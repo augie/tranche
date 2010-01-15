@@ -1,6 +1,4 @@
-*What is a Hash?*
-
-A Hash is a string of characters that creates a unique identifier for a specific uploaded project, folder or file in Tranche. You will use a Hash to download data from Tranche.
+*What is a Hash?* A Hash is a string of characters that creates a unique identifier for a specific uploaded project, folder or file in Tranche. You will use a Hash to download data from Tranche.
 
 Here is an example of what a Hash looks like:
 {{{
