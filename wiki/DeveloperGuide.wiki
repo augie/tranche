@@ -79,19 +79,3 @@ There are three methods for uploading and downloading: GUI, command-line tools, 
 
 
 <br>
-----
-<br>
-
-
-==Modules==
-  * Guide to Tranche Modules
-
-
-<br>
-----
-<br>
-
-
-==Other==
-  * CSV Files
-  * Sample Code
