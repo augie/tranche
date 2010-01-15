@@ -17,10 +17,10 @@ Before we introduce how to create and manage networks, use more advanced tools o
 
 In order to set up a Tranche network, you must create certificates and the proper configuration, as explained below. Before you get started, you will likely want to read through each of these in order to gain an understanding of the process of creating a network.
 
-  * [[Dev Guide New Network Create Certs|Create your certificates]]
-  * [[Dev Guide New Network Create Configs|Create configuration files]]
-  * [[Dev Guide New Network Create JAR|Create a JAR]]
-  * [[Dev Guide New Network Configure Tools|Configuring Tranche tools for your network]]
+  * [CreateCerts Create your certificates]
+  * [NetworkConfigs Create configuration files]
+  * [NetworkJAR Create a JAR]
+  * [ConfigureTools Configuring Tranche tools for your network]
   * [https://trancheproject.org/register.jsp Register your network with us (required for sending email through our servers)]
 
 
@@ -35,8 +35,8 @@ In order to set up a Tranche network, you must create certificates and the prope
 
 Tranche is an open source project, and we provide documentation for the tools we use to develop and the project.
 
-  * [[Dev Guide Source|Getting and building the source code]]
-  * [[Dev Guide Development Setup|Setting up the development environment]]
+  * [Source Getting and building the source code]
+  * [DevelopmentSetup Setting up the development environment]
 
 
 
@@ -53,11 +53,11 @@ Tranche is an open source project, and we provide documentation for the tools we
   * [http://dev.proteomecommons.org/tranche/website/lib/TrancheGUI.jar TrancheGUI.jar] (includes Tranche core source and GUI source)
   * [http://dev.proteomecommons.org/tranche/website/files/tranchegui-lib.zip TrancheGUI.jar Supporting JARs]
 
-===APIs===
+==APIs==
   * [http://dev.proteomecommons.org/tranche/website/dev/api/ Tranche Java API]
   * [http://dev.proteomecommons.org/tranche/website/dev/guiapi/ Tranche GUI Java API] (includes Tranche core source and GUI source)
 
-===Testing Reports===
+==Testing Reports==
 
 We use JUnit to recursively test all Tranche functionality, and provide information regarding performance and coverage for every build
 
@@ -65,11 +65,6 @@ We use JUnit to recursively test all Tranche functionality, and provide informat
   * [http://dev.proteomecommons.org/tranche/dev/clover/ Clover Report]
   * Stress Tests
   * Benchmarks
-
-===Stress Test Reports===
-
-We regularly perform stress tests on the clients and servers to test performance and to ensure that critical applications continue even when resources are limited. Stress tests run nearly continuously, and are required before critical updates to either the client or server.<br>
-At the moment, stress test results are not publicly available . These test uses a consistent framework designed in-house specific to our needs, and as we make the operations more formalized and automated, we will generate reports for the public.
 
 
 <br>
