@@ -1,4 +1,4 @@
-=What is a Hash?=
+*What is a Hash?*
 
 A Hash is a string of characters that creates a unique identifier for a specific uploaded project, folder or file in Tranche. You will use a Hash to download data from Tranche.
 
@@ -11,7 +11,7 @@ Hashes are based on three different algorithms combined together and the file le
 
 Below are the algorithms used to create the Hash:
 
-MD5 (16 bytes)
-SHA-1 (20 bytes)
-SHA-256 (32 bytes)
-File Lenth (8 bytes)
+  * MD5 (16 bytes)
+  * SHA-1 (20 bytes)
+  * SHA-256 (32 bytes)
+  * File Lenth (8 bytes)
