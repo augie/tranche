@@ -1,3 +1,4 @@
+#labels Featured
 =Design Principles=
 
 Before we introduce how to create and manage networks, use more advanced tools or work with the API, there are a few introductory topics that explain the fundamentals of Tranche.
