@@ -8,7 +8,9 @@ Before we introduce how to create and manage networks, use more advanced tools o
   * Details on the Tranche file structure
 
 
+<br>
 ----
+<br>
 
 
 =Starting a Tranche network=
@@ -22,7 +24,10 @@ In order to set up a Tranche network, you must create certificates and the prope
   * [https://trancheproject.org/register.jsp Register your network with us (required for sending email through our servers)]
 
 
+
+<br>
 ----
+<br>
 
 
 
@@ -35,7 +40,9 @@ Tranche is an open source project, and we provide documentation for the tools we
 
 
 
+<br>
 ----
+<br>
 
 
 =Downloads=
@@ -65,7 +72,9 @@ We regularly perform stress tests on the clients and servers to test performance
 At the moment, stress test results are not publicly available . These test uses a consistent framework designed in-house specific to our needs, and as we make the operations more formalized and automated, we will generate reports for the public.
 
 
+<br>
 ----
+<br>
 
 
 ==Downloading and Uploading==
@@ -73,16 +82,20 @@ At the moment, stress test results are not publicly available . These test uses 
 There are three methods for uploading and downloading: GUI, command-line tools, and direct use of the Java API.
 
 
+<br>
 ----
+<br>
 
 
 ==Modules==
-  * [[Dev Guide Modules|Guide to Tranche Modules]]
+  * Guide to Tranche Modules
 
 
+<br>
 ----
+<br>
 
 
 ==Other==
-  * [[Dev Guide CSV Files|CSV Files]]
-  * [[Dev Guide Sample Code|Sample Code]]
+  * CSV Files
+  * Sample Code
