@@ -1,0 +1,88 @@
+=Design Principles=
+
+Before we introduce how to create and manage networks, use more advanced tools or work with the API, there are a few introductory topics that explain the fundamentals of Tranche.
+
+  * [https://trancheproject.org/admin/certificates.jsp Certificates and how authorization works in Tranche]
+  * [https://trancheproject.org/users/hash.jsp What is a Hash?]
+  * [https://trancheproject.org/admin/hashspan.jsp What is a Hash Span?]
+  * Details on the Tranche file structure
+
+
+----
+
+
+=Starting a Tranche network=
+
+In order to set up a Tranche network, you must create certificates and the proper configuration, as explained below. Before you get started, you will likely want to read through each of these in order to gain an understanding of the process of creating a network.
+
+  * [[Dev Guide New Network Create Certs|Create your certificates]]
+  * [[Dev Guide New Network Create Configs|Create configuration files]]
+  * [[Dev Guide New Network Create JAR|Create a JAR]]
+  * [[Dev Guide New Network Configure Tools|Configuring Tranche tools for your network]]
+  * [https://trancheproject.org/register.jsp Register your network with us (required for sending email through our servers)]
+
+
+----
+
+
+
+=Working with the Source Code=
+
+Tranche is an open source project, and we provide documentation for the tools we use to develop and the project.
+
+  * [[Dev Guide Source|Getting and building the source code]]
+  * [[Dev Guide Development Setup|Setting up the development environment]]
+
+
+
+----
+
+
+=Downloads=
+
+==JARs==
+  * [http://dev.proteomecommons.org/tranche/website/lib/Tranche.jar Tranche.jar] (Tranche core source)
+  * [http://dev.proteomecommons.org/tranche/website/files/tranche-lib.zip Tranche.jar Supporting JARs]
+  * [http://dev.proteomecommons.org/tranche/website/lib/TrancheGUI.jar TrancheGUI.jar] (includes Tranche core source and GUI source)
+  * [http://dev.proteomecommons.org/tranche/website/files/tranchegui-lib.zip TrancheGUI.jar Supporting JARs]
+
+===APIs===
+  * [http://dev.proteomecommons.org/tranche/website/dev/api/ Tranche Java API]
+  * [http://dev.proteomecommons.org/tranche/website/dev/guiapi/ Tranche GUI Java API] (includes Tranche core source and GUI source)
+
+===Testing Reports===
+
+We use JUnit to recursively test all Tranche functionality, and provide information regarding performance and coverage for every build
+
+  * [http://dev.proteomecommons.org/tranche/dev/junit/ JUnit Report]
+  * [http://dev.proteomecommons.org/tranche/dev/clover/ Clover Report]
+  * Stress Tests
+  * Benchmarks
+
+===Stress Test Reports===
+
+We regularly perform stress tests on the clients and servers to test performance and to ensure that critical applications continue even when resources are limited. Stress tests run nearly continuously, and are required before critical updates to either the client or server.<br>
+At the moment, stress test results are not publicly available . These test uses a consistent framework designed in-house specific to our needs, and as we make the operations more formalized and automated, we will generate reports for the public.
+
+
+----
+
+
+==Downloading and Uploading==
+
+There are three methods for uploading and downloading: GUI, command-line tools, and direct use of the Java API.
+
+
+----
+
+
+==Modules==
+  * [[Dev Guide Modules|Guide to Tranche Modules]]
+
+
+----
+
+
+==Other==
+  * [[Dev Guide CSV Files|CSV Files]]
+  * [[Dev Guide Sample Code|Sample Code]]
