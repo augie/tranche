@@ -12,7 +12,7 @@ Alternatively, you can simply Windows Firewall, but this will leave your compute
 
 
 
-=ZoneAlarm=
-ZoneAlarm is a third party firewall program that is commonly installed to help prevent viruses, spyware, and hackers from accessing your computer. If you have ZoneAlarm running it will notify you when the Tranche tool tries to connect to the web. Click the option that tells ZoneAlarm to let the Tranche tool to have access to the web. You may have to restart the Tranche tool after clicking this option.
+=Zone Alarm=
+Zone Alarm is a third party firewall program that is commonly installed to help prevent viruses, spyware, and hackers from accessing your computer. If you have Zone Alarm running it will notify you when the Tranche tool tries to connect to the web. Click the option that tells Zone Alarm to let the Tranche tool to have access to the web. You may have to restart the Tranche tool after clicking this option.
 
-Alternatively, you can disable ZoneAlarm, but this will leave your computer more vulnerable because this will allow all software access to the Internet.
+Alternatively, you can disable Zone Alarm, but this will leave your computer more vulnerable because this will allow all software access to the Internet.
