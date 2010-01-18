@@ -1,9 +1,25 @@
+  * [GUITroubleShooting#All_Servers_Offline All servers are offline.]
+  * [GUITroubleShooting#GUI_Not_Launching GUI is not launching.]
+
+
+<br>
+----
+<br>
+
+
+=All Servers Offline=
+
+If your Tranche server is telling you that it could not find any servers on startup, first check your Internet connection. If this is fine, then the likely culprit is your firewall. You will have to work with your local network administrator to open up the default Tranche ports: 443 and 1045. Without these ports open, you will not able to use Tranche.
+
+
+<br>
+----
+<br>
+
+
 =GUI Not Launching=
 
 Any of the following may be reasons that your tool is not launching.
-
-
-----
 
 
 ==Java Not Set Up Properly==
