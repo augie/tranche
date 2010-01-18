@@ -1,4 +1,4 @@
-Tranche may be picked up and blocked by any security tool or firewall program running on your computer. Such programs include ZoneAlarm and Windows Firewall. In order to let the Tranche tools function properly you must opt to let it have access to the Internet.
+Tranche may be picked up and blocked by any security tool or firewall program running on your computer. Such programs include Zone Alarm and Windows Firewall. In order to let the Tranche tools function properly you must opt to let it have access to the Internet.
 
 Most users will not experience firewall issues; however, if you do, know that you'll have to either disable the firewall or configure it to let the Tranche tools work. A list of configurations for various firewall programs is provided below. If your particular program isn't listed, please send in information about it so that we may add it to this documentation.
 
