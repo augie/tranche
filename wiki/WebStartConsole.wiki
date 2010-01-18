@@ -10,7 +10,7 @@ This output can be very useful, particularly when working with a developer to tr
 
 Setting web start to show the console is easy, but differs based on which operating system (or desktop environment) you are using and which JVM you are using.
 
-Most users will have The Sun Microsystems `HotSpot` JVM, though there are alternations. OpenJDK will be common for users who are using an open source package manager. For more details, you can search online, though in general, you should be able to find more information by simply typing javaws on your command-line (shell).
+Most users will have The Sun Microsystems !HotSpot JVM, though there are alternations. OpenJDK will be common for users who are using an open source package manager. For more details, you can search online, though in general, you should be able to find more information by simply typing javaws on your command-line (shell).
 
   # *Launch the command prompt*: Click on the Windows icon, and type cmd in the search bar. Click enter, and after a few seconds, the command-line should open.
   # *Enter the command*: Type javaws -viewer and press enter.
