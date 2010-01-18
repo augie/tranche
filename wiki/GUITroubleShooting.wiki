@@ -1,0 +1,45 @@
+=GUI Not Launching=
+
+Any of the following may be reasons that your tool is not launching.
+
+
+----
+
+
+==Java Not Set Up Properly==
+
+You do not have Java or Web Start is not associated with the the JNLP If you download the JNLP file (ends with .jnlp or .jsp), and double-clicking on it did nothing, perhaps you do not have Java installed or Java Web Start is not associated with the file. First see whether you can find Java Web Start, and if you cannot, you can download Java.
+
+
+==JNLP File Not Being Recognized==
+
+Your computer may not be running the JNLP file. Check your desktop or download directory to see whether a file was downloaded -- it might end with .jsp or .jnlp. It might be that your browser does not execute the files automatically. This behavior can be configured for each browser. Try double-clicking on the file to see whether Java Web Start launches.
+
+
+==Disabled Caching In Internet Explorer==
+
+There is a bug in Internet Explorer that will prevent the application from running if the cache is disabled. Make sure you cache is enabled.
+
+
+==Clear Your Caches==
+
+The cache is where your computer stores files so that it doesn't need to retrieve them again for any arbitrary period of time. While this prevents unnecessary re-downloading, this also means that old copies of files may persist after changes were made.
+
+For Tranche, this may cause problems when the code has changed significantly, and in some cases the application may not start.
+
+If you are having difficulty running the application (such as when the application does not appear after clicking the link), there are steps you will want to take:
+
+===Clear your browser's cache===
+
+How to clear a browser's cache depends on the browser. You can search online for your particular browser. Here are links to clearing the cache for some common browsers:
+
+  * [http://www.microsoft.com/windows/ie/ie6/using/howto/customizing/clearcache.mspx Internet Explorer 6]
+  * [http://support.mozilla.com/en-US/kb/Options+window Mozilla Firefox 3]
+
+===Clear the Java Web Start cache===
+
+  # Open a command prompt
+  # Start up the Java Web Start Viewer
+  # Should start with the Java Cache viewer on top. If it doesn't, you should be able to find it, or try restarting from step #2.
+  # Select and remove individual items. With any existing Tranche icons highlighted, click on the red X to delete it. (If a Tranche instance is running, you may need to shut it down.)
+  # The application cache is empty!. Unless you have applications not related to Tranche that you want to keep.
