@@ -1,0 +1,18 @@
+Tranche may be picked up and blocked by any security tool or firewall program running on your computer. Such programs include ZoneAlarm and Windows Firewall. In order to let the Tranche tools function properly you must opt to let it have access to the Internet.
+
+Most users will not experience firewall issues; however, if you do, know that you'll have to either disable the firewall or configure it to let the Tranche tools work. A list of configurations for various firewall programs is provided below. If your particular program isn't listed, please send in information about it so that we may add it to this documentation.
+
+
+
+=Windows Firewall=
+
+Windows Firewall comes automatically installed on most newer versions of Microsoft Windows. If it is running, a popup box will appear asking if you would like to allow "java.exe" to access the internet. Click yes.
+
+Alternatively, you can simply Windows Firewall, but this will leave your computer more vulnerable because this will allow all software access to the Internet.
+
+
+
+=ZoneAlarm=
+ZoneAlarm is a third party firewall program that is commonly installed to help prevent viruses, spyware, and hackers from accessing your computer. If you have ZoneAlarm running it will notify you when the Tranche tool tries to connect to the web. Click the option that tells ZoneAlarm to let the Tranche tool to have access to the web. You may have to restart the Tranche tool after clicking this option.
+
+Alternatively, you can disable ZoneAlarm, but this will leave your computer more vulnerable because this will allow all software access to the Internet.
