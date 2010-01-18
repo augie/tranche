@@ -1,0 +1,18 @@
+Software prints messages for various reasons: to show warnings, errors, show progress, etc.
+
+When you run software from the command-line (or shell), you see the output. However, you don't see this when running a GUI; all you see is the graphical interface.
+
+This output can be very useful, particularly when working with a developer to troubleshoot a problem. Thankfully, Java Web Start (which is what launches the Tranche GUI) comes with a console; all you need to do is turn it on.
+
+
+
+==How To Show Console==
+
+Setting web start to show the console is easy, but differs based on which operating system (or desktop environment) you are using and which JVM you are using.
+
+Most users will have The Sun Microsystems `HotSpot` JVM, though there are alternations. OpenJDK will be common for users who are using an open source package manager. For more details, you can search online, though in general, you should be able to find more information by simply typing javaws on your command-line (shell).
+
+  # *Launch the command prompt*: Click on the Windows icon, and type cmd in the search bar. Click enter, and after a few seconds, the command-line should open.
+  # *Enter the command*: Type javaws -viewer and press enter.
+  # *Java Control Panel*: After a few seconds of executing the command in the last step, the Java control Panel should appear.
+  # *Show Console*: Go to the Advanced, and expand the Java console. Click Show Console, then click Apply and OK.
