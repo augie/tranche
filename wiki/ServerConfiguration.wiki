@@ -1,0 +1,104 @@
+Our configuration allows administrators to add, edit and remove simple name value pairs. 
+
+These can be arbitrary, as I could easily add my name to the configuration:
+{{{
+"Tagged By" » "Bryan"
+}}}
+
+This wouldn't serve much of a purpose, but it would appear in the Configuration anytime I or anyone else opens it.
+
+However, say I added the following:
+{{{
+"Tranche: Server Name" » "Tranche 209"
+}}}
+
+That value is used by various separate interfaces to show a name for the server. Without this value, we would not be able to provide this value, and would have to use a less friendly Tranche url, which is tranche://141.214.182.209:443.
+
+Consider the following:
+{{{
+"hashSpanFix: AllowRun" » "false"
+}}}
+
+This value impacts server-side performance. This effectively disables the server-side service for that particular server that grabs chunks from other servers that it thinks it should have, as well as repairing broken chunks.
+
+
+==How To Modify The Configuration==
+Any user with write permissions to the network (i.e., anyone who can log in) can open up a server configuration, though only certain users (our admins) can save any changes. However, if you start a server of your own, you will be able to change the values.
+
+To view the attributes of a local server (one on your computer):
+  # Click on Preferences > Server Configuration. If you haven't started a server yet, pick a port (1500 is a good choice for almost any machine) and click Start the server.
+  # Click on the Attributes tab.
+
+To view the attributes of a remote server (one on another computer — this is how we generally administrate servers):
+  # Click on Preferences > Server Configuration
+  # Click on the External Server tab.
+  # Type in the Tranche URL (e.g., tranche://141.214.182.209:443), the click Load Configuration.
+  # Click on the Attributes tab.
+  # You can right-click (or control-click) on attributes to edit or remove them, and you can click on Attributes Menu > Add Attribute (scroll to top of attributes tab) to add a new attribute.
+
+
+
+==Attributes==
+
+As we illustrated earlier, attributes play different roles:
+  * Can impact displayed values for server
+  * Can impact performance of server
+  * Can be viewed by admin to understand the server and its environment
+  * Can be entirely arbitrary, and not affect the end user in any particular way.
+
+|| *Name* || *Default* || *Description* ||
+|| actualBytesUsed: /path/to/directory || Varies || Displays the number of bytes currently residing in every directory used by this server. If this server is using more than one directory, there will be multiple attributes of this kind. ||
+|| currentlyConnectedUsers || Varies || Displays the number of internet connections the server is currently servicing. These represent concurrent users (either actual end-users or services such as backup and monitoring tools). ||
+|| dataBlockUtil: !KnownDataFileCount || Varies || The number of data chunks that are loaded into the server. These are the Tranche file system's way to save and retrieve data, and do not necessarily match the number of files that were uploaded or can be downloaded. ||
+|| dataBlockUtil: !KnownMetaDataFileCount || Varies || The number of meta data chunks that are loaded into the server. These are the Tranche file system's way to restore the original files from data chunks, as well as assemble the project's files back into a project. ||
+|| dataBlockUtil: !MergeQueueSize || Varies || The current size of the queue (line) of files that need to be merged back into the Tranche file system. This will generally be zero unless there are uploads. This will only be non-zero when the file system is doing something called splitting (similar to how self-balancing trees split data when they are unbalanced). ||
+|| flatFileTrancheServer: !KnownProjectCount || Varies || The number of meta data chunks on the server that represent a project. Note that this does not reflect the number of total projects that can be downloaded from that server alone, which varies along many dimensions. This is mostly intended for internal use, but can be used to make an imperfect, rule-of-thumb observation about the percentage of the network on the server. ||
+|| freeMemory || Varies || The number of free bytes of memory available to the server at any given time. This changes rapidly in real-time on the server. This can be useful for tracking down memory issues to alleviate swap or find conditions that cause the server to run out of memory. Changing this value has no impact, and any changes will be overridden automatically, since this value is automatically calculated. ||
+|| hashSpanFix: !AllowDelete || true || Setting to false disables the delete feature in the server's healing thread. A server will only delete a chunk if the server has a hash span and the chunk is not in that hash span but has enough copies on the overall network to remain available after a delete. ||
+|| hashSpanFix: !AllowRun || true || Setting to false disables the healing thread completely, meaning that the server will not repair its chunks nor look for chunks to download or delete. This is a safety switch to allow an admin to stop behavior that she thinks might cause problems on the network. This allows the admin to stop the healing thread if they think it requires too many resources. ||
+|| hashSpanFix: !DataCopied || Varies || The number of data chunks this server has downloaded based on its hash span(s). A server without a hash span will not copy data, since the hash span is intended to mirror a slice of the network. ||
+|| hashSpanFix: !DataDeleted || Varies || The number of data chunks this server has deleted based on its hash span(s). A server without a hash span will not delete data, since the hash span is intended to limit the data on a server to a specific slice of the network (unless that chunk hasn't been replicated enough times yet). ||
+|| hashSpanFix: !DataLocalChunkThrewException || Varies || The number of exceptions (in this case, errors) thrown when loading the data chunks. Unless there are I/O errors, this should remain zero. In the case of a non-zero value, there may be hardware (or software) issues that need to be addressed. This is used to monitor the servers to maintain data integrity and availability.||
+|| hashSpanFix: !DataNotRepaired || Varies || This is a complex value, and a non-zero value is not necessarily bad. Every time the healing thread finds a bad chunk, it tries one server at a time to find a copy of the chunk. If it finds a good copy, it replaces the chunk. If it finds another bad copy, it increments this value by one to signify that another chunk was not replaced. However, this is normal if multiple bad chunks exist. As long as one good chunk exists, it will eventually be replaced. (We specifically test this with unit tests and stress tests.) ||
+|| hashSpanFix: !DataRepaired || Varies || A zero or non-zero value is not necessarily bad. If a bad chunk is replaced by a good copy of the chunk from another server in the server's healing thread, this value is incremented by one. In conditions where we know there are a lot of bad chunks on the network, this helps us know which servers are repairing themselves (along with hashSpanFix: !DataNotRepaired). ||
+|| hashSpanFix: !DataSkipped || Varies || The number of chunks the server finds it already has when trying to mirror a slice of the network specified by its hash span. While the server does not have a hash span (which could be indefinite), this number will not change. ||
+|| hashSpanFix: !GlobalIterationCount || Varies || The total number of times that the healing thread has performed all of its operations once, including adding new data and meta data, deleting irrelevant data and meta data, and repairing any broken data and meta data. Depending on the amount of data and meta data on a server, a single iteration may take a long while, from hours to days, or even weeks or months. ||
+|| hashSpanFix: !GlobalLocalRepairCompleteIterations || Varies || In the case that the server does not have a hash span, this is the total number of times that the healing thread has checked all of its data and meta data for bad chunks and replaced any with any good copies it might find. This process continues as long as the server is running since bad chunks can appear (albeit rarely) at any time under any circumstances that involve I/O errors. ||
+|| hashSpanFix: !MetaDataCopied || Varies || The number of meta data chunks this server has downloaded based on its hash span(s). A server without a hash span will not copy any data (meta data or data), since the hash span is intended to mirror a slice of the network. ||
+|| hashSpanFix: !MetaDataDeleted || Varies || The number of meta data chunks this server has deleted based on its hash span(s). A server without a hash span will not delete meta data, since the hash span is intended to limit the data and meta data on a server to a specific slice of the network (unless that chunk hasn't been replicated enough times yet). ||
+|| hashSpanFix: !MetaDataLocalChunkThrewException || Varies || The number of exceptions (in this case, errors) thrown when loading the meta data chunks. Unless there are I/O errors, this should remain zero. In the case of a non-zero value, there may be hardware (or software) issues that need to be addressed. This is used to monitor the servers to maintain data integrity and availability. ||
+|| hashSpanFix: !MetaDataNotRepaired || Varies || This is a complex value, and a non-zero value is not necessarily bad. Every time the healing thread finds a bad chunk, it tries one server at a time to find a copy of the chunk. If it finds a good copy, it replaces the chunk. If it finds another bad copy, it increments this value by one to signify that another chunk was not replaced. However, this is normal if multiple bad chunks exist. As long as one good chunk exists, it will eventually be replaced. (We specifically test this with unit tests and stress tests.) ||
+|| hashSpanFix: !MetaDataRepaired || Varies || A zero or non-zero value is not necessarily bad. If a bad chunk is replaced by a good copy of the chunk from another server in the server's healing thread, this value is incremented by one. In conditions where we know there are a lot of bad chunks on the network, this helps us know which servers are repairing themselves (along with hashSpanFix: !DataNotRepaired). ||
+|| hashSpanFix: !MetaDataSkipped || Varies || The number of chunks the server finds it already has when trying to mirror a slice of the network specified by its hash span. While the server does not have a hash span (which could be indefinite), this number will not change. ||
+|| hashSpanFix: !NumRepsInHashSpanRequiredForDelete || 1 || If a server has a hash span and finds a chunk (data or meta data) that does not belong, it checks various conditions to determine whether the chunk should be deleted. This particular value is the number of required copies of the chunk in other servers that have a hash span that includes that chunk. (I.e., with the default value of one, at least one other server must have a hash span that holds that chunk AND that server must already have a copy of the chunk). Increasing this value results in more stringent criteria before a deletion will occur, and lessening it (not recommended) results in less stringent criteria for a deletion. ||
+|| hashSpanFix: !NumTotalRepsRequiredForDelete || 3 || If a server has a hash span and finds a chunk (data or meta data) that does not belong, it checks various conditions to determine whether the chunk should be deleted. This particular value is the number of other copies of this chunk must exist before the chunk is deleted, regardless of hash spans. (I.e., with the default value of three, at least three other servers must currently have a copy of the chunk before considering a deletion.) Increasing this value results in more stringent criteria before a deletion will occur, and lessening it (not recommended) results in less stringent criteria for a deletion. ||
+|| serverURL || Varies || The Tranche URL of the server. This URL is used to understand where a configuration is from. ||
+|| totalMemory || Varies || The total amount of primary memory (i.e., RAM) available to the server. Changing this value has no impact, and any changes will be overridden automatically, since this value is automatically calculated. ||
+|| hashSpanFix: !GlobalServerBeingChecked || Varies || The remote server with which the healing thread for the local server is currently communicating for downloading data or meta data to the local server. (In essence, the remote server from which the particular server is currently pulling data.) This will be Unknown if not communicating with another server, which happens when a server does not have a hash span or under a variety of less likely (but not necessarily troublesome) conditions. ||
+|| coreServer: mirrorEveryUpload || Varies || If set to true, the server will mirror every upload to the Tranche core Proteomics network. ||
+|| hashSpanFix: !GlobalLocalDeleteCompleteIterations || Varies || The number of complete iterations that the healing thread has performed checking the server's chunks for data and meta data to delete, based on the configuration settings. ||
+|| hashSpanFix: !BatchSizeForDownloadChunks || 50 || The size of a batch of chunks to check for potential new chunks in a servers hash span. One of three values that compete for healing thread's time: downloading, deleting and healing. ||
+|| hashSpanFix: !BatchSizeForDeleteChunks || 50 || The size of a batch of chunks to check for potential chunks to delete from a server if not in the server's hash span and if there are sufficient copies. One of three values that compete for healing thread's time: downloading, deleting and healing. ||
+|| hashSpanFix: !BatchSizeForReplicateChunks || 50 || The size of a batch of chunks to check for chunks to repair (e.g., the chunks were corrupted). One of three values that compete for healing thread's time: downloading, deleting and healing. ||
+|| hashSpanFix: !CurrentActivity || Varies || The current activity handled by the healing thread. This should generally involve deletion, downloading or repairing. ||
+|| hashSpanFix: !TimeSpentDoingNothing || Varies || Time (actual time and percentage) spent by healing thread doing ancilliary duties, such as waiting for startup. ||
+|| hashSpanFix: !TimeSpentDeleting || Varies || Time (actual time and percentage) spent by healing thread looking for chunks to delete. ||
+|| hashSpanFix: !TimeSpentHealing || Varies || Time (actual time and percentage) spent by healing thread looking for corrupted chunks to heal. ||
+|| hashSpanFix: !TimeSpentDownloading || Varies || Time (actual time and percentage) spent by healing thread downloading chunks that belong on this server. ||
+|| hashSpanFix: !PauseInMillisAfterEachOperation || 100 || If want to free up resources by slowing down the healing thread, can set a value (in milliseconds) to pause between operations. (This is a candidate option that might be auto adjusted after develop a server performance monitor daemon.) ||
+|| remoteTrancheServer: !ServerSideCallbacks || Varies || Human-readable message about the number of callbacks, as well as two servers causing majority of callbacks. Helpful for determining troublesome servers on network. (These not only slow down server-side operations, such as the healing thread, but can slow down client-side operations, such as uploading and downloading.) ||
+|| flatFileTrancheServer: !TotalSize || Varies || The total human-readable size available to the server as a sum of all the limits in the !DataDirectoryConfiguration objects. (I.e., sum of all available space in configured data directories.) If overflow is detected, will be noted. ||
+|| flatFileTrancheServer: !TotalSizeUsed || Varies || The total human-readable size used by the server as a sum of all the used space in the !DataDirectoryConfiguration objects. (I.e., sum of all used space in configured data directories.) If overflow is detected, will be noted. ||
+|| flatFileTrancheServer: !TotalSizeAvailable || Varies || Human-readable space remaining in server when subtract value of flatFileTrancheServer: !TotalSizeUsed from flatFileTrancheServer: !TotalSize. If overflow is detected, will be noted. ||
+|| dataBlockUtil: !MergedDataBlocksTotal || Varies || The number of data blocks that have been merged. This is the process by which the B-tree splits a leaf to become a node, and is mostly useful for debugging purposes. Note this may not be the sum of dataBlockUtil: !MergedDataBlocksSuccesses and dataBlockUtil: !MergedDataBlocksFailures if a failure occurs during a specific portion of the code. If dataBlockUtil: !MergedDataBlocksSuccesses and dataBlockUtil: !MergedDataBlocksFailures do not sum up to this total number, there is a bug which should be reported to the development team. ||
+|| dataBlockUtil: !MergedDataBlocksSuccesses || Varies || The total number of successfully merged data blocks. See dataBlockUtil: !MergedDataBlocksTotal for more information. ||
+|| dataBlockUtil: !MergedDataBlocksFailures || Varies || The total number of failed data blocks merges. This could happen if the data block were corrupted, there are permission problems, or any other IO problems. Tranche servers are programmed to deal with this inevitability, and a small number of these should not cause alarm. However, if there are a large number (say, over 50), you should contact the development team for an investigation. See dataBlockUtil: !MergedDataBlocksTotal for more information. ||
+|| corruptedDataBlock: !CorruptedDataBlockCount || Varies || The total number of corrupted data blocks detected on the server. ||
+|| corruptedDataBlock: !SalvagedChunksFromCorruptedBlockCount || Varies || The total number of chunks recovered from all corrupted data blocks by salvaging intact data. If something is not salvaged, it might be downloaded. ||
+|| corruptedDataBlock: !DownloadedChunksFromCorruptedBlockCount || Varies || The total number of chunks recovered from all corrupted data blocks by downloading the missing data from other servers. Anything not salvaged or downloaded is considered lost. However, salvaging and downloading should hopefully prevent lost data. ||
+|| corruptedDataBlock: !LostChunksFromCorruptedDataBlockCount || Varies || If chunks from corrupted data blocks are not salvaged or downloaded, they are considered lost. There should not be many (if any) lost chunks, as salvaging and downloading combined should reconstitute lost data. ||
+|| corruptedDataBlock: !CorruptedDataBlockHeaderCount || Varies || All corrupted data blocks must either be corrupted in either the header or body. This is the total count of data blocks corrupted in the header. ||
+|| corruptedDataBlock: !CorruptedDataBlockBodyCount || Varies || All corrupted data blocks must either be corrupted in either the header or body. This is the total count of data blocks corrupted in the body. ||
+|| corruptedDataBlock: !AllowedToFixCorruptedDataBlock || true || Whether the server is allowed to fix corrupted data blocks. Because this feature deleting data block files, the switch to turn it off (or on again) is available for troubleshooting. ||
+
+It is not a good idea to edit or remove an attribute unless you know what the impact will be. No changes will take place until the configuration is saved. Only some users can save configuration changes, and anyone who attempts to change them without proper permissions will get a simple message telling them that they do not have permissions to change the configuration.
