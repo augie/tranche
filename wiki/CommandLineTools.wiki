@@ -1,0 +1,29 @@
+There are any number of scenarios that might require or at least suggest the use of a command-line client. Here are several:
+
+  * *Automated tools*: users can use the power of their environment (shell scripts, DOS batch script) combined with other tools (like cron) to automate uploads and downloads. The output of the tools makes aggregating information (hashes, directories) simple, which can be stored in files or databases with little additional work.
+  * *Headless environments*: If you work in any environment that does not offer desktop access (such as SSH or a GUI-less operating system), you can use the command-line interface in a familar way
+  * *Less overhead*: Requires less resources (memory and CPU) than GUI interface
+  * *Quick, stable interface*: The command-line arguments, along with return codes, are stabilizing, and we will aim for backwards compatability to maintain integrity of existing user tools and familiarity.
+
+Because the standard output is tightly controlled (see usage for individual tools) to help automate task, capturing information is quite simple. Furthermore, the status codes are useful for automated responses to many of the problems that might occur.
+
+
+
+==Usage==
+
+  # Download the tool (in the Downloads section):
+  # Unzip the downloaded archive
+  # In your operating system's command-line interface, navigate to the unzipped directory
+  # Type the following, replacing _NAME.jar_ with the proper file name:
+
+{{{
+java -jar NAME.jar --help
+}}}
+
+This will print out the usage information, which includes a description of the tool, arguments and return codes.
+
+If java is not in your system's path, you can either add it to your path or type the full path, e.g.:
+
+{{{
+/path/to/java -jar NAME.jar --help
+}}}
