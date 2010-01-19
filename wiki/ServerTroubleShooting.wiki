@@ -13,7 +13,7 @@
 
 *Symptoms*:
   * If you run `df -h`, you will see `tmp/` directory mounted separately on overflow. Also, root partition is full or was full at some point.
-  * Computer responds very slowly � like in swap � although CPU usage is almost certainly very low. Memory may or may not be low.
+  * Computer responds very slowly like in swap although CPU usage is almost certainly very low. Memory may or may not be low.
 
 *Solution*: clean out enough space on root partition so it can comfortably support the temporary directory, then restart the machine. When you type `df -h`, you should no longer see a separately-mounted temporary directory, and the server should return to normal speed.
 
@@ -42,7 +42,7 @@ If it is the disk controller, use another port on the motherboard. If there isn'
 
 ==Cannot Access External Device==
 
-*Description*: See the thread at http://LinuxQuestions.org, [http://www.linuxquestions.org/questions/linux-server-73/troubleshooting-large-partition-attempt-to-access-beyond-end-of-device-676617/ Troubleshooting large partition "attempt to access beyond end of device"]. In this particular instance, the partition was created incorrectly: it was more than 2TB, but used the msdos disk label, which doesn't support that much. This user ended up using the recovery software, TestDisk, to recover the data, and created smaller partitions.
+*Description*: See the thread at http://LinuxQuestions.org, [http://www.linuxquestions.org/questions/linux-server-73/troubleshooting-large-partition-attempt-to-access-beyond-end-of-device-676617/ Troubleshooting large partition "attempt to access beyond end of device"]. In this particular instance, the partition was created incorrectly: it was more than 2TB, but used the msdos disk label, which doesn't support that much. This user ended up using the recovery software, !TestDisk, to recover the data, and created smaller partitions.
 
 *Symptoms*: You could put data on the partition for a while, but now you can't access all (or any) of the data. Perhaps some directories can be read, but others result in error messages. The data might still be on there (in our case, we were able to rescue it), but the partition's problems prevent you from accessing it normally.
 
