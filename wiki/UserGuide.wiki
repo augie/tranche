@@ -9,5 +9,5 @@
     * [ReferencingData How to reference Tranche data in a manuscript/publication]
   * [Downloading]
   * [Uploading]
-  * [GUITroubleshooting Troubleshooting graphical user interface (GUI) problems]
+  * [GUITroubleShooting Troubleshooting graphical user interface (GUI) problems]
   * [CommandLineTools Command line tools]
