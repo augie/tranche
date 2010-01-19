@@ -1,5 +1,3 @@
-Tranche has been modified extensively to accomodate the various failures that the developers and administrators have witnessed, like disk failures, disconnected servers, etc.
-
 Each server on a Tranche network has a healing thread that runs as long as a server is running. This healing thread serves three primary functions:
   * *Downloading*: looks for any new chunks on the network (other servers) and downloads to itself if the chunk falls in the server's hash span.
   * *Deleting*: looks at the server's own chunks, and deletes any if not in the server's hash span and there are sufficient replications on the network.
