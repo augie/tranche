@@ -1,0 +1,8 @@
+Tranche is designed to recognize X.509 certificates and associated private keys as users. Tranche also accepts these files in a ZIP archive, optionally AES encrypted. You can create these files manually or you can create them by using the create file tool included with the Tranche code. To launch the create file tool complete the following steps.
+
+  # Launch Tranche.
+  #Click on the "Create New User" button, located in the upper left hand corner. The Create a new Tranche User dialog box will appear.
+	
+Each field represents a value that will be set in the associated X.509 certificate. You need not change any of the values. Click on "Create User" to make a user file. You will be prompted for the location to save the file.
+
+Entering a passphrase is a good idea. When you upload data to a Tranche network the data will be signed as coming from you. This is done using the private key that is saved in your Tranche user file. If you do not set a passphrase, anyone who has a copy of your user file can pretend to be you. Additionally, Tranche servers are set to trust people based on their X.509 certificates and associated private keys. If for any reason someone else gets a copy of your information they can edit any server you are able to edit. Setting a passphrase is an easy way to ensure that your user file stays reasonably safe.
