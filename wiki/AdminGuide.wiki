@@ -1,4 +1,6 @@
 #labels Featured
   * [StartingServer Starting a server]
+  * [ServerConfiguration Configuring your server]
+  * [ServerTroubleShooting Problems that might arise with your server and what to do]
   * [CreateCertificate Creating certificates]
-  * [ManageUsers Manage server users]
+  * [ManageServerUsers Manage server users]
