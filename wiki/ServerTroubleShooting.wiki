@@ -9,7 +9,7 @@
 
 ==Temporary File Space Runs Out==
 
-*Description*: If your temporary directory is in the root partition (in *unix) and the root partition fills up, the temporary directory is moved to a separate file system in memory, tempfs. However, if the size of data in the directory exceeds that of the tempfs partition, the server might enter swap, and become very slow.
+*Description*: If your temporary directory is in the root partition (in UNIX) and the root partition fills up, the temporary directory is moved to a separate file system in memory, tempfs. However, if the size of data in the directory exceeds that of the tempfs partition, the server might enter swap, and become very slow.
 
 *Symptoms*:
   * If you run `df -h`, you will see `tmp/` directory mounted separately on overflow. Also, root partition is full or was full at some point.
