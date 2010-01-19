@@ -1,0 +1,40 @@
+==!OutOfMemoryError==
+
+*Description*: The server runs out of memory, and starts throwing !OutOfMemoryError's. Usually, once this starts, it continues. More often than not, the process continues on, but the server simply drops the requests as it tries to server them, making the server a speed liability.
+
+*Symptoms*: From client perspective, the server is online, but a lot of callbacks (requests) are lost. If look through server's logs (all servers should be saving this information), should see !OutOfMemoryError. Note that looking at memory usage will almost always not matter. A server is allocated memory, and the JVM should check to make sure that it can allocate that much heap space at startup.
+
+*Solution*: try allocating more heap space to the process. When start the server from command-line, modify the -Xmx value to be higher. For example, change -Xmx512m to -Xmx1024m, or higher if you have the space. You can also contact the developers if you can support a diagnosis. Heap dumps are particularly useful, though are quite large (over 512MB for a server with 512MB for heap).
+
+
+==Temporary File Space Runs Out==
+
+*Description*: If your temporary directory is in the root partition (in *unix) and the root partition fills up, the temporary directory is moved to a separate file system in memory, tempfs. However, if the size of data in the directory exceeds that of the tempfs partition, the server might enter swap, and become very slow.
+
+*Symptoms*:
+  * If you run `df -h`, you will see `tmp/` directory mounted separately on overflow. Also, root partition is full or was full at some point.
+  * Computer responds very slowly — like in swap — although CPU usage is almost certainly very low. Memory may or may not be low.
+
+*Solution*: clean out enough space on root partition so it can comfortably support the temporary directory, then restart the machine. When you type `df -h`, you should no longer see a separately-mounted temporary directory, and the server should return to normal speed.
+
+
+
+==Disk Or Disk Controller Failure==
+
+*Description*: Your disk controller (which is part of your mother board) or the disks have problems. The kernel should write many disk errors to screen. Similarly, you can view the most recent kernel errors by typing `dmesg | tail`. You might see errors like:
+
+{{{
+[xxxxxx.xxxxxx] Buffer I/O Error on device ___...
+}}}
+
+*Symptoms*:
+  * You see a lot of kernel error messages mentioning some sort of I/O errors.
+  * From client perspective, the server is online, but a lot of callbacks (requests) are lost.
+
+
+*Solution*:
+Identify which disk(s) or disk controller(s) are causing the problem. To isolate the disk and its controller, you remove one disk at a time and try access files. (My favorite way to do this is to write a shell script to diff every file.) You should quickly determine which disk causes the problem.
+
+Try plugging the disk into another computer or another disk controller port on the same motherboard. If the problem persists, it is probably the disk. Otherwise, it is the motherboard's disk controller.
+
+If it is the disk controller, use another port on the motherboard. If there isn't one, replace the motherboard.
