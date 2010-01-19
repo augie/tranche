@@ -1,1 +1,4 @@
 #labels Featured
+  * [StartingServer Starting a server]
+  * [CreateCertificate Creating certificates]
+  * [ManageUsers Manage server users]
