@@ -1,1 +1,13 @@
 #labels Featured
+  * General usage
+    * [SystemRequirements Tranche system requirements]
+    * [Firewalls Information about firewalls (a likely cause of having no Tranche servers online)]
+    * [RunningAsBackgroundProcess Running Tranche in the background]
+    * [WebStartConsole Using the Java Web Start console to gather debugging information]
+  * Tranche Hash
+    * [Hash What is a Tranche hash?]
+    * [ReferencingData How to reference Tranche data in a manuscript/publication]
+  * [Downloading]
+  * [Uploading]
+  * [GUITroubleshooting Troubleshooting graphical user interface (GUI) problems]
+  * [CommandLineTools Command line tools]
