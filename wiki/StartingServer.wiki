@@ -1,0 +1,20 @@
+==GUI==
+  # Open the Tranche Tool. 
+  # Select "Server Configuration" from the "Preferences" menu located at the top of the application. The default port used is 443. You can change this to any port you like, and you can optionally toggle the "SSL" box to tunnel traffic via SSL for encryption, at the expense of notably more CPU cycles. When you are finished making changes, click "Start the Server".
+
+
+
+==Command Line==
+
+These instructions are currently only for Linux and Apple computer installation.
+
+  # Download the current release of the code and save the ZIP file on your computer.
+  # Unzip the contents of the download in to the directory that you wish to install the program.
+  # Make sure that the _run.sh_ script has executable permission, i.e. `chmod +x ./run.sh`
+  # Execute the script. You will be able to use the command-line client. An easy way to keep the code running, even after you log out, is to use, `nohup ./run.sh > tranche.out 2> tranche.err &`
+
+
+
+==Test It's Working==
+
+After setting up a new server, it is recommended that you test it out. You should try to both upload and download content directly to your server. You can do so by launching your network's Tranche tools, adding the server you just set up, then using only that server for the upload/download by making sure it is the only one selected.
