@@ -13,7 +13,7 @@
 
 *Symptoms*:
   * If you run `df -h`, you will see `tmp/` directory mounted separately on overflow. Also, root partition is full or was full at some point.
-  * Computer responds very slowly — like in swap — although CPU usage is almost certainly very low. Memory may or may not be low.
+  * Computer responds very slowly ï¿½ like in swap ï¿½ although CPU usage is almost certainly very low. Memory may or may not be low.
 
 *Solution*: clean out enough space on root partition so it can comfortably support the temporary directory, then restart the machine. When you type `df -h`, you should no longer see a separately-mounted temporary directory, and the server should return to normal speed.
 
@@ -31,10 +31,22 @@
   * You see a lot of kernel error messages mentioning some sort of I/O errors.
   * From client perspective, the server is online, but a lot of callbacks (requests) are lost.
 
-
 *Solution*:
 Identify which disk(s) or disk controller(s) are causing the problem. To isolate the disk and its controller, you remove one disk at a time and try access files. (My favorite way to do this is to write a shell script to diff every file.) You should quickly determine which disk causes the problem.
 
 Try plugging the disk into another computer or another disk controller port on the same motherboard. If the problem persists, it is probably the disk. Otherwise, it is the motherboard's disk controller.
 
 If it is the disk controller, use another port on the motherboard. If there isn't one, replace the motherboard.
+
+
+
+==Cannot Access External Device==
+
+*Description*: See the thread at http://LinuxQuestions.org, [http://www.linuxquestions.org/questions/linux-server-73/troubleshooting-large-partition-attempt-to-access-beyond-end-of-device-676617/ Troubleshooting large partition "attempt to access beyond end of device"]. In this particular instance, the partition was created incorrectly: it was more than 2TB, but used the msdos disk label, which doesn't support that much. This user ended up using the recovery software, TestDisk, to recover the data, and created smaller partitions.
+
+*Symptoms*: You could put data on the partition for a while, but now you can't access all (or any) of the data. Perhaps some directories can be read, but others result in error messages. The data might still be on there (in our case, we were able to rescue it), but the partition's problems prevent you from accessing it normally.
+
+*Solution*: There are essentially two solutions after recovering any lost data.
+
+  # Find a proper tool to create the partition that is larger than 2TB. Note that many Linux distributions ship with parted that doesn't support this.
+  # Make smaller partitions (less than 2TB) and mount separately. Tranche supports an arbitrary number of partitions. See administration documents for more details, or contact us.
