@@ -16,7 +16,9 @@ Configuration files and certificates can be located in any of a number of places
   # *File system*: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\tranche.conf` for Windows.
   # *Internet*: will attempt to load from the Internet if could not load from Java or the file system.
 
-*File Syntax*
+
+
+===File Syntax===
   * Some general guidelines on the configuration file syntax.
   * Blank lines are ignored.
   * Comment lines can start with `#` or //.
@@ -24,9 +26,12 @@ Configuration files and certificates can be located in any of a number of places
   * For attribute names, cAsE does not matter.
   * Attribute names and values are always separated by an equals sign.
 
-*Example Repository Configuration File*
+
+
+===Example Repository Configuration File===
 {{{
 [GENERAL]
+# the attributes that are not set will be set to the default values
 name = ProteomeCommons.org Tranche
 description = ProteomeCommons.org helps bring academics and professionals in proteomics together.
 
@@ -56,3 +61,79 @@ server.ssl = false
 [GUI]
 launch.advanced.url = https://proteomecommons.org/tranche/advanced.jsp
 }}}
+
+
+
+===GENERAL Category===
+
+Name, value pairs:
+|| *Name* || *Description* || *Default* ||
+|| name || The name of the repository. || ||
+|| description || The description of the repository (what is it storing?). || ||
+|| admin.emails || A comma-separated list of email addresses to which email notifications will be sent. || ||
+|| contact.email || The email address to which users of the repository can contact the administrators. || ||
+|| contact.url || The URL where users can contact the administrators. || ||
+|| launch.advanced.url || The URL that launches the GUI. || ||
+|| launch.download.url || The URL that launches the download wizard. || ||
+|| launch.upload.url || The URL that launches the upload wizard. || ||
+|| home.url || The URL for the repository web site. || ||
+|| signup.url || The URL for users to sign up for the repository. || ||
+|| project.cache.url || || ||
+|| project.cache.hash || || ||
+|| project.url || || ||
+|| project.publish.url || || ||
+|| email.url || || https://trancheproject.org/email/send.jsp ||
+|| user.login.url || || ||
+|| servers.url || || ||
+|| update.software.zip.url || || ||
+|| update.software.signature.url || || ||
+|| status.update.client.frequency || || 60000 ||
+|| status.update.server.frequency || || 30000 ||
+|| status.update.server.grouping || || 5 ||
+|| connection.full.hashspan.threshold || || 25 ||
+|| connection.keep.alive.interval || || 8000 ||
+|| status.defunct.threshold || || 604800000 ||
+|| server.offline.notification.interval || || 86400000 ||
+
+
+===CORE SERVERS Category===
+
+A list of Tranche URLs.
+
+
+
+===CERTIFICATES Category===
+Name, value pairs:
+|| *Name* || *Description* || *Default* ||
+|| security.certificate.admin || || ||
+|| security.certificate.write || || ||
+|| security.certificate.user || || ||
+|| security.certificate.read || || ||
+|| security.certificate.autocert || || ||
+|| security.certificate.anon || || ||
+|| security.key.anon || || ||
+|| security.certificate.email || || ||
+|| security.key.email || || ||
+|| security.certs.url || || ||
+
+
+===LOGGING Category===
+Name, value pairs:
+|| *Name* || *Description* || *Default* ||
+|| log.error.url || || ||
+|| log.server.url || || ||
+|| log.upload.url || || ||
+|| log.upload.failure.url || || ||
+
+
+
+===GUI Category===
+Name, value pairs:
+|| *Name* || *Description* || *Default* ||
+|| module.list.start || || ||
+|| module.list.hash || || ||
+|| module.list.url || || ||
+|| upload.pool.size || || 1 ||
+|| download.pool.size || || 1 ||
+|| hash.auto_complete || || true ||
+|| swt || || false ||
