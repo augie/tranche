@@ -21,20 +21,24 @@
     <property name="build.rt" location="${build}/rt"/>
 	<property name="build.gui" location="b-gui"/>
     <property name="build.rt.gui" location="${build.gui}/rt"/>
-    <property name="dist.lib" location="${dist}/lib"/>
+    <property name="name.lib" value="lib"/>
+    <property name="dist.lib" location="${dist}/${name.lib}"/>
     <property name="dist.lib.zip" location="${dist}/tranche-lib.zip"/>
-    <property name="dist.lib.gui" location="${dist}/lib-gui"/>
+    <property name="name.lib.gui" value="lib-gui"/>
+    <property name="dist.lib.gui" location="${dist}/${name.lib.gui}"/>
     <property name="dist.lib.gui.zip" location="${dist}/tranche-lib-gui.zip"/>
-    <property name="dist.javadoc" location="${dist}/javadocs"/>
+    <property name="name.javadoc" value="javadocs"/>
+    <property name="dist.javadoc" location="${dist}/${name.javadoc}"/>
     <property name="dist.javadoc.zip" location="${dist}/javadocs.zip"/>
-    <property name="dist.javadoc.gui" location="${dist}/javadocs-gui"/>
+    <property name="name.javadoc.gui" value="javadocs-gui"/>
+    <property name="dist.javadoc.gui" location="${dist}/${name.javadoc.gui}"/>
     <property name="dist.javadoc.gui.zip" location="${dist}/javadocs-gui.zip"/>
-    <property name="dist.jar" location="${dist}/tranche.jar"/>
-    <property name="dist.jar.gui" location="${dist}/tranche-gui.jar"/>
-    <property name="dist.build" location="${dist}/tranche-${buildNumber}"/>
-    <property name="dist.build.zip" location="${dist}/tranche-${buildNumber}.zip"/>
-    <property name="dist.build.gui" location="${dist}/tranche-gui-${buildNumber}"/>
-    <property name="dist.build.gui.zip" location="${dist}/tranche-gui-${buildNumber}.zip"/>
+    <property name="name.jar" value="tranche.jar"/>
+    <property name="dist.jar" location="${dist}/${name.jar}"/>
+    <property name="name.jar.gui" value="tranche-gui.jar"/>
+    <property name="dist.jar.gui" location="${dist}/${name.jar.gui}"/>
+    <property name="dist.zip" location="${dist}/tranche-${buildNumber}.zip"/>
+    <property name="dist.gui.zip" location="${dist}/tranche-gui-${buildNumber}.zip"/>
     
     <!-- set the variables needed for the linux server build -->
     <property name="dir.server.linux" location="build/server-linux"/>
@@ -112,20 +116,8 @@
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
         <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <mkdir dir="${dist.build}"/>
-        <copy todir="${dist.build}">
-            <fileset file="${dist.jar}"/>
-            <fileset dir="${dist.lib}"/>
-            <fileset dir="${dist.javadoc}"/>
-        </copy>
-        <zip destfile="${dist.build.zip}" basedir="${dist.build}"/>
-        <mkdir dir="${dist.build.gui}"/>
-        <copy todir="${dist.build.gui}">
-            <fileset file="${dist.jar.gui}"/>
-            <fileset dir="${dist.lib.gui}"/>
-            <fileset dir="${dist.javadoc.gui}"/>
-        </copy>
-        <zip destfile="${dist.build.gui.zip}" basedir="${dist.build.gui}"/>
+        <zip destfile="${dist.zip}" basedir="${dist}" includes="${name.jar}, ${name.lib}, ${name.javadoc}"/>
+        <zip destfile="${dist.gui.zip}" basedir="${dist.gui}" includes="${name.jar.gui}, ${name.lib.gui}, ${name.javadoc.gui}"/>
     </target>
 
     <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
@@ -143,20 +135,8 @@
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
         <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <mkdir dir="${dist.build}"/>
-        <copy todir="${dist.build}">
-            <fileset file="${dist.jar}"/>
-            <fileset dir="${dist.lib}"/>
-            <fileset dir="${dist.javadoc}"/>
-        </copy>
-        <zip destfile="${dist.build.zip}" basedir="${dist.build}"/>
-        <mkdir dir="${dist.build.gui}"/>
-        <copy todir="${dist.build.gui}">
-            <fileset file="${dist.jar.gui}"/>
-            <fileset dir="${dist.lib.gui}"/>
-            <fileset dir="${dist.javadoc.gui}"/>
-        </copy>
-        <zip destfile="${dist.build.gui.zip}" basedir="${dist.build.gui}"/>
+        <zip destfile="${dist.zip}" basedir="${dist}" includes="${name.jar}, ${name.lib}, ${name.javadoc}"/>
+        <zip destfile="${dist.gui.zip}" basedir="${dist.gui}" includes="${name.jar.gui}, ${name.lib.gui}, ${name.javadoc.gui}"/>
     </target>
 
     <target name="clean" description="Delete all files from the previous build.">
