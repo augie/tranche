@@ -26,9 +26,12 @@
     <property name="dist.lib.gui" location="${dist}/lib-gui"/>
     <property name="dist.lib.gui.zip" location="${dist}/tranche-lib-gui.zip"/>
     <property name="dist.javadoc" location="${dist}/javadocs"/>
-    <property name="dist.javadoc.gui" location="${dist}/javadocs-gui"/>
+    <property name="dist.javadoc.zip" location="${dist}/javadocs.zip"/>
+    <property name="dist.javadoc.gui.zip" location="${dist}/javadocs-gui.zip"/>
     <property name="dist.jar" location="${dist}/tranche.jar"/>
     <property name="dist.jar.gui" location="${dist}/tranche-gui.jar"/>
+    <property name="dist.zip" location="${dist}/tranche-${buildNumber}.zip"/>
+    <property name="dist.zip.gui" location="${dist}/tranche-gui-${buildNumber}.zip"/>
     
     <!-- set the variables needed for the linux server build -->
     <property name="dir.server.linux" location="build/server-linux"/>
@@ -104,6 +107,10 @@
 		<antcall target="javadoc.gui" />
         <zip destfile="${dist.lib.zip}" basedir="${dist.lib}" />
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
+        <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
+        <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
+        <zip destfile="${dist.zip}" basedir="${dist}" includes="${dist.jar}, ${dist.lib.zip}, ${dist.javadoc.zip}" />
+        <zip destfile="${dist.zip.gui}" basedir="${dist}" includes="${dist.jar.gui}, ${dist.lib.gui.zip}, ${dist.javadoc.gui.zip}" />
     </target>
 
     <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
@@ -119,6 +126,10 @@
         <antcall target="sign-jars" />
         <zip destfile="${dist.lib.zip}" basedir="${dist.lib}" />
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
+        <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
+        <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
+        <zip destfile="${dist.zip}" basedir="${dist}" includes="${dist.jar}, ${dist.lib}, ${dist.javadoc}" />
+        <zip destfile="${dist.zip.gui}" basedir="${dist}" includes="${dist.jar.gui}, ${dist.lib.gui}, ${dist.javadoc.gui}" />
     </target>
 
     <target name="clean" description="Delete all files from the previous build.">
