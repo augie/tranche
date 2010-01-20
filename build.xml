@@ -112,13 +112,13 @@
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
         <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <zip destfile="${dist.zip}" basedir="${dist}">
-            <fileset dir="${dist}" includes="${jar}"/>
+        <zip destfile="${dist.zip}">
+            <fileset file="${dist.jar}"/>
             <fileset dir="${dist.lib}"/>
             <fileset dir="${dist.javadoc}"/>
         </zip>
         <zip destfile="${dist.zip.gui}">
-            <fileset dir="${dist}" includes="${jar.gui}"/>
+            <fileset file="${dist.jar.gui}"/>
             <fileset dir="${dist.lib.gui}"/>
             <fileset dir="${dist.javadoc.gui}"/>
         </zip>
@@ -139,13 +139,13 @@
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
         <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <zip destfile="${dist.zip}" basedir="${dist}">
-            <fileset dir="${dist}" includes="${jar}"/>
+        <zip destfile="${dist.zip}">
+            <fileset file="${dist.jar}"/>
             <fileset dir="${dist.lib}"/>
             <fileset dir="${dist.javadoc}"/>
         </zip>
         <zip destfile="${dist.zip.gui}">
-            <fileset dir="${dist}" includes="${jar.gui}"/>
+            <fileset file="${dist.jar.gui}"/>
             <fileset dir="${dist.lib.gui}"/>
             <fileset dir="${dist.javadoc.gui}"/>
         </zip>
