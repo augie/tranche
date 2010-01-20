@@ -21,22 +21,18 @@
     <property name="build.rt" location="${build}/rt"/>
 	<property name="build.gui" location="b-gui"/>
     <property name="build.rt.gui" location="${build.gui}/rt"/>
-    <property name="lib.name" location="lib"/>
-    <property name="dist.lib" location="${dist}/${lib.name}"/>
+    <property name="dist.lib" location="${dist}/lib"/>
     <property name="dist.lib.zip" location="${dist}/tranche-lib.zip"/>
-    <property name="lib.gui.name" location="lib-gui"/>
-    <property name="dist.lib.gui" location="${dist}/${lib.gui.name}"/>
+    <property name="dist.lib.gui" location="${dist}/lib-gui"/>
     <property name="dist.lib.gui.zip" location="${dist}/tranche-lib-gui.zip"/>
-    <property name="javadoc.name" location="javadocs"/>
-    <property name="dist.javadoc" location="${dist}/${javadoc.name}"/>
+    <property name="dist.javadoc" location="${dist}/javadocs"/>
     <property name="dist.javadoc.zip" location="${dist}/javadocs.zip"/>
-    <property name="javadoc.gui.name" location="javadocs-gui"/>
-    <property name="dist.javadoc.gui" location="${dist}/${javadoc.gui.name}"/>
+    <property name="dist.javadoc.gui" location="${dist}/javadocs-gui"/>
     <property name="dist.javadoc.gui.zip" location="${dist}/javadocs-gui.zip"/>
-    <property name="jar.name" location="tranche.jar"/>
-    <property name="dist.jar" location="${dist}/${jar.name}"/>
-    <property name="jar.gui.name" location="tranche-gui.jar"/>
-    <property name="dist.jar.gui" location="${dist}/${jar.gui.name}"/>
+    <property name="jar" location="tranche.jar"/>
+    <property name="dist.jar" location="${dist}/${jar}"/>
+    <property name="jar.gui" location="tranche-gui.jar"/>
+    <property name="dist.jar.gui" location="${dist}/${jar.gui}"/>
     <property name="dist.zip" location="${dist}/tranche-${buildNumber}.zip"/>
     <property name="dist.zip.gui" location="${dist}/tranche-gui-${buildNumber}.zip"/>
     
@@ -116,8 +112,16 @@
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
         <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <zip destfile="${dist.zip}" basedir="${dist}" includes="${jar.name}, ${lib.name}, ${javadoc.name}" />
-        <zip destfile="${dist.zip.gui}" basedir="${dist}" includes="${jar.gui.name}, ${lib.gui.name}, ${javadoc.gui.name}" />
+        <zip destfile="${dist.zip}" basedir="${dist}">
+            <fileset dir="${dist}" includes="${jar}"/>
+            <fileset dir="${dist.lib}"/>
+            <fileset dir="${dist.javadoc}"/>
+        </zip>
+        <zip destfile="${dist.zip.gui}">
+            <fileset dir="${dist}" includes="${jar.gui}"/>
+            <fileset dir="${dist.lib.gui}"/>
+            <fileset dir="${dist.javadoc.gui}"/>
+        </zip>
     </target>
 
     <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
