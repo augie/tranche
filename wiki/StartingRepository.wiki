@@ -1,0 +1,58 @@
+==Create Certificates==
+
+  # Download the appropriate tool from the list of downloads.
+  # Extract the contents of the ZIP file to some directory, which we will refer to as _DIR_.
+  # Open a command-line client and navigate to _DIR_.
+  # Perform the following operation to print out the usage instructions: `java -jar Tranche-MakeDefaultCerts.jar -h`
+  # Once you have created your Tranche certificates, you are ready for the next step.
+
+
+==Create Repository Configuration File==
+
+In order to run the Tranche software, the first argument that must be passed to any main method is the location of the file that describes the Tranche repository you will be using. If you do not load a configuration file, Tranche will be run without any certificates, and no communication can occur.
+
+Configuration files and certificates can be located in any of a number of places. In general, Tranche attempts to load files and certificates in a nearest to furthest order. Here is how Tranche tries to load them:
+  # *Java package*: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/tranche.conf`.
+  # *File system*: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\tranche.conf` for Windows.
+  # *Internet*: will attempt to load from the Internet if could not load from Java or the file system.
+
+*File Syntax*
+  * Some general guidelines on the configuration file syntax.
+  * Blank lines are ignored.
+  * Comment lines can start with `#` or //.
+  * There is no /`*` comment `*`/ support.
+  * For attribute names, cAsE does not matter.
+  * Attribute names and values are always separated by an equals sign.
+
+*Example Repository Configuration File*
+{{{
+[GENERAL]
+name = ProteomeCommons.org Tranche
+description = ProteomeCommons.org helps bring academics and professionals in proteomics together.
+
+[CORE SERVERS]
+# this is a comment
+tranche://101.101.101.101:443
+tranche://202.202.202.202:443
+
+[CERTIFICATES]
+security.certificate.admin = /org/proteomecommons/tranche/admin.public.certificate
+security.certificate.write = /org/proteomecommons/tranche/write.public.certificate
+security.certificate.user = /org/proteomecommons/tranche/user.public.certificate
+security.certificate.read = /org/proteomecommons/tranche/read.public.certificate
+security.certificate.autocert = /org/proteomecommons/tranche/autocert.public.certificate
+security.certificate.anon = /org/proteomecommons/tranche/anonymous.public.certificate
+security.key.anon = /org/proteomecommons/tranche/anonymous.private.key
+security.certificate.email = /org/proteomecommons/tranche/email.public.certificate
+security.key.email = /org/proteomecommons/tranche/email.private.key
+
+[LOGGING]
+log.upload.url = https://proteomecommons.org/logUpload.jsp
+
+[SERVER]
+server.port = 443
+server.ssl = false
+
+[GUI]
+launch.advanced.url = https://proteomecommons.org/tranche/advanced.jsp
+}}}
