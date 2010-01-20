@@ -37,8 +37,8 @@
     <property name="dist.jar" location="${dist}/${name.jar}"/>
     <property name="name.jar.gui" value="tranche-gui.jar"/>
     <property name="dist.jar.gui" location="${dist}/${name.jar.gui}"/>
-    <property name="dist.zip" location="${dist}/tranche-${buildNumber}.zip"/>
-    <property name="dist.gui.zip" location="${dist}/tranche-gui-${buildNumber}.zip"/>
+    <property name="dist.zip" location="${dist}/tranche-build${buildNumber}.zip"/>
+    <property name="dist.gui.zip" location="${dist}/tranche-gui-build${buildNumber}.zip"/>
     
     <!-- set the variables needed for the linux server build -->
     <property name="dir.server.linux" location="build/server-linux"/>
