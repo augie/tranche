@@ -737,7 +737,7 @@ public class GetFileTool {
      * @param hash A hash.
      * @return An ordered collection of server host names that should be used to download a chunk with the given hash.
      */
-    private Collection<String> getConnections(BigHash hash) {
+    protected Collection<String> getConnections(BigHash hash) {
         debugOut("Getting connections for " + hash);
         debugOut("There are " + ConnectionUtil.getConnectedRows().size() + " connections available.");
         List<String> writableHosts = new LinkedList<String>();

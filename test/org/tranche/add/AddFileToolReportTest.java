@@ -71,7 +71,7 @@ public class AddFileToolReportTest extends TrancheTestCase {
             //store original variables
             long  _timestampStart = uploadReport.getTimestampStart();
             long _timestampEnd = uploadReport.getTimestampEnd();
-            BigHash  _hash = uploadReport.getHash();    
+            BigHash  _hash = uploadReport.getHash();
             long _bytesUploaded = uploadReport.getBytesUploaded();
             long _filesUploaded = uploadReport.getFilesUploaded();
             long _originalBytesUploaded = uploadReport.getOriginalBytesUploaded();
@@ -90,7 +90,8 @@ public class AddFileToolReportTest extends TrancheTestCase {
             //check deserialized variables
            assertEquals( _timestampStart, uploadReportDeserialized.getTimestampStart());
            assertEquals(_timestampEnd, uploadReportDeserialized.getTimestampEnd());
-           assertEquals(_hash.toString(), uploadReportDeserialized.getHash().toString());
+           assertTrue((isBlankString(_hash.toString())==null && isBlankString(uploadReportDeserialized.getHash().toString())==null)
+                    || _hash.equals(uploadReportDeserialized.getHash()));
            assertEquals(_bytesUploaded, uploadReportDeserialized.getBytesUploaded());
            assertEquals(_filesUploaded, uploadReportDeserialized.getFilesUploaded());
            assertEquals(_originalBytesUploaded, uploadReportDeserialized.getOriginalBytesUploaded());
@@ -98,10 +99,14 @@ public class AddFileToolReportTest extends TrancheTestCase {
            assertEquals(_isEncrypted, uploadReportDeserialized.isEncrypted());
            assertEquals(_isShowMetaDataIfEncrypted, uploadReportDeserialized.isShowMetaDataIfEncrypted());
            assertEquals(_title,uploadReportDeserialized.getTitle());
-           assertEquals(_description.toString(),uploadReportDeserialized.getDescription().toString());
-            
+           //TODO: when blank strings are returned vs nulls
+           //is this a valid error
+           assertTrue((isBlankString(_description)==null && isBlankString(uploadReportDeserialized.getDescription())==null)
+                    || _description.equals(uploadReportDeserialized.getDescription()));
             }
-            catch (Exception e){}
+            finally {
+            testNetwork.stop();
+        }
         }
 
 
@@ -161,7 +166,8 @@ public class AddFileToolReportTest extends TrancheTestCase {
             //check deserialized variables
            assertEquals( _timestampStart, uploadReportDeserialized.getTimestampStart());
            assertEquals(_timestampEnd, uploadReportDeserialized.getTimestampEnd());
-           assertEquals(_hash.toString(), uploadReportDeserialized.getHash().toString());
+           assertTrue((isBlankString(_hash.toString())==null && isBlankString(uploadReportDeserialized.getHash().toString())==null)
+                    || _hash.equals(uploadReportDeserialized.getHash()));
            assertEquals(_bytesUploaded, uploadReportDeserialized.getBytesUploaded());
            assertEquals(_filesUploaded, uploadReportDeserialized.getFilesUploaded());
            assertEquals(_originalBytesUploaded, uploadReportDeserialized.getOriginalBytesUploaded());
@@ -169,11 +175,20 @@ public class AddFileToolReportTest extends TrancheTestCase {
            assertEquals(_isEncrypted, uploadReportDeserialized.isEncrypted());
            assertEquals(_isShowMetaDataIfEncrypted, uploadReportDeserialized.isShowMetaDataIfEncrypted());
            assertEquals(_title,uploadReportDeserialized.getTitle());
-           assertEquals(_description.toString(),uploadReportDeserialized.getDescription().toString());
-
+           assertTrue((isBlankString(_description)==null && isBlankString(uploadReportDeserialized.getDescription())==null)
+                    || _description.equals(uploadReportDeserialized.getDescription()));
             }
-            catch (Exception e){}
+           finally {
+            testNetwork.stop();
+        }
         }
 
+     public String isBlankString(String aString){
+         if(aString==null)
+             return null;
+         if(aString.length() == 0)
+             return null;
+         return aString;
+     }
     }
 
