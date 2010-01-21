@@ -1,3 +1,1 @@
-Given starting and ending Hashes, a Hash Span is the set of all Hashes between the two ends, including the ends.
-
-Hash Spans are primarily used to tell a Tranche server what chunks it should keep in its local file system. When a Tranche server is assigned a Hash Span, clients will try to give it only Hashes within that range, but it will still accept any other Hashes. Behind the scenes, a Tranche server has a process running that will check the rest of the network for Hashes within its assigned Hash Span(s) that it does not already have, and will download them. This same process will also try to delete chunks with hashes that are not within its assigned Hash Span(s). Before deleting, it will check that there are at least the appropriate number of replications on the network.
+A hash span is an inclusive range of hashes. A "full hash span" is defined as the complete range of possible hashes – from 0 to 2^608.
