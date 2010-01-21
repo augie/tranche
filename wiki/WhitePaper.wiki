@@ -1,5 +1,4 @@
 #labels Phase-Design
-==Table of Contents==
   * [WhitePaper#Assumptions Assumptions]
   * [WhitePaper#Hash Hash]
   * [WhitePaper#Hash_Span Hash Span]
