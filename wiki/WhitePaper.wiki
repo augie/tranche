@@ -364,7 +364,7 @@ It would be helpful to examine a simple scenario. Take a Tranche network with si
 
 In this case, server a updates from server b, which updates from server c, and so on. Server a also updates from server d, which updates from server e, etc. Modifying the variables used to determine the range size and update frequency allows for the optimization of the propagation scheme.
 
-For server a, the stalest status will be for server f, which will be at most 90 seconds old. In general, the stalest possible status information can be calculated by group size * update interval.
+For server a, the stalest status will be for server f, which will be at most 90 seconds old. In general, the stalest possible status information can be calculated by group size update interval.
 
 When a server is no longer responding, it is flagged as offline and the next available server in the group is used. If no servers in the group are online, then no updates will be made until one of the servers comes back online.
 
