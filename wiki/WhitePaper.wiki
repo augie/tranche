@@ -1,14 +1,62 @@
 #labels Phase-Design
-  * [WhitePaper#Assumptions Assumptions]
-  * [WhitePaper#Hash Hash]
-  * [WhitePaper#Hash_Span Hash Span]
-  * [WhitePaper#File_Structure File Structure]
-  * [WhitePaper#Data_Chunk Data Chunk]
-  * [WhitePaper#MetaData Meta Data]
-  * [WhitePaper#ProjectFile Project File]
+  * [WhitePaper#Abstract Abstract]
+  * [WhitePaper#Introduction Introduction]
+  * [WhitePaper#Design_Overview Design Overview]
+    * [WhitePaper#Assumptions Assumptions]
+    * [WhitePaper#Hash Hash]
+    * [WhitePaper#Hash_Span Hash Span]
+    * [WhitePaper#File_Structure File Structure]
+    * [WhitePaper#Data_Chunk Data Chunk]
+    * [WhitePaper#MetaData Meta Data]
+    * [WhitePaper#ProjectFile Project File]
+    * [WhitePaper#Security Security]
+    * [WhitePaper#Network_Architecture Network Architecture]
+    * [WhitePaper#Core_Servers Core Servers]
+    * [WhitePaper#Data_Server Data Server]
+    * [WhitePaper#Routing_Server Routing Server]
+    * [WhitePaper#Time Time]
+    * [WhitePaper#Sticky_Data Sticky Data]
+    * [WhitePaper#Licensing Licensing]
+    * [WhitePaper#Versioning Versioning]
+  * [WhitePaper#System_Interactions System Interactions]
+    * [WhitePaper#Starting_Up Starting Up]
+    * [WhitePaper#Uploading Uploading]
+    * [WhitePaper#Downloading Downloading]
+    * [WhitePaper#Deleting Deleting]
 
 
-===Assumptions===
+
+=Abstract=
+
+We have designed and implemented the Tranche Distributed Repository (!TrancheProject.org), a scalable distributed repository for the storage and dissemination of immutable files of arbitrary size. Designed and built for the biomedical research community, this system addresses the problems associated with long-term storage and distribution of files referenced in scientific publications.
+
+The design of the system has been shaped by the  needs of the research community – with integrity, provenance, persistence, availability, security, context, and citability being guiding principles. The result is a radical departure from standard models of file sharing.
+
+Tranche was developed primarily to address the needs of researchers and journals in the proteomics community (1-2), and is currently used by !ProteomeCommons.org to host proteomics and proteomics-related data sets. Tranche is configurable and is particularly useful for any data-centric  research community.
+
+In this document, we will discuss the design and development of the system, including the challenges related to the implementation and testing of the system. We will also provide relevant performance metrics.
+
+
+=Introduction=
+
+The Tranche Distributed Repository ('tränsh – French for "slice") has been designed to meet the file storage and dissemination needs of the biomedical research community – a group with highly specialized needs. Meeting these requirements has produced a unique system with distinct features and challenges.
+
+First, Tranche references a file by its contents, not by its location. The contents of all files on the repository are hashed, and this hash is used as the token to access the file. Since a hash is based solely on the contents, it also provides a means to verify the integrity of the file. When citing a data set in a manuscript, referencing a data set by its hash means the downloader can be certain that what they are downloading was precisely what was being referenced by the publisher.
+
+Second, the repository is a hybrid model that uses concepts from both the peer-to-peer networks and centralized servers, so it can best be described as a "distributed server model". Because we are frequently dealing with very large data sets that must be available at all times, a pure peer-to-peer model would not be feasible since nodes continuously enter and leave the network. Furthermore, a centralized model presents other issues such as scalability, and places the entire burden of hosting hardware on one group or organization. Our model accommodates a reasonable amount of individual server downtime, as well as permitting the replacement of old servers and the addition of new servers to meet growing space requirements.
+
+Third, all files are signed by a unique X.509 certificate associated with the user who uploaded it; every file stored in the repository stores a reference to the associated certificate. This provides the file's provenance, which is a central aspect of the peer-review-centric culture of scientific research.
+
+Fourth, files or data sets can be optionally encrypted. The uploader can set a passphrase, and the data will be encrypted. However, the uploader can then "publish" the passphrase, which will automatically decrypt the files during download. This provides researchers with pre-publication access controls with the option of leaving a data set encrypted indefinitely.
+
+There are many other valuable features in Tranche, many of which were added due to users' needs or our needs as administrators of the !ProteomeCommons.org Tranche Repository, including versioned data sets, licensing options, and arbitrary metadata attributes to be associated with any files or data sets.
+
+The primary deployment for Tranche is a 16-node, 80 terabyte (total disk space) repository in use by the proteomics (the study of proteins) community, available through !ProteomeCommons.org. Only 5 of the 16 servers were bought by our group. The other servers have been added to the repository by other institutions in return for uploading their research data. Participating institutions have generally been quick to adopt the system – mostly because of the increased availability for their data sets.
+
+
+=Design Overview=
+
+==Assumptions==
 
 While designing the repository, our design decisions were guided by these general principles:
   * Hardware is of varying quality and have different features and capabilities. The server hardware will be bought and maintained by various institutions.
@@ -19,7 +67,7 @@ While designing the repository, our design decisions were guided by these genera
   * Servers will be housed at organizations, institutions, and universities, which have reliable, high-bandwidth Internet connections.
 
 
-===Hash===
+==Hash==
 
 A hash is used to represent data on a Tranche repository and is generated by a specially-designed hashing algorithm. The hash is central to the design of the repository – it is the reference for all uploaded data. When a file is uploaded to the repository, its contents are hashed and the file is referenced by this hash. The same is true for pieces of files, known as data chunks, which we will discuss shortly. Given the data set, a hash can be regenerated, so data integrity can be verified.
 
@@ -38,7 +86,7 @@ The purpose of combining three different hashing schemes and the length of the d
 The resulting hash is usually encoded as a base-64 string, but is also often represented using base-16 encoding, particularly when being passed in a URL. Since the identifier is 76 bytes (or 608 bits), there is a total of 2^608 possible hashes, regardless of how it is encoded.
 
 
-===Hash Span===
+==Hash Span==
 
 A hash span is an inclusive range of hashes. A "full hash span" is defined as the complete range of possible hashes – from 0 to 2^608.
 
@@ -50,12 +98,12 @@ Files stored on the repository are split into data chunks, each of which is a ma
 A directory of files can be uploaded together; these uploads are interchangeably called a "data set" or a "project". When a data set is uploaded, a special file called the !ProjectFile is generated. This file is used internally by Tranche to describe the contents of the data set, and is downloaded by a client, then used to retrieve the meta data chunks for all the files and discarded from that client machine. Like any other file, the !ProjectFile has a meta data chunk that is used to locate the !ProjectFile data chunks and reassemble them. The hash for the !ProjectFile metadata chunk is considered the hash for the data set, and is used to download the entire data set.
 
 
-===Data Chunk===
+==Data Chunk==
 
 Data chunks, identified by their hash values, are byte arrays with a maximum length of one megabyte. Any file uploaded to Tranche will have one or more data chunks. Data chunks contain no metainformation, and are only useful when the clent can access the associated file's metadata.
 
 
-===!MetaData===
+==!MetaData==
 
 Identified by the hash of the file it describes, the metadata chunk contains information used to find, describe and reconstruct the file.
 
@@ -68,8 +116,145 @@ If an encrypted file were to be referenced by the unencoded hash, in the case th
 Each file encoding has associated properties for storing arbitrary information that Tranche can used internally for important features. For example, an encrypted data set can be decrypted by setting the passphrase into the properties of the associated encryption file encoding. This means the passphrase will be publicly visible, so the same passphrase should not be used on more than one upload. Every time an encrypted file is downloaded, the download tool checks the encryption file encoding for the passphrase before requesting the user to enter one. In this way, encrypted files can be made public without performing a new upload.
 
 
-===!ProjectFile==
+==!ProjectFile==
 
 The !ProjectFile is used to represent directory uploads, known as a "data set". This object contains the information that is necessary to reconstruct the directory during a download and is uploaded as a file to the repository after all other files have been uploaded. It is intended only for internal use, and is only stored temporarily on a client machine during a download. The hash of the !ProjectFile is the hash that represents the data set.
 
 A !ProjectFile consists primarily of a collection of !ProjectFile parts. A !ProjectFile part consists of the relative name of the file (the directory structure plus the name of the file) and the hash of the metadata for the file. Unlike a file, the hash assigned to a data set depends on the naming of files on the uploading user's file system because a !ProjectFile part contains the relative name of a file in the directory, and thus changing the name of a file or directory will change the hash of the upload.
+
+
+==Security==
+
+Tranche employs a federated public-key security model using X.509 certificates to authenticate requests. All authentication is handled individually by each server because there is no central authority from which to verify permissions. The servers start with a core set of trusted certificates, each given differing levels of permissions. 
+
+The possible permissions are:
+  * Read Configuration
+  * Write Data
+  * Write Metadata
+  * Delete Data
+  * Delete Metadata
+  * Write Configuration
+
+All users have their own public certificate and private key that together represent their identity on the network. Each user's public certificate is signed by a certificate that every Tranche server on the network will recognize by default (though each server can have an individually-modified list of trusted certificates). Tranche combines the public certificate and private key into a zipped and encrypted file called the "user zip file". In practice, these files are downloaded and used by the Tranche client when a user logs in; this way, end users do not need to fully understand the security model to use the system.
+
+Authentication is only necessary when adding, modifying or deleting data on the network or when modifying a server's configuration. The user's certificate can be signed by one of the core trusted certificates, which will set the signed certificate's permissions to the same as the signing certificate's. However, each server's configuration can add trusted certificates, so it is not required that a certificate is signed by a core certificate (or even signed at all). Signatures, which are very long hashes of the chunk bytes using the user's private key as the cryptographic cipher, are used to authenticate requests. Upon receipt of a request, a server will use the public certificate to verify that the given signature was produced by the user for the particular request. 
+
+When appropriate, nonces are used to protect against replay attacks. A nonce is a random 32-byte value that a client requests from a server. The server stores this nonce for a short time until it is returned with the client's request, when it is verified and discarded. If a third party that is listening to a client request replays a message sent to a server, the nonce in the request would not match any available nonces and would be discarded.
+
+When files are being uploaded to the repository, they can be encrypted with a passphrase. Tranche currently uses AES-256 to encrypt the files on the local computer before sending the pieces across the network, so at no time will any of the files be moving across the Internet while in an unencrypted form. Also, no one can reconstruct the files from the encrypted chunk without the passphrase, including the server administrators and Tranche developers.
+
+
+==Network Architecture==
+
+There are three different classes of agents in this architecture: clients, data servers, and routing servers. Clients do not share data with each other – therefore, this is not a peer-to-peer model. Instead, the model that the Tranche architecture employs is best described as a distributed server model.
+
+There are several reasons why the architecture was devised in this way. The classic peer-to-peer model of clients joining and leaving the network frequently does not work for data that needs to be available at all times. Because the repository will contain very large data sets, the cost of moving the data between nodes is very high. Storing the data in multiple locations allows for distributed communications, which lets the client processes parallelize requests to increase throughput. Also, using a distributed system spreads the costs and responsibilities between the providers, who are often also the most prominent users in the case of !ProteomeCommons.org. This is not required; however, this participatory model has succeeded in the !ProteomeCommons.org Tranche Repository. Just as it spreads the costs, a distributed system also spreads the risk of outages – the more geographically distributed the system, the less likely there will be a large portion of the data that is unavailable at any moment.
+
+One of the primary goals of the repository is to keep a certain number of replications of all chunks available at all times. This allows for multiple failures without impacting availability. With this system, as the number of servers in the network grows, the liklihood that any fixed number of servers will be unavailable at any given time increases, but the likelihood that data will be unavailable might decrease since each server will have a smaller portion of the network's data. Data availability with the new network model is not fully modeled; however, it will provide improvements to the existing model.
+
+
+==Core Servers==
+
+Every configuration of a Tranche network must contain a set of Tranche server URLs. As long as one of these servers or the web portal (see Interfaces) is online, a client or server is able to get the current status of the entire network. This list serves a second purpose: it defines the set of "core" servers, which are trusted to an extent, as you will see in the remainder of this document.
+
+The system allows for servers to join the network at any time; these are "non-core" servers. The non-core servers can be used if clients specify that they should be used, and they provide a gateway to the rest of the network. However, the data stored on them does not count towards the number of chunk replications required on the network, among other limitations.
+
+
+==Data Server==
+
+Data servers store chunks for the repository. Data servers work mostly independently of a central authority, relying on their individual configurations to guide their behavior. A data server stores only the chunks with hashes that are within the hash spans of the server plus the "sticky" files that have been designated to reside on the server.
+
+The data server will only accept chunks with hashes that are within the target hash spans of the server. To clarify the difference between hash spans and target hash spans: hash spans encompass all of the chunks that the data server has available to read, while target hash spans encompass all of the chunks that the data server will accept. For example, during the reduction of data on the server, the target hash spans are reduced and the internal processes begin moving data off the server. During this time, some data is still stored on the server, so the hash spans reflect that.
+
+
+==Routing Server==
+
+The purpose of a routing server is to allow for a single connection to multiple servers. When a network grows very large, the number of servers that are required to maintain a connection with a full hash span of servers can grow to a prohibitive size. Assuming an average capacity of 5 terabytes per server, a network with less than 5 terabytes of data would require a client to connect to only one server for a full hash span. At almost 50 terabytes, the client would be required to connect to 10 servers for a full hash span. At 500 terabytes – 100 servers, and at 5 petabytes – about 1,000 servers, and so on. There is variability in the maximum number of TCP connections a client's system can handle because of hardware and operating systems. There is also a cost associated with establishing and maintaining each connection, so minimizing the number of required connections to connect to enough servers to access a full hash span is a primary design goal and is the reason the routing server exists.
+
+Routing servers do not store any chunks; they are simply a special interface of a Tranche server that maintains connections with a specified set of Tranche servers. A client communicates with a routing server just as it would with a data server; it does not necessarily know that it is communicating with a routing server. As soon as the routing server receives a request, the request is forwarded to the proper server in the collection of servers to which it routes. A routing server's collection of hash spans are the hash spans of all the servers to which it routes all client requests. Because routing servers do not store any data locally, there is no need for a hard drive. The most significant bottleneck for a routing server is its bandwidth.
+
+
+==Time==
+
+Some key features like activity logs and user certificates reference UNIX timestamps, so all Tranche applications need to have synchronized clocks. Tranche contacts stratum 2 Network Time Protocol servers to determine local time offset with a given time zone – which one doesn't matter as long as they're all on the same one (we synchronize on the United States eastern time zone).
+
+
+==Sticky Data==
+
+Files can be designated to reside on a certain collection of data servers in addition to their normal replications. This can allow for local access to specific data sets and additional replications of the file. The host names of the servers on which a file should be "stuck" are stored in the metadata of the file.
+
+
+==Licensing==
+
+When a user uploads a data set to a repository, the user can include a license with the data set. The license file becomes part of the data set, so it therefore also becomes part of the hash that is used to refer to that data set and the data set cannot be downloaded completely without also downloading the license.
+
+The licenses that can be used with a Tranche repository are configurable. The !ProteomeCommons.org Tranche Repository was an early adopter of the Creative Commons Zero waiver, which "is a universal waiver that may be used by anyone wishing to permanently surrender the copyright and database rights they may have in a work, thereby placing it as nearly as possible into the public domain" (3).
+
+
+==Versioning==
+
+There is support for versioning data sets, which is the only option for providing revisions to uploaded files. The hashes for older and newer versions of a data set are stored in the metadata, so a client can traverse different versions of the same data set using this doubly-linked list of references.
+
+
+=System Interactions=
+
+==Starting Up==
+
+The first step in a Tranche process is to get the status of all the servers on the network. The network configuration files contain a list of core server URLs  to which a process can connect and get the current status of the network. Each server on the network maintains a "network status table" with each row in the table representing a server on the network. The rows in the table are updated at regular intervals to ensure that its information is up-to-date. The update process is more fully described in a later section.
+
+A row in the status table contains the following information:
+  * *Host name*: the domain name or IP address for the server (e.g. !ProteomeCommons.org)
+  * *Name*: an arbitrary name for the server, as it should be presented to clients (e.g. !ProteomeCommons)
+  * *Group name*: an arbitrary name for the group of servers to which the server belongs (e.g. University of Michigan)
+  * *Port*: the port to which the server is bound (e.g. 443)
+  * *Hash span collection*: the hash spans for chunks that are meant to be currently stored on the server.
+  * *Target hash span collection*: the hash spans for chunks to which the server is migrating
+  * *Update timestamp*: the UNIX timestamp denoting the last time the information in the row was updated.
+  * *Flags*:
+    * *SSL*: whether the server communicates over secure socket layers
+    * *Online*: whether the server is online
+    * *Readable*: whether the server allows for its data to be read
+    * *Writable*: whether the server allows data to be written to it
+    * *Data store*: whether the server stores data chunks on it (i.e., to differentiate between routing and data servers)
+
+Upon obtaining the network status, the necessary connections are made for using the repository. The connections that are maintained depends on whether the the process is for a client, data server or routing server.
+
+A client needs to maintain a connection with a collection of servers that, when combined, contain a full hash span; additionally, these connections must exclusively be to core servers that are all both readable and writable, permitting a client to download or upload any data regardless of its associated hash. Descriptions of the connections that servers need to make are available in the server sections.
+
+
+==Uploading==
+
+Uploading files to the repository requires the creation of a signature using a certificate that is either trusted (has permission to write) or signed by a trusted certificate on each of the servers to which it uploads. Optionally, uploads can be encrypted using a passphrase. Upon upload, files are hashed before being broken into data chunks with a maximum size of one megabyte. The hash is generated for each chunk, and the chunk is uploaded.
+
+When uploading a chunk, the client first determines the route to all the servers that have the hash of the given chunk within their target hash spans. Because there is no way to check which servers have a replication of the chunk (a connection is maintained only with one of the x servers that are to be uploaded to), the chunk is uploaded without first checking whether the server already has the chunk. The payload sent consists of the chunk hash (or both the data chunk hash and the metadata chunk hash in the case of a data chunk upload), a signature, and the data. Upon receipt of the chunk, the server will validate the request before storing the chunk and sending the chunk to the other servers to which the client has requested a copy be sent. Transmission errors are detected by recalculating the hash of data chunks and by verifying that metadata can be parsed without error. While the client is awaiting a response, the server sends keep-alive signals to avoid timing out.
+
+Nonces are not used when setting chunks, which reduces the overall latency by half. The consequences of playback are reversible and do not significantly impact the integrity of the repository.
+
+In the case that a metadata is already online, the user's signature and upload properties must be added to the existing metadata. The upload of a file is differentiated by its UNIX timestamp of upload, uploader's user name, and the relative path of the file in a directory upload (if applicable). For this reason, the client upload process must try to download the metadata from the repository each time it is going to upload a file.
+
+The client communicates with only one of the core servers to which it will upload the chunk. This lessens the amount of bandwidth used by the client and shifts some of the work to the server, while also lessening the number of connections required by the client. Clients upload directly to non-core servers because core servers will not communicate with non-core servers.
+
+Upon completion of an upload, the hash is returned for the file uploaded or for the ProjectFile that represents the directory uploaded.
+
+
+==Downloading==
+
+Downloading from the repository does not require authentication – anybody can download any public or encrypted (with a passphrase) data set from a Tranche repository.
+
+The download process takes as input a hash that is associated with a metadata. Upon initiation, the download tool will download the metadata, which are never encrypted, so the passphrase for encrypted data is not required until attempting to download a file's contents.
+
+The download process can skip downloading files that already exist in the desired location on the local file system. For each file it finds, it hashes the file and compares the hash against the hash of the file that is about to be downloaded. If the hash does not match, the process will overwrite the existing file.
+
+The expected server location of the data chunks on the network is determined by the hash spans assigned to each server. If a server does not have a chunk with a hash within its hash spans, it will try to get the chunk from the core servers that also have that hash within their hash spans. If found on one of the other core servers, the first server will store that chunk locally if possible before sending the chunk to the requesting client, thus creating another replication of the chunk.
+
+Validation of the download protects against man-in-the-middle attacks. This validation consists of hashing the data chunks as they are downloaded and comparing the resulting hash against the expected hash, then doing the same for each file as they are downloaded and unencoded.
+
+For the special circumstance of many small files in a data set, batching the chunk requests together significantly reduces the download time by reducing the latency.
+
+
+==Deleting==
+
+Only certificates with delete permissions can perform deletes; the uploader of a data set does not automatically have delete permissions. This also means that any user with permission to delete is capable of deleting any other user's data sets. For this reason, delete privileges are limited to administrators and automated administrative processes.
+To fully delete a data set from the repository, every replication of every chunk must be deleted. Deletes are not commonly performed, as data sets that are uploaded are generally expected to remain online and revisions can be made through versioning uploads. While the bandwidth required for a deletion is negligible, the latency is the largest time factor. For this reason, batching requests are used extensively.
+
+Both data chunks and metadata chunks may be shared between uploaded files. For this reason, delete requests must specify which file is to be downloaded. When deleting a metadata chunk, the  request requires the user name, UNIX timestamp of upload, and relative path in directory as parameters for deletion to differentiate between file uploads. A deletion of a data chunk requires both the hash of the data chunk as well as the hash of the file to which it belongs.
