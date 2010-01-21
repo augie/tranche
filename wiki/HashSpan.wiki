@@ -1,1 +1,0 @@
-A hash span is an inclusive range of hashes. A "full hash span" is defined as the complete range of possible hashes – from 0 to 2^608.
