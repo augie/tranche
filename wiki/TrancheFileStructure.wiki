@@ -1,33 +1,3 @@
-==File Construction==
+Files stored on the repository are split into data chunks, each of which is a maximum of one megabyte in size. Each file that is uploaded has an associated meta data chunk, which contains an ordered list of all the data chunks, along with other useful information. The metadata chunk is important in both locating the data chunks for any file as well as reassembling that file. Data chunks and meta data may be referred to as "chunks" when there is no need to distinguish between the two.
 
-Upon upload, files are first compressed with the GZIP compression algorithm. They are then split into 1 MB data chunks and the hash is calculated for each. Each data chunk is uploaded to 3 different servers. The information about the file, including the hashes of all the data chunks, is stored in a meta data chunk, which is not compressed, but is also uploaded to 3 different servers. The hash is calculated for the entire file and is assigned to the meta data chunk, and that is the hash that is used to reference the file for download.
-
-To download a file, the meta data for that file is downloaded to get the data chunk hashes, which are then downloaded from the network, reconstructed, and decompressed.
-
-
-
-==Directory Construction==
-
-Upon upload, all files within a directory structure are uploaded the same way as stated above. When dealing with a directory of files, a special file created, named a project file. Within the project file are the hashes that reference all of the files that have been uploaded. A project file is uploaded the same way as a normal file. To reference a directory, one must reference the hash for the project file. Upon download, the project file is downloaded the same way as a normal file, then the file hashes are read from the project file. The files are then downloaded and put into the same directory structure as when it was uploaded.
-
-
-
-==Server Storage==
-
-A server's file system is set up as a tree structure, with the data chunks and meta data chunks as the leaves. The hash of a chunk (data or meta data) is used to determine the location of that chunk. The tree leaves are in fact groups of chunks in a single file, known as a data block.
-
-The first layer of the tree contains folders or data blocks with names that correspond to the first two characters of the hash for all chunks contained within. There are up to 100 chunks or 100 MB per data block. Depending on the size of the meta data, it is possible to have fewer than 100 chunks and more than 100 MB.
-
-When a data block reaches its limit, it splits. Splitting a data block in the first layer consists of turning the data block into a directory of the same name, then creating a new layer of data blocks within the new directory and naming those data blocks with the third and fourth characters in the Hashes that are contained within. This sort of splitting can go on until the last two characters in a hash are reached. Because a hash is 76 characters long, there can be a maximum of 38 layers. There isn't anything in the world even close to being able to hold that much data — about 8 exabytes (8 million terabytes) — so the structure will never reach its end point.
-
-
-
-==Network Storage==
-
-Because it is possible for a Tranche network to contain more data than any one computer can hold, the individual servers each take only a portion of the load. The primary administrators of a network can give each server a hash span that is proportional to their available disk size, and can also favor those servers they deem to be faster or more reliable.
-
-Tranche servers are self-regulating. Behind the scenes, Tranche servers shuffle the chunks between one-another according to their assigned hash spans while always maintaining a minimum number of replications of each chunk on the network. A server will follow these rules to ensure a properly balanced network:
-  * Accept all sent chunks as long as there is space on disk.
-  * Handle requests before running the balancing process.
-  * Delete a chunk only if there are at least 3 other replications of that chunk on the network and its hash is not within any assigned hash spans.
-  * If assigned one or more hash span(s), try to download all chunks that are within them.
+A directory of files can be uploaded together; these uploads are interchangeably called a "data set" or a "project". When a data set is uploaded, a special file called the !ProjectFile is generated. This file is used internally by Tranche to describe the contents of the data set, and is downloaded by a client, then used to retrieve the meta data chunks for all the files and discarded from that client machine. Like any other file, the !ProjectFile has a meta data chunk that is used to locate the !ProjectFile data chunks and reassemble them. The hash for the !ProjectFile metadata chunk is considered the hash for the data set, and is used to download the entire data set.
