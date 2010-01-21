@@ -1,3 +1,15 @@
+===Assumptions===
+
+While designing the repository, our design decisions were guided by these general principles:
+  * Hardware is of varying quality and have different features and capabilities. The server hardware will be bought and maintained by various institutions.
+  * Hardware failures are inevitable. Even the best hardware will fail eventually.
+  * Servers are distributed across multiple timezones.
+  * Files being deposited vary widely in size. For proteomics, some mass spectrometers output thousands of small files with one spectra each, while others output a single file containing all of the spectra.
+  * Deposited files should not be modified; if they are, there should be a way to demonstrate that the data has changed while making both old and new versions available.
+  * Servers will be housed at organizations, institutions, and universities, which have reliable, high-bandwidth Internet connections.
+
+
+===Table of Contents===
   * [Hash]
   * [HashSpan Hash Span]
   * [MetaData Meta Data]
