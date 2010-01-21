@@ -23,6 +23,10 @@
     * [WhitePaper#Uploading Uploading]
     * [WhitePaper#Downloading Downloading]
     * [WhitePaper#Deleting Deleting]
+  * [WhitePaper#_Data_Server Data Server]
+    * [WhitePaper#Activity_Log Activity Log]
+    * [WhitePaper#_Starting_Up Starting Up]
+    * [WhitePaper#Configuration Configuration]
 
 
 
@@ -258,3 +262,53 @@ Only certificates with delete permissions can perform deletes; the uploader of a
 To fully delete a data set from the repository, every replication of every chunk must be deleted. Deletes are not commonly performed, as data sets that are uploaded are generally expected to remain online and revisions can be made through versioning uploads. While the bandwidth required for a deletion is negligible, the latency is the largest time factor. For this reason, batching requests are used extensively.
 
 Both data chunks and metadata chunks may be shared between uploaded files. For this reason, delete requests must specify which file is to be downloaded. When deleting a metadata chunk, the  request requires the user name, UNIX timestamp of upload, and relative path in directory as parameters for deletion to differentiate between file uploads. A deletion of a data chunk requires both the hash of the data chunk as well as the hash of the file to which it belongs.
+
+
+= Data Server=
+
+==Activity Log==
+
+Data servers log the activities that impact their data store (see Data Storage). Each activity is logged with the following attributes:
+  * UNIX Timestamp
+  * Type (e.g. delete data)
+  * Hash
+  * Signature 
+  * Other Attributes
+
+"Other Attributes" refers to activity attributes that are specific to certain types of activities. For example, the "delete data chunk" activity takes as arguments both the hash of the data chunk and the hash of the metadata chunk to which it belongs.
+Because permissions are federated among servers, the signatures for each activity are recorded to allow for later validation by other servers, which may have different permissions for different certificates or different trusted certificates completely.
+
+The activity log is stored in the following separate random access files: 
+  * Activity log file: fixed-length entries containing timestamp, action type, hash,  signatures key and attributes key
+  * Signatures index file: fixed-length entries containing a key, offset and length
+  * Signatures file: variable-length entries only containing signature
+  * Other attributes index file: fixed-length entries containing a key, offset and length
+  * Other attributes file: variable-length entries only containing any additional attributes
+
+The activities are logged chronologically with fixed-length entries, and the time to search a log with n entries by timestamp is O(log n). Searching for an entry without knowing the timestamp requires a linear search, though there is no current use case that requires this.
+
+When an activity log file entry is accessed, the associated signatures key is used to get the signature offset and length in the signatures index file, which is another O(log n) search. With that information, we read in the signature from the signatures file in O(1).
+Each activity log entry is approximately 100 bytes. Assuming the average data chunk size is 400 kilobytes and half the chunks are metadata of negligible size, the average chunk is approximately 200 kilobytes. This means the storage requirements for the activity logs is about 0.05%,or 1/2,000 of the total storage.
+
+== Starting Up==
+
+Upon getting the status of the network, the server establishes connections with all the servers with which is shares an overlapping hash span plus the servers from which it needs to perform network status updates plus a full hash span of servers, overlapping when possible.
+
+To protect changes made to the network, servers must go through a process of verifying their data store before they share it with the rest of the network. To understand why, consider a server with a copy of a chunk that is offline. A user might delete that chunk from the rest of the network, but the copy that is on the offline server will still be intact. When that server comes back online, its copy will become available, and other servers will begin to replicate it, salvaging the deleted chunk.
+
+To solve this problem, a server in the process of starting up becomes write-only so it can record changes while it verifies its data store; while performing this step, its data store is not available to the rest of the network. It will then query each server for all their logged activities between the time it went offline (which is known based on its own activity log) and the current timestamp. Chunks are deleted if any logged deletions are found and their associated signatures belong to trusted users, then the server removes the write-only restriction and downloads newly added chunks.
+
+The last step in the process is notifying other servers on the network that this server exists and is online. This is done during the update network status table process, so it will not happen until update interval time has passed.
+
+
+==Configuration==
+
+There are several aspects to the configuration of a data server: trusted users, hash spans, target hash spans, data directories, server configurations, and properties. The configuration is also the object through which performance statistics and status are reported.
+
+The list of trusted users is part of the system's security model. For each user, their public certificate is stored and permissions are defined.
+
+Each data server can be assigned a limited number of hash spans and target hash spans. The number of hash spans is limited because hash spans are incorporated into each row of the network status table; because the network status is kept in memory,  the system must protect against arbitrary memory consumption, especially considering the non-core servers that might participate. These hash spans essentially define how much (as well as which) data is stored on the server. Generally, the percentage of a full hash span the server's hash spans take up is the percentage of the network that will be stored on the server. So if the hash spans equal half of a full hash span and there are 6 terabytes of data on the network, then the server should be expected to hold 3 terabytes.
+
+A list of data directories define where the server stores chunks and the maximum amount of the data that can be stored in that directory. Additional directories can later be added, and existing directories can be removed. This allows individual servers to scale appropriately.
+
+Server configurations also store the parameters for the various forms of activity that it can perform. For example, some limited interactions with the server can be done via HTTP. The server's properties store the name-value pairs for variables that define the behavior of the server.
