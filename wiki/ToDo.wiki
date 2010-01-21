@@ -40,14 +40,14 @@ An object similar to the !GetFileTool that gives an easy-to-use API for deleting
 
 An object similar to the !GetFileTool that gives an easy-to-use API for editing the meta data that exists on the repository. 
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
 
 
 ===HTTP Browse Repository Through Server===
 
 Add functionality to the Tranche server that allows users to browse the contents of a Tranche repository using an HTTP browser. The core HTTP server code is already implemented, though there is currently . You would only need to implement the browsing functionality and make the web pages returned look good.
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
 
 
 ===HTTP or FTP Download===
@@ -62,7 +62,7 @@ Wishlist item. Haven't planned how it would work.
 
 ===Launch GUI From Server===
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
 
 
 ===Machine-Readable Licenses===
@@ -77,14 +77,14 @@ Licenses are an important part of Tranche. They let uploaders state exactly what
 
 ===Multiple-Repository Configuration===
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
 
 
 ===Remote Command Line Terminal===
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
 
 
 ===Self-Modification of Server Hash Spans===
 
-[NEED DETAILS - contact Augie (augman85)]
+(NEED DETAILS - contact Augie augman85@gmail.com)
