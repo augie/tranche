@@ -5,7 +5,7 @@
     * [RunningAsBackgroundProcess Running Tranche in the background]
     * [WebStartConsole Using the Java Web Start console to gather debugging information]
   * Tranche Hash
-    * [Hash What is a Tranche hash?]
+    * [WhitePaper#Hash What is a Tranche hash?]
     * [ReferencingData How to reference Tranche data in a manuscript/publication]
   * [Downloading]
   * [Uploading]
