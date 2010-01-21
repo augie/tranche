@@ -39,7 +39,7 @@
   * [WhitePaper#Interface Interface]
     * [WhitePaper#Java_API Java API]
     * [WhitePaper#GUI GUI]
-    * [WihtePaper#Web_Portal Web Portal]
+    * [WhitePaper#Web_Portal Web Portal]
   * [WhitePaper#Measurements Measurements]
     * [WhitePaper#Controlled_Measurements Controlled Measurements]
     * [WhitePaper#Real_World_Measurements Real World Measurements]
@@ -258,7 +258,7 @@ In the case that a metadata is already online, the user's signature and upload p
 
 The client communicates with only one of the core servers to which it will upload the chunk. This lessens the amount of bandwidth used by the client and shifts some of the work to the server, while also lessening the number of connections required by the client. Clients upload directly to non-core servers because core servers will not communicate with non-core servers.
 
-Upon completion of an upload, the hash is returned for the file uploaded or for the ProjectFile that represents the directory uploaded.
+Upon completion of an upload, the hash is returned for the file uploaded or for the !ProjectFile that represents the directory uploaded.
 
 
 ==Downloading==
@@ -417,7 +417,7 @@ The graphical user interface was made using the Java Swing library and is opened
 
 ==Web Portal==
 
-While a generic web portal for interaction with a Tranche repository has not yet been created, !ProteomeCommons.org is a prototype for this type of application. The web portal is the central user access point for the repository, where users can search through the contents of the repository and manage their uploaded data. This is analogous to parts of a BitTorrent tracker and index website.
+While a generic web portal for interaction with a Tranche repository has not yet been created, !ProteomeCommons.org is a prototype for this type of application. The web portal is the central user access point for the repository, where users can search through the contents of the repository and manage their uploaded data. This is analogous to parts of a !BitTorrent tracker and index website.
 
 The web portal controls the assignment of certificates. For !ProteomeCommons.org, users must sign up and go through a simple vetting process before being allowed to upload to the repository. When signing in through the GUI, a request is sent to !ProteomeCommons.org, then a certificate is sent back. This allowed users that were uncomfortable with the certificate system to easily use Tranche.
 
