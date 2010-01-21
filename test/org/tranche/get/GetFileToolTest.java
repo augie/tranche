@@ -836,7 +836,7 @@ public class GetFileToolTest extends TrancheTestCase {
             assertTrue(report.isFinished());
             assertTrue(report.isFailed());
             if (continueOnFailure) {
-                assertEquals(fileCount - filesToKill, new File(download, upload.getName()).listFiles().length);
+                assertEquals(fileCount, new File(download, upload.getName()).listFiles().length);
             } else {
                 // should have stopped the download of some other files
                 if (new File(download, upload.getName()).exists()) {

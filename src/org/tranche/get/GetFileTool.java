@@ -659,18 +659,16 @@ public class GetFileTool {
                 try {
                     ConnectionUtil.connectHost(host, true);
                 } catch (Exception e) {
-                    System.err.println(e.getClass().getSimpleName() + " occurred while connecting to " + host + ": " + e.getMessage());
-                    e.printStackTrace(System.err);
-                    ConnectionUtil.reportExceptionHost(host, e);
                     debugErr(e);
                     fire("Could not connect to server " + host + ".");
+                    ConnectionUtil.reportExceptionHost(host, e);
                 }
             }
         }
 
         // Connect to servers on external networks
         for (String url : getExternalServerURLsToUse()) {
-            final String host = IOUtil.parseHost(url);
+            String host = IOUtil.parseHost(url);
             
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
             // Tues Jan 19th 2010: Noticed this wasn't working on shadow network,
@@ -703,11 +701,9 @@ public class GetFileTool {
                     ConnectionUtil.lockConnection(host);
                 }
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName() + " occurred while connecting to external server " + url + ": " + e.getMessage());
-                e.printStackTrace(System.err);
-                ConnectionUtil.reportExceptionURL(url, e);
                 debugErr(e);
                 fire("Could not connect to external server " + url + ".");
+                ConnectionUtil.reportExceptionURL(url, e);
             }
         }
 
@@ -817,7 +813,7 @@ public class GetFileTool {
         file = new File(file.getParent(), TEMP_FILE_DENOTATION + file.getName());
         if (!file.exists()) {
             File parent = file.getParentFile();
-            if (!parent.exists()) {
+            if (parent != null && !parent.exists()) {
                 parent.mkdirs();
             }
             file.createNewFile();
@@ -875,7 +871,7 @@ public class GetFileTool {
                 }
                 validateSpecifiedUploader();
                 timeEstimator = new ContextualTimeEstimator(0, hash.getLength(), 0, 1);
-                pf = new File(TempFileUtil.getTemporaryDirectory(), hash.toBase16String());
+                pf = TempFileUtil.createTemporaryFile();
                 // download the file
                 if (passphrase != null) {
                     downloadFile(null, metaData, pf, new BigHash(passphrase.getBytes()).toByteArray());

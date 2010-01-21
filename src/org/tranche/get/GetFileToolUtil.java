@@ -146,12 +146,16 @@ public class GetFileToolUtil {
             message.append("A download failed @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " on " + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "\n\n");
             message.append("--------------------------------------------------------------------------------------------\n");
             for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
-                message.append(pew.toString() + "\n");
+                message.append(pew.toString() + Text.getNewLine());
+                for (StackTraceElement ste : pew.exception.getStackTrace()) {
+                    message.append("    " + ste + Text.getNewLine());
+                }
+                message.append(Text.getNewLine());
             }
             message.append("--------------------------------------------------------------------------------------------\n");
             message.append("\n");
             if (gft.getMetaData() != null && gft.getMetaData().getDataSetName() != null) {
-                message.append("Title: " + gft.getMetaData().getDataSetName());
+                message.append("Title: " + gft.getMetaData().getDataSetName() + "\n");
             }
             message.append("Hash: " + gft.getHash().toString() + "\n");
             message.append("Using passphrase?: " + String.valueOf(gft.getPassphrase() != null) + "\n");
