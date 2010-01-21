@@ -1,10 +1,5 @@
 #labels Featured,Phase-Implementation
-  * Design
-    * [Hash]
-    * [HashSpan Hash span]
-    * [TrancheFileStructure File structure]
-    * [Certificates]
-    * [HealingThread Server healing thread]
+  * [WhitePaper Read the white paper.]
   * [StartingRepository How to start a repository]
 
 
