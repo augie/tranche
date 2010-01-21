@@ -25,7 +25,7 @@
     * [WhitePaper#Deleting Deleting]
   * [WhitePaper#_Data_Server Data Server]
     * [WhitePaper#Activity_Log Activity Log]
-    * [WhitePaper#_Starting_Up Starting Up]
+    * [WhitePaper#Starting__Up Starting Up]
     * [WhitePaper#Configuration Configuration]
 
 
@@ -290,7 +290,7 @@ The activities are logged chronologically with fixed-length entries, and the tim
 When an activity log file entry is accessed, the associated signatures key is used to get the signature offset and length in the signatures index file, which is another O(log n) search. With that information, we read in the signature from the signatures file in O(1).
 Each activity log entry is approximately 100 bytes. Assuming the average data chunk size is 400 kilobytes and half the chunks are metadata of negligible size, the average chunk is approximately 200 kilobytes. This means the storage requirements for the activity logs is about 0.05%,or 1/2,000 of the total storage.
 
-== Starting Up==
+==Starting  Up==
 
 Upon getting the status of the network, the server establishes connections with all the servers with which is shares an overlapping hash span plus the servers from which it needs to perform network status updates plus a full hash span of servers, overlapping when possible.
 
