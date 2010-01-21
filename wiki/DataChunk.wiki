@@ -1,1 +1,0 @@
-Data chunks, identified by their hash values, are byte arrays with a maximum length of one megabyte. Any file uploaded to Tranche will have one or more data chunks. Data chunks contain no metainformation, and are only useful when the clent can access the associated file's metadata.
