@@ -1,1 +1,19 @@
-#labels Phase-Requirements
+#labels Phase-Requirements,Featured
+|| *TITLE* || *PRIORITY* || *CLAIMED BY* ||
+|| [ToDo#GUI_Modules GUI Modules] || medium || Augie ||
+|| Launch GUI From Server || low || ||
+|| HTTP Browse Repository Through Server || low || ||
+|| HTTP or FTP Download || low || ||
+|| HTTP or FTP Upload || low || ||
+|| Delete File Tool || medium || ||
+|| Edit Meta Data Tool || medium || ||
+|| Chunk-File Relationship Tracking || high || ||
+|| Machine-Readable Licenses || low || ||
+|| Multiple-Repository Configuration || low || ||
+|| Self-Modification of Server Hash Spans || low || ||
+|| Remote Command Line Terminal || low || ||
+
+
+==GUI Modules==
+
+Make GUI Modules available through the GUI. This functionality was removed for the sake of expedience during the Tranche 2.0 refactor.
