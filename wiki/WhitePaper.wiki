@@ -12,4 +12,7 @@ While designing the repository, our design decisions were guided by these genera
 ===Table of Contents===
   * [Hash]
   * [HashSpan Hash Span]
+  * [TrancheFileStructure File Structure]
+  * [DataChunk Data Chunk]
   * [MetaData Meta Data]
+  * [ProjectFile Project File]
