@@ -434,6 +434,21 @@ Measuring the storage capacity and usage of a Tranche repository can be tricky. 
 
 The three data sets that were used to take measurements were downloaded from the !ProteomeCommons.org Tranche Repository, so they represent a range of real-world data sets. The data sets differ primarily in the number and size of files they contain.
 
+Table 1: Data Sets
+|| *DATA SET* || *FILES* || *SIZE* ||
+|| A || 11,196 || 8.2 GB ||
+|| B || 10 || 1.1 GB ||
+|| C || 1 || 1.3 GB ||
+
+Table 2: Upload and Download Rates
+|| *DATA SET* || *COMPRESSED* || *TIME UP (s)* || *AVG SPEED (MB/s)* || *TIME DOWN (s)* || *AVG SPEED (MB/s)* ||
+|| A || TRUE || 4284 || 1.96 || 1022 || 8.22 ||
+|| A || FALSE || 4362 || 1.92 || 978 || 8.59 ||
+|| B || TRUE || 257 || 4.38 || 127 || 8.87 ||
+|| B || FALSE || 319 || 3.53 || 125 || 9.01 ||
+|| C || TRUE || 447 || 2.98 || 300 || 4.44 ||
+|| C || FALSE || 381 || 3.49 || 218 || 6.11 ||
+
 
 ==Real World Measurements==
 
