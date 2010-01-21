@@ -1,3 +1,14 @@
+#labels Phase-Design
+==Table of Contents==
+  * [WhitePaper#Assumptions Assumptions]
+  * [WhitePaper#Hash Hash]
+  * [WhitePaper#Hash_Span Hash Span]
+  * [WhitePaper#File_Structure File Structure]
+  * [WhitePaper#Data_Chunk Data Chunk]
+  * [WhitePaper#MetaData Meta Data]
+  * [WhitePaper#ProjectFile Project File]
+
+
 ===Assumptions===
 
 While designing the repository, our design decisions were guided by these general principles:
@@ -9,10 +20,25 @@ While designing the repository, our design decisions were guided by these genera
   * Servers will be housed at organizations, institutions, and universities, which have reliable, high-bandwidth Internet connections.
 
 
-===Table of Contents===
-  * [Hash]
-  * [HashSpan Hash Span]
-  * [TrancheFileStructure File Structure]
-  * [DataChunk Data Chunk]
-  * [MetaData Meta Data]
-  * [ProjectFile Project File]
+===Hash===
+
+
+
+===Hash Span===
+
+
+
+===File Structure===
+
+
+
+===Data Chunk===
+
+
+
+===MetaData===
+
+
+
+===ProjectFile==
+
