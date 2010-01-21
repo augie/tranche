@@ -6,3 +6,10 @@
     * [Certificates]
     * [HealingThread Server healing thread]
   * [StartingRepository How to start a repository]
+
+
+==Contributing==
+
+  # At least skim through [WhitePaper the white paper].
+  # Read through [ToDo what needs to be done]. Make sure what you want to do isn't already being done or get an idea of something to do.
+  # Check out the source code and get started. Please write JUnit tests for everything you make.
