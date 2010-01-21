@@ -1,17 +1,17 @@
 #labels Phase-Requirements,Featured
 || *TITLE* || *PRIORITY* || *CLAIMED BY* ||
+|| Chunk-File Relationship Tracking || high || Augie ||
 || [ToDo#GUI_Modules GUI Modules] || medium || Augie ||
-|| Launch GUI From Server || low || ||
+|| Delete File Tool || medium || ||
+|| Edit Meta Data Tool || medium || ||
 || HTTP Browse Repository Through Server || low || ||
 || HTTP or FTP Download || low || ||
 || HTTP or FTP Upload || low || ||
-|| Delete File Tool || medium || ||
-|| Edit Meta Data Tool || medium || ||
-|| Chunk-File Relationship Tracking || high || ||
+|| Launch GUI From Server || low || ||
 || Machine-Readable Licenses || low || ||
 || Multiple-Repository Configuration || low || ||
-|| Self-Modification of Server Hash Spans || low || ||
 || Remote Command Line Terminal || low || ||
+|| Self-Modification of Server Hash Spans || low || ||
 
 
 ==GUI Modules==
