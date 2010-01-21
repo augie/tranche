@@ -1,0 +1,488 @@
+<html>
+<head>
+  <title>Tranche DFS Stress Tests Read-Me</title>
+  <style type="text/css">
+  <!--
+    body {
+      background: #f7f7f7;
+    }
+    p.top {
+      text-transform: lowercase; font-variant: small-caps; font-size: .9em; margin-top: 6em;
+    }
+    hr {
+      height: 0; border: 0; border-top: 1px solid #000; margin-top: 0em; margin-bottom: 2em;
+    }
+    div {
+      border: 1px solid black; padding: 1em; background: rgb(238, 238, 238) none repeat scroll 0% 50%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; font-family: courier,monospace; font-size: 0.9em;
+    }
+    table {
+      border: 2px solid black;
+      border-collapse: collapse;
+    }
+    td {
+      border: 1px solid black; background: rgb(238, 238, 238) none repeat scroll 0% 50%;
+      padding: .25em;
+    } 
+
+    th {
+      background: #ccc;
+    }
+  -->
+  </style>
+</head>
+<body>
+  <h1><a name="top"></a>Tranche DFS Stress Tests Read-Me</h1>
+
+  <h2><a name="contents"></a>Table of Contents</h2>
+
+  <p>You can use this as a reference. However, if this is the first time you are running the stress tests, if you read this straight through in order, you will know how to configure, design and run a test suite.</p>
+
+  <ol>
+    <li><a href="#intro">Brief Introduction</a></li>
+    <li><a href="#netbeans">Setting up in NetBeans</a></li>
+    <li><a href="#config">Configuration</a></li>
+    <li><a href="#suite">Designing a test suite</a></li>
+    <li><a href="#run">Running a test suite</a></li>
+    <li><a href="#results">Interpretting the results</a></li>
+  </ol>
+
+  <h2>Appendix</h2>
+
+  <ol>
+    <li><a href="#multiple-networks">Setting up multiple networks</a></li>
+    <li><a href="#multiple-clients">Using multiple client machines with one server</a></li>
+  </ol>
+
+  <!-- ============================================================================== -->
+  <hr style="height: 3px; background: #fff; border: 1px solid black; border-left: 0; border-right: 0; margin-top: 2em;" />
+
+  <h2><a name="intro"></a>Brief Introduction</h2>
+
+  <p>Running the stress tests is not difficult once you gain a handle on the system. It is a bit like learning algebra: it is awkward at first, but becomes natural quite quickly.</p>
+
+  <p>Like learning algebra, you will likely need to read some instructive material. This document contains everything you need to know if you are familiar with building and running Tranche DFS.</p>
+
+  <p>Stress tests are a way to test that the clients and servers behave in a particular way under a certain load. You can use stress tests to ensure that the clients and servers work properly under heavy load, to find the breaking point for clients and servers (to improve their performance), or to continue to test the code base in a fairly reasonable environment.</p>
+
+  <p>A <em>test suite</em> is an ordered collection of tests. For this stress test, there is a file at <em>files/stress_test.conf</em> with a small domain-specific language that allows anyone to quickly create a test suite.</p>
+
+  <p>You can always run one or more clients (the number is specified in the test suite just described) and a server all on the same machine. However, it is better to put clients on one machine and a server on another. Clients have much more overhead, and it is important to see how a server responds to a heavier load without compounding the impact of the client's needs with its own.</p>
+
+  <p>The rest of this document explains how to get started. Read it in order. You should do one section at a time. For example, the next section is on setting up the projects in NetBeans. Do this first before moving on to the next section, which is on configuration.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+
+  <h2><a name="netbeans"></a>Setting up in NetBeans</h2>
+
+  <p>Before we start, let's assume you have two computers you want to use on the same network. (If not, you can do all of this on one computer&mdash;I'll explain this after the two-computer scenario.) We will create the following NetBeans projects (from existing sources) on the two servers:</p>
+
+  <p>Client computer</p>
+  <ul>
+    <li>Tranche-StressTests-ClientServer</li>
+    <li>Tranche-StressTests-ClientInSeparateJVM</li>
+  </ul>
+ 
+  <p>Server computer</p>
+  <ul>
+    <li>Tranche-StressTests-ClientServer</li>
+  </ul>
+
+  <p>A couple things to quickly note:</p>
+  <ul>
+    <li>The client and server have the same projects. However, we will choose different main classes for each.</li>
+    <li>The names are arbitrary, but they reflect what their use.</li>
+  </ul>
+
+  <p>Let me briefly explain each project in turn.</p>
+
+  <h3>Tranche-StressTests-ClientServer</h3>
+
+  <p><em>Description</em>: Defines a separate Tranche network for stress tests. Contains two main methods in two classes (<em>StressClient</em> and <em>StressServer</em>), which respectively start the client and server.</p>
+
+  <p>Here's what you need to do to create the project in NetBeans:</p>
+
+  <ol>
+    <li>Click on <strong>New Project</strong> &gt; <strong>Java Project with Existing Sources</strong></li>
+    <li>Select <strong>ClientServer/src</strong> as source and <strong>ClientServer/test</strong> as test. Go ahead and click in <em>Finish</em></li>
+    <li>Now that the project is created, right-click on it and go to <strong>Properties</strong> &gt; <strong>Libraries</strong>. Add the following:
+      <ul>
+        <li>Add the Tranche project (if you do not have it as a NetBeans project, add it as a JAR)</li>
+        <li>Add all the jars in the Tranche lib/ directory (except SWT jars)</li>
+      </ul>
+    </li>
+    <li>Go to <strong>Properties</strong> &gt; <strong>Run</strong>, and add the following for VM Options: <u>-Xmx512m</u></li>
+    <li>Go to <strong>Properties</strong> &gt; <strong>Run</strong>, and select one of the two main methods:
+      <ul>
+        <li>StressClient for client</li>
+        <li>StressServer for server</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>Tranche-StressTests-ClientInSeparateJVM</h3>
+
+  <p><em>Description</em>: Contains one class with a main method that simulates the behavior of a single client. ClientServer drops to the operating system to run 1+ instances using the Jar built from this project, one for each client simulate.</p>
+
+  <p>Here's what you need to do to create the project in NetBeans:</p>
+
+  <ol>
+    <li>Click on <strong>New Project</strong> &gt; <strong>Java Project with Existing Sources</strong></li>
+    <li>Select <strong>ClientInSeparateJVM/src</strong> as source and <strong>ClientInSeparateJVM/test</strong> as test. Go ahead and click in <em>Finish</em></li>
+    <li>Now that the project is created, right-click on it and go to <strong>Properties</strong> &gt; <strong>Libraries</strong>. Add the following:
+      <ul>
+        <li>Add the Tranche NetBeans project (if you do not have it as a NetBeans project, add it as a JAR)</li>
+        <li><span style="background: yellow;">Add the ClientServer NetBeans project we just created</span></li>
+        <li>Add all the jars in the Tranche lib/ directory (except SWT jars)</li>
+      </ul>
+    </li>
+    <li>Go to <strong>Properties</strong> &gt; <strong>Run</strong>, and add the following for VM Options: <u>-Xmx512m</u></li>
+    <li>Go to <strong>Properties</strong> &gt; <strong>Run</strong>, and select one of the two main methods:
+      <ul>
+        <li>StressClient for client</li>
+        <li>StressServer for server</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>I <span style="background: yellow;">highlighted</span> the only difference between creating this project (ClientInSeparateJVM) and ClientServer.</p>
+
+  <p>Before you go one, you'll want to create these projects: ClientServer on both the client and server machine, then ClientInSeparateJVM on just the client machine.</p>
+
+  <p>I mentioned that you can, if need be, run the client and server from the same machine. Simply set the machine up like a client, i.e., ClientServer and ClientIntSeparateJVM. The only difference is that you will need to set the main method in <strong>Properties</strong> &gt; <strong>Run</strong> to <em>StressServer</em> to run the server, then set the main method to <em>StressClient</em>.</p>
+
+  <p>We discuss running the project later.</p>
+
+  <p>Also, remember that you need to build ClientInSeparateJVM before you can run the client. You might as well do that now.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+
+  <h2><a name="config"></a>Configuration</h2>
+
+  <p>There are two files you will need to edit to set up the stress test network:</p>
+
+  <ul>
+    <li>files/client.conf</li>
+    <li>stress/servers.conf</li>
+  </ul>
+
+  <p>You will want to start with <strong>client.conf</strong>. Open the file, and you will see something similar to this:</p>
+
+  <div>
+SetEnvironment = BryanKubuntu<br/><br />
+
+Environment BryanKubuntu {<br />
+&nbsp;&nbsp;serverIP = 127.0.0.1<br />
+&nbsp;&nbsp;clientJARPath = /home/besmit/NetBeansProjects/Tranche-StressTests-ClientThread/dist/Tranche-StressTests-ClientInSeparateJVM.jar<br />
+&nbsp;&nbsp;resultsFile = /home/besmit/Desktop/socket-stress.txt<br />
+&nbsp;&nbsp;outAndErrRedirectFile = /home/besmit/Desktop/socket-stress.out-and-err.txt<br />
+&nbsp;&nbsp;tempDirectory = /tmp/tranche-stress-temp/<br />
+}<br /><br />
+  ...
+  </div>
+
+  <p>You will need to:</p>
+
+  <ul>
+    <li>Create an Environment for your computer(s). (Make sure its name is unique in the filespace.)</li>
+    <li>Use SetEnvironment to use your environment.</li>
+  </ul>
+
+  <div>
+SetEnvironment = BryanVista<br/><br />
+
+Environment BryanKubuntu {<br />
+&nbsp;&nbsp;serverIP = 127.0.0.1<br />
+&nbsp;&nbsp;clientJARPath = /home/besmit/NetBeansProjects/Tranche-StressTests-ClientThread/dist/Tranche-StressTests-ClientInSeparateJVM.jar<br />
+&nbsp;&nbsp;resultsFile = /home/besmit/Desktop/socket-stress.txt<br />
+&nbsp;&nbsp;outAndErrRedirectFile = /home/besmit/Desktop/socket-stress.out-and-err.txt<br />
+&nbsp;&nbsp;tempDirectory = /tmp/tranche-stress-temp/<br />
+}<br /><br />
+
+/**************************************************************<br />
+&nbsp;* This is being used. See SetEnvironment.<br />
+&nbsp;**************************************************************<br />
+Environment BryanVista {<br />
+&nbsp;&nbsp;serverIP = 192.168.5.2<br />
+&nbsp;&nbsp;clientJARPath = C:\\Users\bryan\NetBeansProjects\Tranche-StressTests-ClientThread\dist\Tranche-StressTests-ClientInSeparateJVM.jar<br />
+&nbsp;&nbsp;resultsFile = C:\\Users\bryan\Desktop\socket-stress.txt<br />
+&nbsp;&nbsp;outAndErrRedirectFile = C:\\Users\bryan\Desktop\socket-stress.out-and-err.txt<br />
+&nbsp;&nbsp;tempDirectory = C:\\tmp\tranche-stress-temp\<br />
+}<br /><br />
+
+  ...
+  </div>
+
+  <p>Of course, if running client and server on different computers, they can use different environments. However note that serverIP will be the same for both, since you can only use one server.</p>
+
+  <p>Here are the fields:</p>
+
+  <ul>
+    <li><strong>serverIP</strong>: The IP address of the server you will be running.</li>
+    <li><strong>clientJARPath</strong>: The path the the Jar that is built from the <em>ClientInSeparateJVM</em> project.</li>
+    <li><strong>resultsFile</strong>: The path to where you want the results file. If file creates, the client will exit with an error message reminding you to move or delete the file.</li>
+    <li><strong>outAndErrRedirectFile</strong>: Path to a file where to redirect all standard output and error. You can use this for troubleshooting if there is a problem.</li>
+    <li><strong>tempDirectory</strong>: Path to a temporary directory. Note: This will be recursively deleted, so the path should be to a directory that can be created and deleted.</li>
+  </ul>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+
+  <h2><a name="suite"></a>Designing a test suite</h2>
+
+  <p>If this section, you will learn to design a test suite. You can always use the example we present if you are interested in getting started quickly, as well as any of the examples we'll describe shortly that are already provided with the stress test code base.</p>
+
+  <p>You can run one or more tests in a row, which is referred to as a <em>test suite</em>.</p>
+
+  <p>Before we start, it is important to briefly familiarize yourself with the following variables:</p>
+
+  <table>
+    <tr>
+      <th>Variable name</th>
+      <th>Valid values</th>
+      <th>Description</th>
+    </tr>
+
+    <tr>
+      <td>client_count</td>
+      <td>Number (e.g., 3)</td>
+      <td>The number of clients (in separate JVMs) to run simultaneously. If use number 3, your computer will be kept quite busy simply acting as three clients.</td>
+    </tr>
+
+    <tr>
+      <td>files</td>
+      <td>Number (e.g., 10000)</td>
+      <td>This value, multiplied by the <em>max_file_size</em>, will be the maximum total amount of data to upload per client.</td>
+    </tr>
+
+    <tr>
+      <td>max_file_size</td>
+      <td>Number (in bytes, e.g., 1073741824 for a gigabyte)</td>
+      <td>This value, multiplied by <em>files</em>, will be the maximum total amount of data to upload per client.</td>
+    </tr>
+
+    <tr>
+      <td>min_project_size</td>
+      <td>Number (in bytes, e.g., 1048576 for a megabyte)</td>
+      <td>This is the smallest potential size of a project that will be uploaded at a time. For example, if a client is going to upload 1GB of data, a smallest project of 1MB could result in 1024 projects, though this is highly unlikely if <em>max_project_size</em> has a different value. If not the same size as <em>max_project_size</em>, then the values of the uploaded projects will be randomly generated (and uniformly distributed) between the two.</td>
+    </tr>
+
+    <tr>
+      <td>max_project_size</td>
+      <td>Number (in bytes, e.g., 2147483648 for 2 gigabytes)</td>
+      <td>This is the largest potential size of a project that will be uploaded at a time. For example, if a client is going to upload 1GB of data, a largest project of 100GB will guarentee that more that 10 projects will be uploaded for that client (since 1GB=1024MB). If not the same size as <em>min_project_size</em>, then the values of the uploaded projects will be randomly generate (and uniformly distributed) between the two.</td>
+    </tr>
+
+    <tr>
+      <td>delete_chunks_randomly</td>
+      <td>&mdash;</td>
+      <td>This value is ignored. It used to allow some data and meta chunks to be deleted. However, unit tests cover this behavior, and this obfuscates the results of the tests in terms of time.</td>
+    </tr>
+
+    <tr>
+      <td>use_batch</td>
+      <td>true/false</td>
+      <td>If true, the upload and download tools will use their batching functionality to speed up their performance (ideally). Otherwise, use false.</td>
+    </tr>
+
+    <tr>
+      <td>use_dbu_cache</td>
+      <td>true/false</td>
+      <td>If true, the server's DBU will use its caching scheme. The default behavior for the server is to use what was last set by client or, if nothing was set, the default value in DataBlockUtil. If you do not understand this value, then do not worry about it.</td>
+    </tr>
+  </table>
+
+  <p>The total size of data uploaded during a single test for a single client is determined by two of the file variables, not the project variables. Here's how you calculate the total amount of data (in bytes) to upload and download per client:</p>
+
+  <div>
+[total size for client ] <= files * max_file_size
+  </div>
+
+  <p>And to calculate the total amount of data (in bytes) for a particular test for all clients:</p>
+
+  <div>
+[total size for all clients] <= files * max_file_size * client_count
+  </div>
+
+  <p>Note that the more clients and files you use, the more likely that the following will accurately describe the total data uploaded:</p>
+
+  <div>
+[total size for all clients] ~= (1/2) files * max_file_size * client_count
+  </div>
+
+  <p>As a rule of thumb, if use at least 1000 files and a maximum file size of 1MB or greater with any number of clients (1+), you can expect the above estimation to be pretty accurate. (The actual values will be normally distributed with little significant variance.)</p>
+
+  <p>The project variables (<em>max_file_size</em> and <em>min_file_size</em>) exist to subdivide a test in a predictable fashion. Combined with the files variables (<em>files</em> and <em>max_file_size</em>), you get a lot of control over the nature of the clients' behavior, even if the control seems odd.</p>
+
+  <p>There is a file at <strong>files/stress_test.conf</strong> that you will edit to build a test suite. There are several sample files in the same directory, including:</p>
+
+  <ul>
+    <li>stress_test.conf.example.severe_three_client</li>
+    <li>stress_test.conf.example.some-simpe-adjustments-toggle-use-batch</li>
+    <li>stress_test.conf.example.some-simple-adjustments</li>
+  </ul>
+
+  <p>(* More might appear. Please do not delete any.)</p>
+
+  <p>With these examples and the above explanation of the variables, you should be able to easily design a test suite.</p>
+
+  <p>Here's an example. Say we want a test suite with three tests. They will all have three clients, and they will average 10GB, 20GB, and 30GB in total size for all clients.</p>
+
+  <p>First, we need to decide how we want to achieve 10GB, 20GB and 30GB. Remember the estimation:</p>
+
+  <div>
+[total size for all clients] ~= (1/2) files * max_file_size * client_count
+  </div>
+
+  <p>Then, using arithmetic, we see:</p>
+
+  <div>
+   files ~= 2 * [total size for all clients]/(max_file_size * client_count)
+  </div>
+
+  <p>We already decided on the client_count (3) and the total size for all clients (10GB, 20GB and 30GB, which is 10*(1024)^3 = 10737418240, 20*(1024)^3 = 21474836480 and 30*(1024)^3 = 32212254720 bytes, respectively). Now let's settle on a max_file_size of 1MB (or 1024^2 = 1048576 bytes). What is the number of files we need to approximate the desired sizes?</p>
+
+  <ul>
+    <li><strong>10GB (10737418240 bytes)</strong>: files ~= &lceil;2 * 10737418240 / (1048576 * 3)&rceil; = 6827</li>
+    <li><strong>20GB (21474836480 bytes)</strong>: files ~= &lceil;2 * 21474836480 / (1048576 * 3)&rceil; = 13654</li>
+    <li><strong>30GB (32212254720 bytes)</strong>: files ~= &lceil;2 * 32212254720 / (1048576 * 3)&rceil; = 20480</li>
+  </ul>
+
+  <p>There are two bits of consideration left before we code our test suite:</p>
+
+  <ol>
+    <li><strong>How many projects should be uploaded?</strong>: If <em>min_project_size</em> and <em>max_project_size</em> are the same, the size of uploads would be predictable. However, I want to test variability in sizes because I am hoping to not see much variance in times based on the overhead associated with each project. My minimum will be 1MB and my maximum will be 1GB.</li>
+    <li><strong>Should we use batch?</strong>: I will say yes, since it is the direction in which we are heading developmentally. If you were happy with six tests, you could easily run each test twice, one with and one without batch.</li>
+  </ol>
+
+  <p>We are ready to create our test suite. Here's what I'd put, all with comments:</p>
+
+<div>
+# Test will upload approximately 10GB, shared between three clients<br />
+test {<br />
+&nbsp;&nbsp;client_count=3<br />
+&nbsp;&nbsp;files=6827<br />
+&nbsp;&nbsp;max_file_size=1048576<br />
+&nbsp;&nbsp;min_project_size=1048576<br />
+&nbsp;&nbsp;max_project_size=1073741824<br />
+&nbsp;&nbsp;delete_chunks_randomly=false<br />
+&nbsp;&nbsp;use_batch=true<br />
+}<br /><br />
+
+# Test will upload approximately 10GB, shared between three clients<br />
+test {<br />
+&nbsp;&nbsp;client_count=3<br />
+&nbsp;&nbsp;files=13654<br />
+&nbsp;&nbsp;max_file_size=1048576<br />
+&nbsp;&nbsp;min_project_size=1048576<br />
+&nbsp;&nbsp;max_project_size=1073741824<br />
+&nbsp;&nbsp;delete_chunks_randomly=false<br />
+&nbsp;&nbsp;use_batch=true<br />
+}<br /><br />
+
+# Test will upload approximately 10GB, shared between three clients<br />
+test {<br />
+&nbsp;&nbsp;client_count=3<br />
+&nbsp;&nbsp;files=20480<br />
+&nbsp;&nbsp;max_file_size=1048576<br />
+&nbsp;&nbsp;min_project_size=1048576<br />
+&nbsp;&nbsp;max_project_size=1073741824<br />
+&nbsp;&nbsp;delete_chunks_randomly=false<br />
+&nbsp;&nbsp;use_batch=true<br />
+}<br />
+</div>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+  <h2><a name="run"></a>Running a test suite</h2>
+
+  <p>Once you have done the following, you can run the test suite:</p>
+
+  <ul>
+    <li>Created the NetBeans projects with the proper libraries and set the correct main method and JVM options</li>
+    <li>Configured the stress test network to including the IP address of the server and other information about temporary directory, etc.</li>
+    <li>Designed a stress test suite (or copied over an example one)</li>
+  </ul>
+
+  <p>Running the project is simple:</p>
+
+  <ol>
+    <li><strong>Start the server first</strong>: Clean and build the ClientServer project you created in NetBeans for the server, then select <em>Run</em>. After a few seconds, you should see output indicating that the server is waiting.</li>
+    <li><strong>Start the client next</strong>: Clean and build the ClientInSeparateJVM and ClientServer projects you create in NetBeans for the client, then select <em>Run</em>. Wait for output to indicate whether it correctly contacted the server. (You can also look at the output of the server to see whether it was contacted by a client.)</li>
+  </ol>
+
+  <p>Note that the client is far more demanding than the server. You will likely find a computer unusable while running stress tests with more than one client per test, though you will be able to use the machine hosting the server.</p>
+
+  <p>Also note that you must move or delete the results file from the previous run to run the client again. You will receive an error message if you do not.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+  <h2><a name="results"></a>Interpretting the results</h2>
+
+  <p>As the stress tests run, a file will be created and updated on the client machine to reflect performance and other information. (The name and path is defined by the user and was discussed in the configuration section.)</p>
+
+  <p>The output file is CSV (comma-separated value). It is plain-text, though major spreadsheet editors will be able to import its values.</p>
+
+  <p>Each row is a single entry representing a single test in the suite. Each column is defined by its header, and is subject to change.</p>
+
+  <p>The results should be automatically posted online when the are finished. You can view a graph of the results from all stress test runs at <a href="http://tranche.proteomecommons.org/activity/stress/">http://tranche.proteomecommons.org/activity/stress/</a>.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+
+  <!-- ============================================================================== -->
+  <hr style="height: 3px; background: #fff; border: 1px solid black; border-left: 0; border-right: 0; margin-top: 2em;" />
+  <h2>Appendix</h2>
+
+  <p>This additional information assumes you read the rest of the guide. This is more of a follow-up than an appendix. It would be an FAQ, but no one asked me any questions, so its an appendix.</p>
+
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+
+  <h2><a name="multiple-networks"></a>Appendix: Setting up multiple networks</h2>
+
+  <p>You can run any number of independent stress test networks. Again, our idea of a network is one (or more) client(s) and one server.</p>
+
+  <p>Here are the files you must modify to get independent networks:</p>
+
+  <ul>
+    <li>files/client.conf</li>
+    <li>stress/servers.conf</li>
+  </ul>
+
+  <p>Details can be found in the <a href="#config">configuration section</a> of this guide. Note each network will use a different configuration in client.conf (particularly, the server IP will be different), and you must set the appropriate IP address in the server.conf file. Otherwise, the network will behave in an unpredictable fashion.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+  <!-- ------------------------------------------------------------------------------ -->
+  <hr />
+
+  <h2><a name="multiple-clients"></a>Appendix: Using multiple client machines with one server</h2> 
+
+  <p>Just as easily as you set up independent networks, you can set up a single network with multiple client machines and one server machine.</p>
+
+  <p>You do not have to do anything special: the server knows how many clients it has, and will not delete unnecessary files until there are no client machines connected.</p>
+
+  <p>Again, the only files you have to modify:</p>
+
+  <ul>
+    <li>files/client.conf</li>
+    <li>stress/servers.conf</li>
+  </ul>
+
+  <p>Details can be found in the <a href="#config">configuration section</a> of this guide. Note that every client you want to connect to the server must set the same IP address for the server in both the files.</p>
+
+  <p>Note that this will have some impact on the client's time, and some might perform faster than others based on many variables, so this is not a good way to test tweaks to code for speed. If you want to modify an independent variable (e.g., DataBlockUtil caching vs. non-caching), you should use independent networks.</p>
+
+  <p>However, this is a good way to try to find a servers breaking point, or to find out how a lot of traffic will impact end users.</p>
+
+  <p class="top"><a href="#top">&laquo; Return to top of page</a></p>
+
+  
+</body>
+</html>
