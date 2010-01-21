@@ -23,10 +23,30 @@
     * [WhitePaper#Uploading Uploading]
     * [WhitePaper#Downloading Downloading]
     * [WhitePaper#Deleting Deleting]
-  * [WhitePaper#_Data_Server Data Server]
+  * [WhitePaper#Data__Server Data Server]
     * [WhitePaper#Activity_Log Activity Log]
     * [WhitePaper#Starting__Up Starting Up]
     * [WhitePaper#Configuration Configuration]
+    * [WhitePaper#Data_Storage Data Storage]
+    * [WhitePaper#Processes Processes]
+      * [WhitePaper#Update_Network_Status_Table Update Network Status Table]
+      * [WhitePaper#Balance_Data_Directories Balance Data Directories]
+      * [WhitePaper#Download_Hash_Span_Chunks Download Hash Span Chunks]
+      * [WhitePaper#Delete_Superfluous_Chunks Delete Superfluous Chunks]
+      * [WhitePaper#Download_Sticky_Data Download Sticky Data]
+      * [WhitePaper#Notify_Servers_of_Sticky_MetaData Notify Servers of Sticky !MetaData]
+      * [WhitePaper#Update_Network_Configuration Update Network Configuration]
+  * [WhitePaper#Interface Interface]
+    * [WhitePaper#Java_API Java API]
+    * [WhitePaper#GUI GUI]
+    * [WihtePaper#Web_Portal Web Portal]
+  * [WhitePaper#Measurements Measurements]
+    * [WhitePaper#Controlled_Measurements Controlled Measurements]
+    * [WhitePaper#Real_World_Measurements Real World Measurements]
+  * [WhitePaper#Experiences Experiences]
+  * [WhitePaper#Conclusions Conclusions]
+  * [WhitePaper#Acknowledgements Acknowledgements]
+  * [WhitePaper#References References]
 
 
 
@@ -264,7 +284,7 @@ To fully delete a data set from the repository, every replication of every chunk
 Both data chunks and metadata chunks may be shared between uploaded files. For this reason, delete requests must specify which file is to be downloaded. When deleting a metadata chunk, the  request requires the user name, UNIX timestamp of upload, and relative path in directory as parameters for deletion to differentiate between file uploads. A deletion of a data chunk requires both the hash of the data chunk as well as the hash of the file to which it belongs.
 
 
-= Data Server=
+=Data  Server=
 
 ==Activity Log==
 
@@ -312,3 +332,136 @@ Each data server can be assigned a limited number of hash spans and target hash 
 A list of data directories define where the server stores chunks and the maximum amount of the data that can be stored in that directory. Additional directories can later be added, and existing directories can be removed. This allows individual servers to scale appropriately.
 
 Server configurations also store the parameters for the various forms of activity that it can perform. For example, some limited interactions with the server can be done via HTTP. The server's properties store the name-value pairs for variables that define the behavior of the server.
+
+
+==Data Storage==
+
+Chunks are stored in a b-tree structure; insertions, searches and deletions run in logarithmic time, O(log n). A leaf node in the structure is called a "data block". The b-tree begins with a single layer of 256 data blocks. In this top-level data block, all the chunks have hashes which, when base-16 encoded, share the first two characters. These data blocks are hence identified by these two shared base-16 characters. When a data block contains 1,000 chunks or grows to 100 megabytes, it branches into a new layer of 256 data blocks, each of which has the same aforementioned restrictions on size. The second layer of data blocks is named by the second two characters of the base-16 value of the chunks that are stored within them, since these children data blocks will contain chunks with base-16 encoded hashes that share the same first four characters. A data block at a depth n in the b-tree, where n is 1 for top-level nodes, will contain chunks with base-16 encoded hashes sharing the first 2*n characters. The data block search time in a tree with n data chunks is log256 n.
+
+A data block is made up of a header and a body. The header is a hash table of Tranche hashes and offsets where the location of the Tranche hash entry is determined by the hashcode of the string value of the Tranche hash. When a chunk is added to the block, the data is appended to the body and the lookup information is added to the header. 
+
+The b-tree is distributed across the server's data directories. Each server can have multiple data directories (typically on separate disks) and may hold millions of chunks, so balancing the storage between all the data directories is important for balancing the acccess between the disks, reducing the likelihood of a bottleneck at the disk.
+
+A data chunk may belong to multiple files, so the repository must keep track of which data chunks belong to which files. This information is stored in a file called a "map block" that maps the one-to-many relationship between data chunk hashes and metadata chunk hashes. There is a map block for each of the data blocks.
+
+A map block consists of a header and a body. Like the data block, the header is a hash table of Tranche hashes and offsets. The body, unlike in the data block, consists of hashes and offsets that are used to create linked lists.
+
+
+==Processes==
+
+Since the network status table must be updated regularly for the proper performance of a server, this process is performed continuously. Other server processes, however, are only performed when the server is not occupied performing client requests.
+
+
+===Update Network Status Table===
+
+Updating the network status table is done in a propagation scheme because of the limited number of servers to which a server is connected. The primary goals is to minimize the staleness of the information in the status table while also minimizing the number of connections required.
+
+Within a network status table, all rows are ordered alphabetically by host name. Starting at the local host, the rows are split into groups, and a server from each of the groups (which must be an online, non-local core server) is contacted at regular intervals for the updated status of the servers in that group.
+
+When updating the network status table, groups are more appropriately thought of as "ranges" because the addition of servers to the network must be incorporated within the existing groups.When a request for a portion of the network status table is given, the parameters for the request are simply the host names for the end points of the ranges. The first host name in the range is inclusive, while the last host name in the range is exclusive.
+
+It would be helpful to examine a simple scenario. Take a Tranche network with six servers total in which all are online, a group size of 3, and an update interval of 30 seconds. In the diagram, you can see that the servers have been given the labels a through f and they are sorted in alphabetical order.
+
+In this case, server a updates from server b, which updates from server c, and so on. Server a also updates from server d, which updates from server e, etc. Modifying the variables used to determine the range size and update frequency allows for the optimization of the propagation scheme.
+
+For server a, the stalest status will be for server f, which will be at most 90 seconds old. In general, the stalest possible status information can be calculated by group size * update interval.
+
+When a server is no longer responding, it is flagged as offline and the next available server in the group is used. If no servers in the group are online, then no updates will be made until one of the servers comes back online.
+
+Because non-core servers cannot be trusted to provide the status of other servers, they must only be asked of their own status. The task of updating from non-core servers is given to the core server that is located alphabetically before the non-core server in the status table.
+
+To ensure that the network is notified that the local server is running, a newly-started server registers with each server which it will use for performing status updates.
+
+
+===Update Data Directories===
+
+On occasion, a server will check the distribution of the data store's b-tree across the data directories. Data directories may be of varying sizes, so the process compares them based on their percentage used. When the percentage of used space differs by a configurable amount, the server will transfer data blocks to other data directories to lessen the disparity to an acceptable level.
+
+
+===Download Hash Span Chunks===
+
+This process requests lists of chunks that are within the server's set of hash spans from other core servers with overlapping hash spans. As it finds chunks that it does not have, it will download and store them. Although this is quite expensive in terms of bandwidth, this is the only process by which data sets that are not accessed often can have missing replications replaced.
+
+
+===Delete Superfluous Chunks===
+
+This process deletes chunks that are not within the target hash spans of the server. There are two reasons why these chunks may be residing on a server to which they do not belong: the target hash spans may have changed or the data chunks may have been associated with a sticky file. Before deleting a chunk, the server must verify whether it is part of a sticky file.
+
+
+===Download Sticky Data===
+
+Another process that runs in the background is the download of missing sticky data chunks. This process will examine the set of sticky metadata on the server, then make sure that all the data chunks listed within that metadata are on the server.
+
+
+===Notify Servers of Sticky !MetaData===
+
+As the server reviews a metadata's sticky servers list, it must verify that the servers to which the metadata should be "stuck" have a copy. For security purposes, only core servers can send notifications of sticky metadata; core servers will ignore notifications sent by non-core servers. After the metadata is stored on the appropriate server, the Download Sticky Data process will download the data chunks associated with that metadata.
+
+
+===Update Network Configuration===
+
+At set intervals, servers update their network configurations from the central authority. Network configuration parameters include core servers, certificates, and behavior variables. The central authority is usually the web portal, from which administrators can quickly make changes to the configuration for every server in the distributed repository.
+
+
+=Interface=
+
+==Java API==
+
+Tranche is free, open source and available under the [http://www.apache.org/licenses/LICENSE-2.0.html Apache 2.0 License]. The core software package was written in Java 5. Configuration files and core certificates define a Tranche repository. Most runnable classes take as their first argument the location of the main Tranche configuration file, which can be in the JVM, the local file system, or on the Internet. 
+
+
+==GUI==
+
+The graphical user interface was made using the Java Swing library and is opened using Java Web Start. The Advanced GUI has extended functionality, but for most users, the only times the GUI must be launched are when uploading and downloading. Most other other management activities can be performed more easily through the web portal.
+
+
+==Web Portal==
+
+While a generic web portal for interaction with a Tranche repository has not yet been created, !ProteomeCommons.org is a prototype for this type of application. The web portal is the central user access point for the repository, where users can search through the contents of the repository and manage their uploaded data. This is analogous to parts of a BitTorrent tracker and index website.
+
+The web portal controls the assignment of certificates. For !ProteomeCommons.org, users must sign up and go through a simple vetting process before being allowed to upload to the repository. When signing in through the GUI, a request is sent to !ProteomeCommons.org, then a certificate is sent back. This allowed users that were uncomfortable with the certificate system to easily use Tranche.
+
+Tranche Annotations was developed to contextualize the data sets in an accompanying Tranche Distributed Repository. The core feature of this software is that it allows for a dynamic information model, which allows metadata stored in the database to evolve along with the field as new technologies, new terms, and new data relationships are developed. This reflects the reality of basic scientific research where new technologies and methods lead to new terms, new concepts, and new relationships between terms. Consistent with the design of the Tranche Distributed Repository, the annotation system was designed to be configurable, and because it works through a dynamic information model, it can be applied to many other fields. The metadata is stored in a MySQL database and is managed through the web portal.
+
+
+=Measurements=
+
+==Controlled Measurements==
+
+A repository was set up between three identical commodity desktop computers connected on a LAN. They all contain dual-core AMD Athlon 64-bit 3600+ processors, 4 GB of DDR2 RAM, a 7,200 RPM SATA hard drive, an NVIDIA Gigabit LAN controller, and run the Ubuntu 8.10 operating system. They are connected by a Netgear 8-port gigabit switch. A fourth identical computer connected on the same switch was used to take the measurements.
+
+Measuring the storage capacity and usage of a Tranche repository can be tricky. Because data is stored and referenced by contents, files may overlap, so identical files or identical parts of files willd not take any more space. Additionally, uploads can be compressed upon upload, and certain types of file (typically plain-text) are often effectively compressed. For example, mass spectrometry-based proteomics data can be highly repetitive (depending on the file format), sometimes leading to compression rates of 80% or higher.
+
+The three data sets that were used to take measurements were downloaded from the !ProteomeCommons.org Tranche Repository, so they represent a range of real-world data sets. The data sets differ primarily in the number and size of files they contain.
+
+
+==Real World Measurements==
+
+(measurements)
+
+
+=Experiences=
+
+Many of the design decisions took some trial-and-error experimentation to reach, and they will undoubtedly be continually refined. For example, all standard user interaction with a Tranche repository was once performed through the GUI. Over time, we have received a lot of valuable experience and feedback concerning the performance and usability of the graphical application; some users found it to be lacking in speed, usability, and familiarity. We used the feedback to develope the revised !ProteomeCommons.org, which offers management tasks as well as a conventional web interface for searching and browsing data sets, among other community-oriented capabilities.
+
+At least of of our design improvements occurred because of an accident that happened after setting up a group of four computers to run a process counting the number of chunk replications for each data set. With about 20 million chunks and about 12 servers on the network at the time, this process was expected to take a few weeks to finish. A couple of days into the process, we received an urgent email from the medical center IT at the University of Michigan instructing us to immediately turn off the processes – the requests were causing a denial of service to some key university systems (like voicemail). We still needed to run the process, so we developed a solution: to batch together many small requests into a single packet. After comparing the average latency time to the processing time of a simple request, it became clear that batching was a solution that could be applied to Tranche in general.
+
+Tranche underwent a significant architectural redesign that began in the summer of 2009. Before the redesign, all clients and servers had to connect to every server on the network, and updated information about each server's status by regularly pinging it as well as requesting its configuration.  Also prior to the redesign, hash spans were only suggestions, which meant that chunk location was non-deterministic; a process would need to check every server before determining a chunk was not in the repository. When presented with a use-case for several petabytes of data, it was clear that the system would not be able to scale. The network status problem was addressed by making a serializable table where each of the servers was represented by a row in the table, then designing propagation rules to notify the network of a server's connectivity and configuration changes. The work of updating the network status was cut to a small fraction of its previous traffic and clients could get the status of the entire network in a single request. The chunk location problem was addressed by changing the system design to require a deterministic location for chunks based on hash spans, so as the scale of the repository grows exponentially, the time to download does not increase at all.
+
+
+=Conclusions=
+
+The Tranche Distributed Repository has demonstrated its usefulness to the proteomics community in a short amount of time. Our design could potentially meet the needs of any data-centric community by providing a highly scalable storage and dissemination system for immutable files that can be run on commodity hardware and thus at a cost-effective price. Replicating files and distributing them across many servers speeds up downloads through parallelization while also ensuring the availability of the data in the event of a server failure. Hashing the contents of the repository ensures the integrity of the files is maintained, while vetting and tracking uploaders ensures the provenance of the data; combined, these ensure that downloaders know who uploaded the data and can verify the integrity of the data. The decentralized structure ensures against bottlenecks and provides ease-of-scalability. Since Tranche is decentralized, it can scale more easily than a centralized model, and helps prevent performance bottlenecks by distributing the load among available servers. We believe that Tranche is a promising solution to the need to store and disseminate large, immutable files.
+
+
+=Acknowledgements=
+
+Funding for Tranche and !ProteomeCommons.org comes from the National Cancer Institute's Clinical Proteomics Technologies for Cancer and the National Center for Research Resources (NCRR award P41-RR018627).
+Thank you to those that have contributed to the source code for Tranche: Jerod Falkner, Brian Maso, Panagiotis Papoulias, Eric Vander Weele, Todd Yocum.
+
+
+=References=
+
+  # Bruno Domon and Ruedi Aebersold. Challenges and Opportunities In Proteomics Data Analysis. Molecular and Cellular Proteomics, 5: 1921-1926, 2006.
+  # Catherine A Ball, Gavin Sherlock, and Alvis Brazma. Funding High-Throughput Data Sharing. Nature Biotechnology, 22: 1179-1183, 2004.
+  # 2009 March – Creative Commons. http://creativecommons.org/weblog/2009/3/page/5 (accessed 15 July 2009)
