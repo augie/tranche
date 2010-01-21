@@ -1,4 +1,4 @@
-#labels Phase-Requirements,Featured
+#labels Phase-Requirements
 || *TITLE* || *PRIORITY* || *CLAIMED BY* ||
 || Chunk-File Relationship Tracking || high || Augie ||
 || [ToDo#GUI_Modules GUI Modules] || medium || Augie ||
