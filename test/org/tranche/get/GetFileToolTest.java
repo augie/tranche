@@ -18,18 +18,24 @@ package org.tranche.get;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import org.tranche.FileEncoding;
+import org.tranche.TrancheServer;
 import org.tranche.add.AddFileTool;
 import org.tranche.add.AddFileToolReport;
 import org.tranche.add.CommandLineAddFileToolListener;
 import org.tranche.exceptions.TodoException;
 import org.tranche.flatfile.DataBlockUtil;
+import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.server.PropagationExceptionWrapper;
@@ -37,6 +43,7 @@ import org.tranche.util.DevUtil;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.meta.MetaDataUtil;
+import org.tranche.network.ConnectionUtil;
 import org.tranche.project.ProjectFile;
 import org.tranche.project.ProjectFileUtil;
 import org.tranche.security.SecurityUtil;
@@ -75,12 +82,51 @@ public class GetFileToolTest extends TrancheTestCase {
     }
 
     /**
-     * There are two servers with a full hash span. A file is uploaded only to the first server and downloaded only from the second. The second should download the data from the first server and send it to the client.
+     * There are two servers with a full hash span.
+     * A file is uploaded only to the first server and downloaded only from the second.
+     * The second should download the data from the first server and send it to the client.
      * @throws java.lang.Exception
      */
     public void testGetFileThroughServer() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetFileThroughServer()");
-        throw new TodoException();
+
+
+        String HOST0 = "server1.com";
+        String HOST1 = "server2.com";
+        TestNetwork testNetwork = new TestNetwork();
+
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1501, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+
+         //create temp file
+        File upload = TempFileUtil.createTempFileWithName("name.file");
+        DevUtil.createTestFile(upload, 125);
+
+
+        try {
+            testNetwork.start();
+
+            //Upload test file
+            AddFileToolReport upFile = uploadTest(upload,HOST0,null);
+            BigHash _hash = upFile.getHash();
+
+            //download test file
+            GetFileTool gft = new GetFileTool();
+            gft.addServerToUse(HOST1);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(upload);
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+            GetFileToolReport downFile = gft.getFile();
+
+            assertFalse(downFile.isFailed());
+            assertNotNull(downFile);
+            assertEquals(upFile.getBytesUploaded(), downFile.getBytesDownloaded());
+
+        }
+        finally{
+            testNetwork.stop();
+        }
     }
 
     /**
@@ -90,7 +136,61 @@ public class GetFileToolTest extends TrancheTestCase {
      */
     public void testGetConnections() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetConnections()");
-        throw new TodoException();
+        //TODO: can specify readable or writeable connections in server config test???
+        //TODO: should test different spans???
+
+        int tot = 10; //total number of possible test servers
+        Random rand = new Random();
+        int rs = rand.nextInt(tot); //actual number of servers to allocate
+
+        //create host names
+        String[] hosts = new String[rs];
+        for(int i = 0; i < rs; i++){
+            hosts[i] = "server" + i + ".com";
+        }
+
+        TestNetwork testNetwork = new TestNetwork();
+
+        //add configurations for hosts
+        for(int i = 0; i < rs; i++){
+            int n = 1500 + i;
+            testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, hosts[i], n , "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+        }
+
+         //create temp file
+        File upload = TempFileUtil.createTempFileWithName("name.file");
+        DevUtil.createTestFile(upload, 125);
+
+
+        try {
+            testNetwork.start();
+
+            //Upload test file
+            int upHost = rand.nextInt(tot);
+            AddFileToolReport upFile = uploadTest(upload,hosts[upHost],null);
+            BigHash _hash = upFile.getHash();
+
+            //download test file
+            GetFileTool gft = new GetFileTool();
+            Collection h = Arrays.asList(hosts);
+            gft.addServersToUse(h);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(upload);
+            Collection connections = gft.getConnections(_hash);
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+            GetFileToolReport downFile = gft.getFile();
+
+            assertFalse(downFile.isFailed());
+            assertNotNull(downFile);
+            //TODO: is this the correct test or should I be testing
+            //something else too ???
+            assertEquals(connections.size(), rs);
+        }
+        finally{
+            testNetwork.stop();
+        }
+
     }
 
     /**
@@ -99,7 +199,74 @@ public class GetFileToolTest extends TrancheTestCase {
      */
     public void testMultipleSameFileInSameDataSet() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testMultipleSameFileInSameDataSet()");
-        throw new TodoException();
+
+        int tot = 20; //total # of files
+
+        //create directory with duplicate files
+        File directory = TempFileUtil.createTemporaryDirectory();
+        File nextFile,duplicateFile;
+        OutputStream out = null, dup = null;
+        for (int i = 0, j=i+1; i < tot; i+=2, j+=2) {
+            nextFile = new File(directory, i + ".tmp");
+            duplicateFile = new File(directory,j+".tmp");
+            try {
+                out = new FileOutputStream(nextFile);
+                dup = new FileOutputStream(duplicateFile);
+                // Want files that are at least 16K
+                int size = RandomUtil.getInt((4 * 1024 * 1024) - (1024*16) + 1) + (1024*16);
+                byte[] bytes = new byte[size];
+
+                RandomUtil.getBytes(bytes);
+                out.write(bytes);
+                dup.write(bytes);
+
+            } finally {
+                IOUtil.safeClose(out);
+                IOUtil.safeClose(dup);
+            }
+        }
+
+        //Test Network
+        String HOST0 = "server0.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+
+
+        try {
+            testNetwork.start();
+
+            //Upload Test Directory
+            AddFileToolReport upDir = uploadTest(directory,HOST0,null);
+            BigHash _hash = upDir.getHash();
+
+            //download test file
+            File downDir = TempFileUtil.createTemporaryDirectory();
+
+            GetFileTool gft = new GetFileTool();
+            gft.addServerToUse(HOST0);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(downDir);
+            gft.setRegEx("0.tmp$");
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+            GetFileToolReport downFile = gft.getDirectory();
+
+            assertFalse(downFile.isFailed());
+            assertNotNull(downFile);
+
+            // validate
+            System.out.println("Printing uploaded directory structure.");
+            Text.printRecursiveDirectoryStructure(directory);
+            System.out.println("");
+            System.out.println("Printing downloaded directory structure.");
+            Text.printRecursiveDirectoryStructure(downDir);
+            assertEquals(2, new File(downDir, directory.getName()).listFiles().length);
+
+
+        }
+        finally{
+            testNetwork.stop();
+        }
     }
 
     /**
@@ -108,7 +275,53 @@ public class GetFileToolTest extends TrancheTestCase {
      */
     public void testAllServersFailingIntermittently() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testAllServersFailingIntermittently()");
-        throw new TodoException();
+
+        //create host names
+        String[] hosts = new String[5];
+        for(int i = 0; i < 5; i++){
+            hosts[i] = "server" + i + ".com";
+        }
+
+        TestNetwork testNetwork = new TestNetwork();
+
+        //add configurations for hosts
+        double failureRate =.2;
+        for(int i = 0; i < 5; i++){
+            int n = 1500 + i;
+            testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForFailingDataServer(443, hosts[i], n , "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET,failureRate));
+            failureRate = failureRate + .2;
+        }
+
+        //create temp file
+        File upload = TempFileUtil.createTempFileWithName("name.file");
+        DevUtil.createTestFile(upload, 125);
+
+
+        try {
+            testNetwork.start();
+
+            //Upload test file
+            AddFileToolReport upFile = uploadTest(upload,hosts[0],null);
+            BigHash _hash = upFile.getHash();
+
+            //download test file
+            GetFileTool gft = new GetFileTool();
+            Collection h = Arrays.asList(hosts);
+            gft.addServersToUse(h);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(upload);
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+            GetFileToolReport downFile = gft.getFile();
+
+            assertFalse(downFile.isFailed());
+            assertNotNull(downFile);
+            assertEquals(upFile.getBytesUploaded(), downFile.getBytesDownloaded());
+
+        }
+        finally{
+            testNetwork.stop();
+        }
     }
 
     /**
@@ -117,7 +330,44 @@ public class GetFileToolTest extends TrancheTestCase {
      */
     public void testOneServerFailingIntermittently() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testOneServerFailingIntermittently()");
-        throw new TodoException();
+
+        //create host names
+        String HOST0 = "server0.com";
+
+        TestNetwork testNetwork = new TestNetwork();
+
+        //add configurations for host
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForFailingDataServer(443, HOST0, 1500 , "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET,.3));
+
+        //create temp file
+        File upload = TempFileUtil.createTempFileWithName("name.file");
+        DevUtil.createTestFile(upload, 125);
+
+
+        try {
+            testNetwork.start();
+
+            //Upload test file
+            AddFileToolReport upFile = uploadTest(upload,HOST0,null);
+            BigHash _hash = upFile.getHash();
+
+            //download test file
+            GetFileTool gft = new GetFileTool();
+            gft.addServerToUse(HOST0);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(upload);
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+            GetFileToolReport downFile = gft.getFile();
+
+            assertFalse("Download Failed.",downFile.isFailed());
+            assertNotNull("Download File Empty.", downFile);
+            assertEquals(upFile.getBytesUploaded(), downFile.getBytesDownloaded());
+
+        }
+        finally{
+            testNetwork.stop();
+        }
     }
 
     /**
@@ -127,7 +377,91 @@ public class GetFileToolTest extends TrancheTestCase {
      */
     public void testStop() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testStop()");
-        throw new TodoException();
+        final String HOST0 = "aardvark.org";
+        final String HOST1 = "bryan.com";
+        final String HOST2 = "cherry.gov";
+
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET));
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1501, "127.0.0.1", true, true, false, HashSpan.FULL_SET));
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST2, 1502, "127.0.0.1", true, true, false, HashSpan.FULL_SET));
+
+        //create temp file
+        File upload = TempFileUtil.createTempFileWithName("name.file");
+        DevUtil.createTestFile(upload, 125);
+
+        try {
+            testNetwork.start();
+
+            TrancheServer ts1 = ConnectionUtil.connectHost(HOST0, true);
+            assertNotNull(ts1);
+
+            TrancheServer ts2 = ConnectionUtil.connectHost(HOST1, true);
+            assertNotNull(ts2);
+
+            TrancheServer ts3 = ConnectionUtil.connectHost(HOST2, true);
+            assertNotNull(ts3);
+
+            FlatFileTrancheServer ffts1 = testNetwork.getFlatFileTrancheServer(HOST0);
+            assertNotNull(ffts1);
+
+            FlatFileTrancheServer ffts2 = testNetwork.getFlatFileTrancheServer(HOST1);
+            assertNotNull(ffts2);
+
+            FlatFileTrancheServer ffts3 = testNetwork.getFlatFileTrancheServer(HOST2);
+            assertNotNull(ffts3);
+
+            AddFileToolReport upFile = uploadTest(upload, HOST0, null);
+            BigHash _hash = upFile.getHash();
+            
+            //download test file
+            final GetFileTool gft = new GetFileTool();
+            gft.addServerToUse(HOST0);
+            gft.addServerToUse(HOST1);
+            gft.addServerToUse(HOST2);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(_hash);
+            gft.setSaveFile(upload);
+            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+
+            final GetFileToolReport[] downFile = new GetFileToolReport[1];
+            final boolean[] isRunning = {false};
+
+            Thread t = new Thread("gftDownload") {
+
+                @Override()
+                public void run() {
+                    synchronized (isRunning) {
+                        isRunning[0] = true;
+                    }
+                    downFile[0] = gft.getFile();
+                    synchronized (isRunning) {
+                        isRunning[0] = false;
+                    }
+                }
+            };
+            t.setDaemon(true);
+            t.setPriority(Thread.MIN_PRIORITY);
+            t.start();
+
+            Thread.yield();
+            Thread.sleep(500);
+
+            assertTrue("Should be executing.", gft.isExecuting());
+
+            gft.stop();
+
+            t.join(60 * 1000);
+
+            assertFalse("Thread shouldn't be running.", t.isAlive());
+            assertTrue("Since it was stopped, should be finished.", downFile[0].isFinished());
+ 
+
+        } finally {
+            testNetwork.stop();
+
+            IOUtil.recursiveDelete(upload);
+        }
     }
 
     public void testGetMetaData() throws Exception {
