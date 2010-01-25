@@ -1,4 +1,4 @@
-#labels Phase-Design
+#labels Phase-Design,Featured
   * [WhitePaper#Abstract Abstract]
   * [WhitePaper#Introduction Introduction]
   * [WhitePaper#Design_Overview Design Overview]
