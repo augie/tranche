@@ -3,7 +3,7 @@
   # Download the appropriate tool from the list of downloads.
   # Extract the contents of the ZIP file to some directory, which we will refer to as _DIR_.
   # Open a command-line client and navigate to _DIR_.
-  # Perform the following operation to print out the usage instructions: `java -jar Tranche-MakeDefaultCerts.jar -h`
+  # Perform the following operation to print out the usage instructions: `java -jar tranche-certs.jar -h`
   # Once you have created your Tranche certificates, you are ready for the next step.
 
 
@@ -12,8 +12,8 @@
 In order to run the Tranche software, the first argument that must be passed to any main method is the location of the file that describes the Tranche repository you will be using. If you do not load a configuration file, Tranche will be run without any certificates, and no communication can occur.
 
 Configuration files and certificates can be located in any of a number of places. In general, Tranche attempts to load files and certificates in a nearest to furthest order. Here is how Tranche tries to load them:
-  # *Java package*: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/tranche.conf`.
-  # *File system*: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\tranche.conf` for Windows.
+  # *Java package*: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/pc-tranche.conf`.
+  # *File system*: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/pc-tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\pc-tranche.conf` for Windows.
   # *Internet*: will attempt to load from the Internet if could not load from Java or the file system.
 
 
