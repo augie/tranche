@@ -34,6 +34,7 @@ Configuration files and certificates can be located in any of a number of places
 # the attributes that are not set will be set to the default values
 name = ProteomeCommons.org Tranche
 description = ProteomeCommons.org helps bring academics and professionals in proteomics together.
+launch.advanced.url = https://proteomecommons.org/tranche/advanced.jsp
 
 [CORE SERVERS]
 # this is a comment
@@ -59,7 +60,7 @@ server.port = 443
 server.ssl = false
 
 [GUI]
-launch.advanced.url = https://proteomecommons.org/tranche/advanced.jsp
+download.pool.size = 2
 }}}
 
 
