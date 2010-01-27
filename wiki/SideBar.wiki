@@ -1,4 +1,4 @@
-  * [FAQ Frequently Asked Questions (FAQ)]
+  * [FAQ]
   * [UserGuide User Guide]
   * [AdminGuide Admin Guide]
   * [DeveloperGuide Developer Guide]
