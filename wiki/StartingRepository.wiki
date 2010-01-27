@@ -99,7 +99,7 @@ Name, value pairs:
 
 ===CORE SERVERS Category===
 
-A list of Tranche URLs.
+A list of Tranche URLs. One URL per line.
 
 
 
@@ -125,6 +125,8 @@ Name, value pairs:
 || log.server.url || || ||
 || log.upload.url || || ||
 || log.upload.failure.url || || ||
+|| log.download.url || || ||
+|| log.download.failure.url || || ||
 
 
 
