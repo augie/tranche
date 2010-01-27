@@ -21,6 +21,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.tranche.ConfigureTranche;
+import org.tranche.logs.LogUtil;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
@@ -195,12 +196,19 @@ public class AddFileToolUtil {
     public static void emailFailureNotice(final String[] recipients, final AddFileTool aft, final AddFileToolReport report) {
         String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Failure: " + aft.getTitle();
         final StringBuffer message = new StringBuffer();
-        message.append("An upload failed at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " due to:\n");
+        message.append("An upload failed at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " due to:" + Text.getNewLine() + Text.getNewLine());
         for (PropagationExceptionWrapper e : report.getFailureExceptions()) {
-            message.append(" " + e.exception.getClass().getName() + ": " + e.exception.getMessage() + "\n");
+            message.append("* " + e.exception.getClass().getName() + ": " + e.exception.getMessage() + Text.getNewLine());
+
+            for (StackTraceElement ste : e.exception.getStackTrace()) {
+                message.append("    - " + ste.toString() + Text.getNewLine());
+            }
+
+            message.append(Text.getNewLine());
         }
-        message.append("\nTitle: " + aft.getTitle() + "\n");
-        message.append("Description: " + aft.getDescription() + "\n\n");
+        message.append("Title: " + aft.getTitle() + Text.getNewLine() + Text.getNewLine());
+        message.append("Description: " + aft.getDescription() + Text.getNewLine() + Text.getNewLine());
+        message.append(LogUtil.getTroubleshootingInformation() + Text.getNewLine() + Text.getNewLine());
         // Build up string list of admin email addresses to which user can forward error
         StringBuffer adminEmailListBuffer = new StringBuffer();
         final String[] a = ConfigureTranche.getAdminEmailAccounts();
