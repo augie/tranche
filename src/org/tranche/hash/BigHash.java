@@ -772,6 +772,9 @@ public final class BigHash implements Comparable<BigHash> {
         hashRedirects.put("pimW6PSkwbsDAeIhC5rl5ycX2hqksjqI+7CNMXDNgVaWtMBx9r7hqkq6ifWSPZkszBao3Yg5NcU/5dH8qrhoo1JPicAAAAAAAJ4PaQ==", "P3d2NELmQoSua7TiJHDf96FSwYSrqcxv3t5Ul6M+y8mcnly0akuiALzjtlSgESnITvCzL9vZ1H2u3qR6mOdPBsmU4lwAAAAAAJ4P8Q==");
         hashRedirects.put("wj1xQ7zQcSXO6e06gPxPQyJGBB0xI1eATfNFsxFRwk40F+p4U8TnQXWlqSKXIbFdqe5Nfsv7DrP4slJdgSSe82nt8gYAAAAAAKoakg==", "+sm+alrjwSnZfc3njj+5eVX61EAADKMctQm+I/LlQ1NqnJ6+ndrGGjC18nZdSdmpi/gUGSqI5I9gAeAEFuHPz6/ADY4AAAAAAKobGg==");
         hashRedirects.put("6FqkyAzUBo2lm2aXR1rgO5CP9ISwAnugdm5Tmoc09wDC61kCMn1Q/Rraz0P0PuuIGjHuhFyF7vPVEJ6Nhd4IfVQFkRQAAAAAAZQHFQ==", "u9c3+UEY+XwjDuEgsiL9VnSxQbpQaTduB4OYS2J9U/njxTLQeKW5VwZXaIh+NIuIXBlivmEcNRi2k1MA9V6CZzGBBJcAAAAAAZQHnQ==");
+    
+        // Top-down Aflavus. Reuploaded on 01/27/2010, Bryan
+        hashRedirects.put("PfBBXOHKrcjh9hm6pygUhqOIXvohLKq4dS8A/c5U3Qaj5HfAhG+M9YjN3hZVIJuNmKlwfkFgXKsV4sNEYvJjQ8cLP+4AAAAAAAAD+Q==", "1N/JJSgBp/o4loXOhaTRdx3KD+DMGIxLoQjzaVqfu3wBOfh+lbb2lO5PbO8+7rSpXRdbY+Y66lIo9XUaM4sBYXxZZ9oAAAAAAAACyg==");
     }
     // *** This is only a bug fix ***
     // Unfortunately we had to make a compromise to make some Tranche uploads
