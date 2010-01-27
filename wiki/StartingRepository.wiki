@@ -85,7 +85,7 @@ Name, value pairs:
 || email.url || || https://trancheproject.org/email/send.jsp ||
 || user.login.url || || ||
 || servers.url || || ||
-|| update.conf.url || The URL where an updated configuration file can be found. The configuration file will be updated at regular intervals at about the same time on all clients and servers. || ||
+|| update.conf.url || The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location. || ||
 || update.software.zip.url || || ||
 || update.software.signature.url || || ||
 || status.update.client.frequency || || 60000 ||
