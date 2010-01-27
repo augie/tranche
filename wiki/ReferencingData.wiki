@@ -12,10 +12,10 @@ Once the data is uploaded the hash can be used to verify the complete and uncorr
 
 =Publication Examples=
 
-A brief example clearly illustrates how this functionality works. Take for example a manuscript that is citing availability of code and supplementary data. Here is a template sentence that would work well for citing the data on ProteomeCommons.org Tranche network:
+A brief example clearly illustrates how this functionality works. Take for example a manuscript that is citing availability of code and supplementary data. Here is a template sentence that would work well for citing the data on ProteomeCommons.org Tranche repository:
 
 {{{
-The data associated with this manuscript may be downloaded from the ProteomeCommons.org Tranche network using the following hash:
+The data associated with this manuscript may be downloaded from the ProteomeCommons.org Tranche repository using the following hash:
 
 [insert your hash here]
 
@@ -27,7 +27,7 @@ Note that Base 16 encoding is used because Base 64 encoding (the one Tranche mor
 Just for clarity, here is a filled out example with a hash:
 
 {{{
-The data associated with this manuscript may be downloaded from the ProteomeCommons.org Tranche network using the following hash:
+The data associated with this manuscript may be downloaded from the ProteomeCommons.org Tranche repository using the following hash:
 
 x4iy3M6tTKzKRGz/JPqZWjKAvXtQ0KcoQamU8aj9olFFvaLvwaIFUHsJrnqJSl8fmK8K0DO2DAeJFYFnhtuZnPSwkqoAAAAAAAAM3A==
 
@@ -38,7 +38,7 @@ The idea is that the above lines should appear somewhere in your availability se
 
 It is very important that you double-check that your hash is correctly typed for publishing. We advise that you also get a proof from the publisher before printing to verify that it is correct. Our download tool can compensate for some mistypes in hashes and also uses predictive algorithms, but there are instances that cannot be compensated for.
 
-Included in the above availability section is a normal looking reference to a website, which is often how supplemental data is distributed, but notice the last line, "The hash for downloading this project from the ProteomeCommons.org Tranche network is ..." This line is all that is required to properly reference the exact data set used by the publication. Anyone with access to the data network can enter this hash and retrieve the data.
+Included in the above availability section is a normal looking reference to a website, which is often how supplemental data is distributed, but notice the last line, "The hash for downloading this project from the ProteomeCommons.org Tranche repository is ..." This line is all that is required to properly reference the exact data set used by the publication. Anyone with access to the data network can enter this hash and retrieve the data.
 
 
 
