@@ -669,7 +669,7 @@ public class GetFileTool {
         // Connect to servers on external networks
         for (String url : getExternalServerURLsToUse()) {
             String host = IOUtil.parseHost(url);
-            
+
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
             // Tues Jan 19th 2010: Noticed this wasn't working on shadow network,
             // though a different tool was. Each thread using GFT was blocking on 
@@ -805,12 +805,23 @@ public class GetFileTool {
             throw new NullPointerException("Relative name is null.");
         }
         File file = null;
+        File saveLocation = saveTo;
         if (singleFile) {
-            file = saveTo;
+            if (saveLocation == null) {
+                saveLocation = TempFileUtil.createTemporaryFile();
+            }
+            file = saveLocation;
         } else {
-            file = new File(saveTo, relativeName);
+            if (saveLocation == null) {
+                saveLocation = TempFileUtil.createTemporaryDirectory();
+            }
+            file = new File(saveLocation, relativeName);
         }
-        file = new File(file.getParent(), TEMP_FILE_DENOTATION + file.getName());
+        if (file.getParent() != null) {
+            file = new File(file.getParent(), TEMP_FILE_DENOTATION + file.getName());
+        } else {
+            file = new File(TempFileUtil.createTemporaryDirectory(), TEMP_FILE_DENOTATION + file.getName());
+        }
         if (!file.exists()) {
             File parent = file.getParentFile();
             if (parent != null && !parent.exists()) {
@@ -976,7 +987,7 @@ public class GetFileTool {
             }
             GetFileToolUtil.testDirectoryForWritability(saveTo);
             // make the meta chunk list
-            long size = 0,   files = 0;
+            long size = 0, files = 0;
             LinkedList<MetaChunk> metaChunkList = new LinkedList<MetaChunk>();
             for (ProjectFilePart pfp : projectFile.getParts()) {
                 if (regExPattern.matcher(pfp.getRelativeName().toLowerCase()).find()) {
@@ -2259,7 +2270,7 @@ public class GetFileTool {
             // only set up a file decoding object if the file is larger than 1MB
             if (part.getHash().getLength() > DataBlockUtil.ONE_MB) {
                 // make a temp file
-                File tempFile = createTemporaryFile(part.getRelativeName(), false);
+                File tempFile = createTemporaryFile(part.getRelativeName().replaceAll("[\\:*?\"<>|]", "-"), false);
                 // open the temp file for writing
                 RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
                 // set the size
@@ -2290,7 +2301,7 @@ public class GetFileTool {
         public MetaChunk(MetaData md, boolean singleFile) throws Exception {
             this.md = md;
             // make a temp file
-            File tempFile = createTemporaryFile(md.getName(), singleFile);
+            File tempFile = createTemporaryFile(md.getName().replaceAll("[\\:*?\"<>|]", "-"), singleFile);
             // open the temp file for writing
             RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
             // set the size
@@ -2337,7 +2348,7 @@ public class GetFileTool {
     private class FileDataDownloadingThread extends Thread {
 
         private final LinkedList<DataChunk> dataList;
-        private  boolean started = false,      finished = false,    stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         private List<PropagationExceptionWrapper> exceptions = new LinkedList<PropagationExceptionWrapper>();
         private Set<FileDataDownloadingThread> dataThreads;
 
@@ -2468,7 +2479,7 @@ public class GetFileTool {
     private class DirectoryDataDownloadingThread extends Thread {
 
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private  boolean started = false,      finished = false,      stopWhenFinished = false,    stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         // batch data structures
         private final Map<String, DataChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -2848,7 +2859,7 @@ public class GetFileTool {
 
         private final LinkedList<MetaChunk> metaChunks;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private  boolean started = false,      finished = false,    stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         // batch data structures
         private final Map<String, MetaChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
