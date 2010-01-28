@@ -103,19 +103,19 @@
 	</path>
 
     <target name="dist.quick" description="Builds the code, signs JARs, and compiles JavaDocs." >
-        <antcall target="rt.compile.gui" />
-        <antcall target="dist.linux" />
-        <antcall target="dist.windows" />
-        <antcall target="dist.get" />
-        <antcall target="dist.add" />
-		<antcall target="dist.certs" />
-        <antcall target="sign-jars" />
-        <antcall target="javadoc" />
-		<antcall target="javadoc.gui" />
-        <zip destfile="${dist.lib.zip}" basedir="${dist.lib}" />
-        <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
-        <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
-        <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
+        <antcall target="rt.compile.gui"/>
+        <antcall target="dist.linux"/>
+        <antcall target="dist.windows"/>
+        <antcall target="dist.get"/>
+        <antcall target="dist.add"/>
+		<antcall target="dist.certs"/>
+        <antcall target="sign-jars"/>
+        <antcall target="javadoc"/>
+		<antcall target="javadoc.gui"/>
+        <zip destfile="${dist.lib.zip}" basedir="${dist.lib}"/>
+        <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}"/>
+        <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}"/>
+        <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}"/>
         <zip destfile="${dist.zip}">
             <fileset file="${dist.jar}"/>
             <zipfileset dir="${dist.lib}" prefix="${name.lib}"/>
@@ -123,6 +123,7 @@
         </zip>
         <zip destfile="${dist.gui.zip}">
             <fileset file="${dist.jar.gui}"/>
+            <zipfileset file="${dist.jar}" prefix="${name.lib.gui}"/>
             <zipfileset dir="${dist.lib.gui}" prefix="${name.lib.gui}"/>
             <zipfileset dir="${dist.javadoc.gui}" prefix="${name.javadoc.gui}"/>
         </zip>
