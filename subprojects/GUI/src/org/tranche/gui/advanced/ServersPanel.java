@@ -72,12 +72,30 @@ public class ServersPanel extends JPanel {
 
     private class ServersMenu extends LeftMenu {
 
+        private JButton connectMenuItem = LeftMenu.createLeftMenuButton("Connect");
         private JButton pingMenuItem = LeftMenu.createLeftMenuButton("Ping");
         private JButton monitorMenuItem = LeftMenu.createLeftMenuButton("Monitor");
         private JButton configureMenuItem = LeftMenu.createLeftMenuButton("Load Configuration");
 
         public ServersMenu() {
             // add the listeners
+            connectMenuItem.setToolTipText("Connects to the selected servers.");
+            connectMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            table.connectToSelected(GUIUtil.getAdvancedGUI());
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
+            addButton(connectMenuItem);
+
             pingMenuItem.setToolTipText("Determines download time from the selected servers.");
             pingMenuItem.addActionListener(new ActionListener() {
 
@@ -137,6 +155,7 @@ public class ServersPanel extends JPanel {
             });
             addButton(configureMenuItem);
 
+            connectMenuItem.setEnabled(false);
             pingMenuItem.setEnabled(false);
             monitorMenuItem.setEnabled(false);
             configureMenuItem.setEnabled(false);
@@ -145,6 +164,7 @@ public class ServersPanel extends JPanel {
         @Override
         public void updateSelection() {
             int rows[] = table.getSelectedRows();
+            connectMenuItem.setEnabled(rows.length > 0);
             pingMenuItem.setEnabled(rows.length > 0);
             monitorMenuItem.setEnabled(rows.length > 0);
             configureMenuItem.setEnabled(rows.length == 1);

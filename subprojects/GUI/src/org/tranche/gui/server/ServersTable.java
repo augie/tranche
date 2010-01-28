@@ -282,6 +282,32 @@ public class ServersTable extends GenericTable {
         }
     }
 
+    public void connectToSelected(Component relativeTo) {
+        IndeterminateProgressBar progress = new IndeterminateProgressBar("Connecting");
+        if (relativeTo == null) {
+            GUIUtil.centerOnScreen(progress);
+        } else {
+            progress.setLocationRelativeTo(relativeTo);
+        }
+        progress.start();
+        Set<Exception> exceptions = new HashSet<Exception>();
+        for (String host : getSelectedHosts()) {
+            try {
+                TrancheServer ts = ConnectionUtil.connectHost(host, false);
+                if (ts == null) {
+                    throw new Exception("Could not connect to " + host);
+                }
+            } catch (Exception e) {
+                exceptions.add(e);
+            }
+        }
+        progress.stop();
+        if (!exceptions.isEmpty()) {
+            ErrorFrame ef = new ErrorFrame();
+            ef.show(exceptions, relativeTo);
+        }
+    }
+
     public void pingServers(final String[] hosts) {
         if (hosts.length == 0) {
             return;
@@ -361,12 +387,27 @@ public class ServersTable extends GenericTable {
 
     private class ServerPopupMenu extends JPopupMenu {
 
+        private JMenuItem connectMenuItem = new JMenuItem("Connect");
         private JMenuItem pingMenuItem = new JMenuItem("Ping");
         private JMenuItem monitorMenuItem = new JMenuItem("Monitor");
         private JMenuItem registerServerMenuItem = new JMenuItem("Register Server");
         private JMenuItem shutDownMenuItem = new JMenuItem("Shut Down");
 
         public ServerPopupMenu() {
+            connectMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            connectToSelected(ServersTable.this);
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
             pingMenuItem.addActionListener(new ActionListener() {
 
                 public void actionPerformed(ActionEvent e) {
@@ -424,6 +465,7 @@ public class ServersTable extends GenericTable {
                 }
             });
 
+            add(connectMenuItem);
             add(pingMenuItem);
             add(monitorMenuItem);
             add(registerServerMenuItem);
@@ -437,6 +479,7 @@ public class ServersTable extends GenericTable {
                         @Override()
                         public void run() {
                             int rows[] = getSelectedRows();
+                            connectMenuItem.setEnabled(rows.length > 0);
                             pingMenuItem.setEnabled(rows.length > 0);
                             monitorMenuItem.setEnabled(rows.length > 0);
                             registerServerMenuItem.setEnabled(rows.length > 0);

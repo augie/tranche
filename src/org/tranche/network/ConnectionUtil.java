@@ -285,12 +285,12 @@ public class ConnectionUtil {
             ts = new RemoteTrancheServer(host, port, secure);
             // ping to be sure there is a connection
             final TrancheServer verifyTS = ts;
-            final Exception[] exception = {null};
+            final Exception[] exception = {new TimeoutException()};
             Thread t = new Thread("Verify connection with " + host) {
 
                 @Override
                 public void run() {
-                    for (int i = 0; i < 3; i++) {
+                    for (int i = 0; i < 10; i++) {
                         try {
                             verifyTS.ping();
                             exception[0] = null;
@@ -305,11 +305,21 @@ public class ConnectionUtil {
             t.start();
             int millisToWait = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIMEOUT);
             if (millisToWait > 0) {
+                debugOut("Waiting " + millisToWait + " milliseconds for verification of connection with " + host);
                 t.join(millisToWait);
+                if (t.isAlive()) {
+                    try {
+                        t.interrupt();
+                    } catch (Exception e) {
+                        debugErr(e);
+                    }
+                }
             } else {
+                debugOut("Waiting indefinitely milliseconds for verification of connection with " + host);
                 t.join();
             }
             if (exception.length > 0 && exception[0] != null) {
+                debugErr(exception[0]);
                 throw exception[0];
             }
 
