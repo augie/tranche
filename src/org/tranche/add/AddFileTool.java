@@ -783,7 +783,7 @@ public class AddFileTool {
     public void setFile(File file) {
         throwExceptionIfLocked();
         // reset?
-        if (this.file == null || !this.file.equals(file)) {
+        if (file != null && (this.file == null || !this.file.equals(file))) {
             stopped = START_VALUE_STOPPED;
             paused = START_VALUE_PAUSED;
             timeEstimator = START_VALUE_TIME_ESTIMATOR;
@@ -1008,7 +1008,7 @@ public class AddFileTool {
         // add all the sticky servers
         for (String host : getStickyServers()) {
             StatusTableRow row = NetworkUtil.getStatus().getRow(host);
-            if (row != null && !hosts.contains(host) && row.isWritable() && !row.isCore()) {
+            if (row != null && !hosts.contains(host) && row.isWritable() && !row.isCore() && row.isOnline()) {
                 hosts.add(host);
             }
         }
@@ -2744,7 +2744,6 @@ public class AddFileTool {
                         }
 
                         // upload to non-core hosts directly
-                        boolean nonCoreSuccess = false;
                         for (String host : nonCoreHosts) {
                             // break point
                             if (stopped || AddFileTool.this.isStopped()) {
@@ -2760,7 +2759,6 @@ public class AddFileTool {
                                     }
                                 }
                                 if (doubleInnerExceptions.isEmpty()) {
-                                    nonCoreSuccess = true;
                                     fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
                                 } else {
                                     exceptions.addAll(innerExceptions);
@@ -2771,7 +2769,7 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        if (uploadedCoreHosts.isEmpty() && !nonCoreSuccess) {
+                        if (uploadedCoreHosts.isEmpty()) {
                             failChunk(dataChunk, exceptions);
                         } else {
                             fireFinishedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash);

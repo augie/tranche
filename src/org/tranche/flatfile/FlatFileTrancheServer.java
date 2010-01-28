@@ -2055,7 +2055,6 @@ public class FlatFileTrancheServer extends TrancheServer {
                 if (!user.canSetData()) {
                     throw new GeneralSecurityException(Token.SECURITY_ERROR);
                 }
-
                 // Check that the certificate is valid
                 if (!verifyCertificate(sig.getCert())) {
                     throw new GeneralSecurityException(Token.SECURITY_ERROR);
@@ -2103,7 +2102,6 @@ public class FlatFileTrancheServer extends TrancheServer {
      * @throws java.lang.Exception
      */
     public PropagationReturnWrapper setMetaData(boolean merge, BigHash hash, byte[] metaData, Signature sig, String[] hosts) throws Exception {
-
         // Hosts are required
         if (hosts == null || hosts.length == 0) {
             throw new NoHostProvidedException();

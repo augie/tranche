@@ -89,7 +89,7 @@ public abstract class RemoteCallback {
             // did this time out?
             if (timeCompleted == RemoteCallback.NOT_COMPLETED && cachedException == null) {
                 final long finish = TimeUtil.getTrancheTimestamp();
-                cachedException = new TimeoutException("Callback #" + id + " timed out. Waited: " + Text.getPrettyEllapsedTimeString(finish - start) + " (Start: " + Text.getFormattedDate(start) + ", Finish: " + Text.getFormattedDate(finish) + ")");
+                cachedException = new TimeoutException("Callback #" + id + " timed out. Server: " + this.rts.getHost() + ". Waited: " + Text.getPrettyEllapsedTimeString(finish - start) + " (Start: " + Text.getFormattedDate(start) + ", Finish: " + Text.getFormattedDate(finish) + ")");
             }
         }
         debugOut("Exiting wait method after " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start) + " (ID = " + id + ", Time completed = " + timeCompleted + ", Name = " + name + ", Description = " + description + ")");

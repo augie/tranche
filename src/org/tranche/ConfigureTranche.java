@@ -15,31 +15,30 @@
  */
 package org.tranche;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.tranche.exceptions.AssertionFailedException;
+import org.apache.commons.httpclient.protocol.Protocol;
 import org.tranche.network.NetworkUtil;
 import org.tranche.remote.RemoteUtil;
+import org.tranche.security.EasySSLProtocolSocketFactory;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.tasks.ExcelSavvyLineSplitter;
 import org.tranche.time.TimeUtil;
-import org.tranche.users.User;
 import org.tranche.util.ThreadUtil;
 
 /**
@@ -141,10 +140,6 @@ public class ConfigureTranche {
     /**
      * <p></p>
      */
-    public static final String PROP_SERVERS_URL = "servers.url";
-    /**
-     * <p></p>
-     */
     public static final String PROP_SERVER_CONFIG_ATTR_URL = "server.config.attributes.url";
     /**
      * <p></p>
@@ -221,6 +216,10 @@ public class ConfigureTranche {
     /**
      * <p></p>
      */
+    public static final String PROP_UPDATE_CONFIG_URL = "update.conf.url";
+    /**
+     * <p></p>
+     */
     public static final String PROP_SOFTWARE_UPDATE_ZIP_URL = "update.software.zip.url";
     /**
      * <p></p>
@@ -250,10 +249,6 @@ public class ConfigureTranche {
      * <p></p>
      */
     public static final String PROP_LOG_DOWNLOAD_FAILURE = "log.download.failure.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_DOWNLOAD_FAILURE_EMAIL_RECIPIENTS = "log.download.failure.emails";
     /**
      * <p></p>
      */
@@ -354,10 +349,12 @@ public class ConfigureTranche {
     private static Map<String, String> attributesCache = null;
     private static long lastAttributeCacheTimestampModulusValue = -1;
     private static final long attributesCacheTimestampModulus = 10000000;
-    private static boolean loaded = false;
+    private static boolean loaded = false, updated = false;
 
 
     static {
+        // load the HTTPS protocol just once on startup
+        Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
         set(PROP_EMAIL_URL, DEFAULT_EMAIL_URL);
         set(PROP_SERVER_DIRECTORY, DEFAULT_SERVER_DIRECTORY);
         set(PROP_SERVER_PORT, DEFAULT_SERVER_PORT);
@@ -481,14 +478,29 @@ public class ConfigureTranche {
      */
     public static void load(String configFile) {
         InputStream is = null;
-        BufferedInputStream bis = null;
         try {
             is = openStreamToFile(configFile);
+            load(is);
+        } catch (Exception e) {
+            debugErr(e);
+        } finally {
+            IOUtil.safeClose(is);
+        }
+    }
+
+    /**
+     * Takes the input stream of this Tranche network's configuration information.
+     * @param configFileStream
+     */
+    public static void load(InputStream configFileStream) {
+        try {
+            debugOut("Loading configuration");
             String readingCategory = CATEGORY_GENERAL;
             Set<String> servers = new HashSet<String>();
             String line = null;
-            while ((line = readLineIgnoreComments(is)) != null) {
+            while ((line = readLineIgnoreComments(configFileStream)) != null) {
                 try {
+                    debugOut("> " + line);
                     if (line.startsWith("[")) {
                         if (line.equals(CATEGORY_GENERAL)) {
                             readingCategory = CATEGORY_GENERAL;
@@ -540,22 +552,17 @@ public class ConfigureTranche {
                     debugErr(e);
                 }
             }
-
-            // If retrieve anything from URL, use that; otherwise, use whatever comes from configuration
-            Set<String> serversFromURL = updateServers();
-            if (serversFromURL.size() > 0) {
-                NetworkUtil.setStartupServerURLs(serversFromURL);
-            } else {
+            if (!servers.isEmpty()) {
                 NetworkUtil.setStartupServerURLs(servers);
             }
+            debugOut("Done reading configuration.");
 
-            // If URL, overwrite with certificates dynamically (if no URL, returns immediately)
-            updateCertificates();
+            if (!updated) {
+                updated = true;
+                update();
+            }
         } catch (Exception e) {
             debugErr(e);
-        } finally {
-            IOUtil.safeClose(bis);
-            IOUtil.safeClose(is);
         }
         loaded = true;
     }
@@ -625,64 +632,47 @@ public class ConfigureTranche {
     }
 
     /**
-     * <p>Returns network-wide core servers from URL.</p>
-     * @return
-     */
-    public static final Set<String> updateServers() {
-        String updateURL = get(ConfigureTranche.PROP_SERVERS_URL);
-
-        Set<String> urls = new HashSet<String>();
-
-        // return blank set when no URL from which to update
-        if (updateURL == null || updateURL.equals("")) {
-            return urls;
-        }
-
-        // get the newest list of core servers
-        try {
-            // make a new client
-            HttpClient c = new HttpClient();
-
-            // make a post method
-            PostMethod pm = new PostMethod(updateURL);
-
-            // best effort, do not print anything
-            c.executeMethod(pm);
-
-            if (pm.getStatusCode() == 200) {
-                BufferedReader br = null;
-                InputStreamReader isr = null;
-                try {
-                    isr = new InputStreamReader(pm.getResponseBodyAsStream());
-                    br = new BufferedReader(isr);
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        urls.add(line.trim());
-                    }
-                } finally {
-                    IOUtil.safeClose(br);
-                    IOUtil.safeClose(isr);
-                }
-            }
-        } catch (Exception e) {
-            debugErr(e);
-        }
-
-        return urls;
-    }
-
-    /**
      * <p>Returns network-wide server attributes from URL.</p>
      * @return
      */
     public static Map<String, String> getServerConfigurationAttributes() {
         // all servers should update their configuration attributes at the same time
-        long modulus = TimeUtil.getTrancheTimestamp() % attributesCacheTimestampModulus;
-        if (lastAttributeCacheTimestampModulusValue == -1 || modulus < lastAttributeCacheTimestampModulusValue) {
+        long remainder = TimeUtil.getTrancheTimestamp() % attributesCacheTimestampModulus;
+        if (lastAttributeCacheTimestampModulusValue == -1 || remainder < lastAttributeCacheTimestampModulusValue) {
             attributesCache = updateServerConfigurationAttributes();
         }
-        lastAttributeCacheTimestampModulusValue = modulus;
+        lastAttributeCacheTimestampModulusValue = remainder;
         return attributesCache;
+    }
+
+    /**
+     *
+     */
+    public static void update() {
+        String url = ConfigureTranche.get(ConfigureTranche.PROP_UPDATE_CONFIG_URL);
+        if (url != null && !url.equals("")) {
+            debugOut("Updating configuration from " + url);
+            try {
+                // make a new client
+                HttpClient c = new HttpClient();
+                // make a post method
+                GetMethod gm = new GetMethod(url);
+                // best effort, do not print anything
+                c.executeMethod(gm);
+                if (gm.getStatusCode() == 200) {
+                    debugOut("Successfully obtained new configuration from " + url);
+                    InputStream configFileStream = null;
+                    try {
+                        configFileStream = new ByteArrayInputStream(gm.getResponseBody());
+                        ConfigureTranche.load(configFileStream);
+                    } finally {
+                        IOUtil.safeClose(configFileStream);
+                    }
+                }
+            } catch (Exception e) {
+                debugErr(e);
+            }
+        }
     }
 
     /**
@@ -701,15 +691,9 @@ public class ConfigureTranche {
         }
 
         try {
-            // make a new client
             HttpClient c = new HttpClient();
-
-            // make a post method
             PostMethod pm = new PostMethod(updateURL);
-
-            // best effort, do not print anything
             c.executeMethod(pm);
-
             if (pm.getStatusCode() == 200) {
                 BufferedReader br = null;
                 InputStreamReader isr = null;
@@ -734,143 +718,6 @@ public class ConfigureTranche {
         }
 
         return attributes;
-    }
-
-    /**
-     * <p>Loads network-wide certificates (and any relevant anoymous keys) from URL.</p>
-     * @return
-     */
-    private static void updateCertificates() {
-        String updateURL = get(PROP_SECURITY_CERTS_URL);
-
-        // return if no URL from which to update
-        if (updateURL == null || updateURL.equals("")) {
-            return;
-        }
-
-        try {
-            // make a new client
-            HttpClient c = new HttpClient();
-
-            // make a post method
-            PostMethod pm = new PostMethod(updateURL);
-
-            // best effort, do not print anything
-            c.executeMethod(pm);
-
-            if (pm.getStatusCode() == 200) {
-                InputStream is = null;
-                try {
-                    is = pm.getResponseBodyAsStream();
-
-                    final int totalToRead = RemoteUtil.readInt(is);
-
-                    for (int i = 0; i < totalToRead; i++) {
-                        int certBytesToRead = RemoteUtil.readInt(is);
-
-                        byte[] certBytes = new byte[certBytesToRead];
-                        int read = 0;
-                        while (read < certBytes.length) {
-                            int len = certBytes.length - read;
-                            read += is.read(certBytes, read, len);
-                        }
-
-                        X509Certificate cert = SecurityUtil.getCertificate(certBytes);
-                        PrivateKey key = null;
-
-                        int flags = RemoteUtil.readInt(is);
-
-                        byte isKey = (byte) is.read();
-
-                        if (isKey == 0) {
-                            // Nothing to do
-                        } else if (isKey == 1) {
-                            int keyBytesToRead = RemoteUtil.readInt(is);
-
-                            byte[] keyBytes = new byte[keyBytesToRead];
-
-                            read = 0;
-                            while (read < keyBytes.length) {
-                                int len = keyBytes.length - read;
-                                read += is.read(keyBytes, read, len);
-                            }
-
-                            key = SecurityUtil.getPrivateKey(keyBytes);
-                        } else {
-                            throw new AssertionFailedException("Value for isKey should be 0 (false) or 1 (true), instead found: " + isKey);
-                        }
-
-                        String subjectName = cert.getSubjectX500Principal().getName();
-                        String certName = null;
-
-                        if (subjectName != null) {
-                            // Break up into components
-                            String[] tokens = subjectName.split(",");
-                            for (String token : tokens) {
-                                String[] pair = token.split("=");
-                                if (pair.length != 2) {
-                                    continue;
-                                }
-                                if (pair[0].equals("CN")) {
-                                    certName = pair[1];
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (certName == null) {
-                            System.err.println("WARNING: Certificate doesn't have a subject name for some warning. Will attempt to use, but should notify developers.");
-                        }
-
-                        // Admin
-                        if (flags == User.ALL_PRIVILEGES) {
-                            if (key != null) {
-                                throw new AssertionFailedException("Should not have key for user: admin");
-                            }
-                            SecurityUtil.setAdminCert(cert);
-                        } // User
-                        else if (flags == SecurityUtil.getUserFlags()) {
-                            if (key != null) {
-                                throw new AssertionFailedException("Should not have key for user: user");
-                            }
-                            SecurityUtil.setUserCert(cert);
-                        } // Read-only
-                        else if (flags == SecurityUtil.getReadOnlyFlags()) {
-                            if (key != null) {
-                                throw new AssertionFailedException("Should not have key for user: read-only");
-                            }
-                            SecurityUtil.setReadCert(cert);
-                        } // Anon
-                        else if (flags == SecurityUtil.getAnonymousFlags()) {
-                            if (key == null) {
-                                throw new AssertionFailedException("Should have key for user: anonymous");
-                            }
-                            SecurityUtil.setAnonCert(cert);
-                            SecurityUtil.setAnonKey(key);
-                        } // Write-only: same flags as auto-cert, so check name
-                        else if (flags == SecurityUtil.getWriteOnlyFlags() && certName != null && certName.toLowerCase().contains("write-only")) {
-                            if (key != null) {
-                                throw new AssertionFailedException("Should not have key for user: write-only");
-                            }
-                            SecurityUtil.setWriteCert(cert);
-                        } // Auto-cert: same flags as write-only, so check name
-                        else if (flags == SecurityUtil.getAutoCertFlags() && certName != null && certName.toLowerCase().contains("auto")) {
-                            if (key != null) {
-                                throw new AssertionFailedException("Should not have key for user: auto-cert");
-                            }
-                            SecurityUtil.setAutoCertCert(cert);
-                        } else {
-                            throw new AssertionFailedException("Could not find flags: " + flags);
-                        }
-                    }
-
-                } finally {
-                    IOUtil.safeClose(is);
-                }
-            }
-        } catch (Exception e) {
-            debugErr(e);
-        }
     }
 
     /**

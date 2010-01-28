@@ -213,7 +213,7 @@ public class StatusTable extends Object implements Serializable {
     protected void setRow(StatusTableRow row) {
         boolean isNew = !contains(row.getHost());
         // the stored row is more recent than the one being given
-        if (!isNew && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
+        if (!isNew && getRow(row.getHost()).isOnline() == row.isOnline() && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
             return;
         }
         boolean isUpdated = !isNew && !getRow(row.getHost()).equals(row);

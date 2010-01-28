@@ -250,7 +250,7 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>Sets the timestamp when the row's information was last updated.</p>
      * @param updateTimestamp The timestamp when the row's information was last updated.
      */
-    private void setUpdateTimestamp(long updateTimestamp) {
+    protected void setUpdateTimestamp(long updateTimestamp) {
         this.updateTimestamp = updateTimestamp;
         if (this.updateTimestamp < 0) {
             this.updateTimestamp = 0;

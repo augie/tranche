@@ -35,6 +35,7 @@ public class ConnectionsKeepAliveThread extends Thread {
                         }
                     } catch (Exception e) {
                         debugErr(e);
+                        ConnectionUtil.reportExceptionHost(host, e);
                     }
                 }
             } catch (Exception e) {

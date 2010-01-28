@@ -28,6 +28,7 @@ import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.routing.RoutingTrancheServerListener;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
+import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
@@ -123,11 +124,12 @@ public class NetworkUtil {
                     updateRow(row);
                 } else {
                     // update the connection parameters
-                    row = row.clone();
-                    row.setIsOnline(true);
-                    row.setPort(event.getPort());
-                    row.setIsSSL(event.isSSL());
-                    updateRow(row);
+                    StatusTableRow newRow = row.clone();
+                    newRow.setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
+                    newRow.setIsOnline(true);
+                    newRow.setPort(event.getPort());
+                    newRow.setIsSSL(event.isSSL());
+                    updateRow(newRow);
                 }
             }
         });
@@ -265,40 +267,68 @@ public class NetworkUtil {
                     // keep track of the servers tried
                     Set<String> serversTried = new HashSet<String>();
                     debugOut("# startup server URLs: " + getStartupServerURLs().size());
+                    WHILE:
                     while (serversTried.size() < getStartupServerURLs().size()) {
                         // go to three random startup servers to request the network status
-                        Collection<String> serversToAsk = getRandomStartupServerURLs(3, serversTried);
+                        Collection<String> serversToAsk = getRandomStartupServerURLs(4, serversTried);
                         // dummy check
                         if (serversToAsk.isEmpty()) {
                             break;
                         }
-                        // get the URL from which to request
-                        String serverURL = serversToAsk.toArray(new String[0])[0];
-                        // we tried this server
-                        serversTried.add(serverURL);
-                        // do not get from local server
-                        if (NetworkUtil.getLocalServer() != null) {
-                            try {
-                                if (IOUtil.parseHost(serverURL).equals(NetworkUtil.getLocalServer().getHostName())) {
-                                    continue;
+                        final Boolean[] success = {false, false, false, false};
+                        Set<Thread> threads = new HashSet<Thread>();
+                        FOR:
+                        for (int i = 0; i < serversToAsk.size(); i++) {
+                            // get the URL from which to request
+                            final String serverURL = serversToAsk.toArray(new String[0])[i];
+                            final int j = i;
+                            // we tried this server
+                            serversTried.add(serverURL);
+                            // do not get from local server
+                            if (NetworkUtil.getLocalServer() != null) {
+                                try {
+                                    if (IOUtil.parseHost(serverURL).equals(NetworkUtil.getLocalServer().getHostName())) {
+                                        continue FOR;
+                                    }
+                                } catch (Exception e) {
                                 }
+                            }
+                            Thread t = new Thread("Getting Network Status From " + serverURL) {
+
+                                @Override
+                                public void run() {
+                                    debugOut("Trying to get the network status from " + serverURL);
+                                    // catch connection errors
+                                    try {
+                                        TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
+                                        if (ts != null) {
+                                            StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+                                            table.removeDefunctRows();
+                                            updateRows(table.getRows());
+                                            success[j] = true;
+                                            debugOut("Retreived the network status table from " + serverURL);
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        ConnectionUtil.reportExceptionURL(serverURL, e);
+                                    }
+                                }
+                            };
+                            t.setDaemon(true);
+                            t.start();
+                            threads.add(t);
+                        }
+                        for (Thread t : threads) {
+                            try {
+                                t.join(5000);
                             } catch (Exception e) {
+                                debugErr(e);
                             }
                         }
-                        debugOut("Trying to get the network status from " + serverURL);
-                        // catch connection errors
-                        try {
-                            TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
-                            if (ts != null) {
-                                StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
-                                table.removeDefunctRows();
-                                updateRows(table.getRows());
-                                debugOut("Retreived the network status table from " + serverURL);
-                                break;
+                        for (boolean s : success) {
+                            if (s) {
+                                break WHILE;
                             }
-                        } catch (Exception e) {
-                            debugErr(e);
-                            ConnectionUtil.reportExceptionURL(serverURL, e);
                         }
                     }
                     // adjust the connections

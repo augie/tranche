@@ -1551,8 +1551,11 @@ public class SecurityUtil {
      * @param adminCertificateLocation
      */
     public static void setAdminCertLocation(String adminCertificateLocation) {
-        SecurityUtil.adminCertificateLocation = adminCertificateLocation;
-        debugOut("admin: " + adminCertificateLocation);
+        if (SecurityUtil.adminCertificateLocation == null || !SecurityUtil.adminCertificateLocation.equals(adminCertificateLocation)) {
+            adminCert = null;
+            SecurityUtil.adminCertificateLocation = adminCertificateLocation;
+            debugOut("admin: " + adminCertificateLocation);
+        }
     }
 
     /**
@@ -1568,8 +1571,11 @@ public class SecurityUtil {
      * @param userCertificateLocation
      */
     public static void setUserCertLocation(String userCertificateLocation) {
-        SecurityUtil.userCertificateLocation = userCertificateLocation;
-        debugOut("user: " + userCertificateLocation);
+        if (SecurityUtil.userCertificateLocation == null || !SecurityUtil.userCertificateLocation.equals(userCertificateLocation)) {
+            userCert = null;
+            SecurityUtil.userCertificateLocation = userCertificateLocation;
+            debugOut("user: " + userCertificateLocation);
+        }
     }
 
     /**
@@ -1585,8 +1591,11 @@ public class SecurityUtil {
      * @param writeCertificateLocation
      */
     public static void setWriteCertLocation(String writeCertificateLocation) {
-        SecurityUtil.writeCertificateLocation = writeCertificateLocation;
-        debugOut("write: " + writeCertificateLocation);
+        if (SecurityUtil.writeCertificateLocation == null || !SecurityUtil.writeCertificateLocation.equals(writeCertificateLocation)) {
+            writeOnlyCert = null;
+            SecurityUtil.writeCertificateLocation = writeCertificateLocation;
+            debugOut("write: " + writeCertificateLocation);
+        }
     }
 
     /**
@@ -1602,8 +1611,11 @@ public class SecurityUtil {
      * @param readCertificateLocation
      */
     public static void setReadCertLocation(String readCertificateLocation) {
-        SecurityUtil.readCertificateLocation = readCertificateLocation;
-        debugOut("read: " + readCertificateLocation);
+        if (SecurityUtil.readCertificateLocation == null || !SecurityUtil.readCertificateLocation.equals(readCertificateLocation)) {
+            readOnlyCert = null;
+            SecurityUtil.readCertificateLocation = readCertificateLocation;
+            debugOut("read: " + readCertificateLocation);
+        }
     }
 
     /**
@@ -1619,8 +1631,11 @@ public class SecurityUtil {
      * @param autocertCertificateLocation
      */
     public static void setAutocertCertLocation(String autocertCertificateLocation) {
-        SecurityUtil.autocertCertificateLocation = autocertCertificateLocation;
-        debugOut("auto: " + autocertCertificateLocation);
+        if (SecurityUtil.autocertCertificateLocation == null || !SecurityUtil.autocertCertificateLocation.equals(autocertCertificateLocation)) {
+            SecurityUtil.autoCert = null;
+            SecurityUtil.autocertCertificateLocation = autocertCertificateLocation;
+            debugOut("auto: " + autocertCertificateLocation);
+        }
     }
 
     /**
@@ -1644,8 +1659,11 @@ public class SecurityUtil {
      * @param anonCertificateLocation
      */
     public static void setAnonCertLocation(String anonCertificateLocation) {
-        SecurityUtil.anonCertificateLocation = anonCertificateLocation;
-        debugOut("anon (cert): " + anonCertificateLocation);
+        if (SecurityUtil.anonCertificateLocation == null || !SecurityUtil.anonCertificateLocation.equals(anonCertificateLocation)) {
+            anonCert = null;
+            SecurityUtil.anonCertificateLocation = anonCertificateLocation;
+            debugOut("anon (cert): " + anonCertificateLocation);
+        }
     }
 
     /**
@@ -1653,8 +1671,11 @@ public class SecurityUtil {
      * @param anonPrivateKeyLocation
      */
     public static void setAnonKeyLocation(String anonPrivateKeyLocation) {
-        SecurityUtil.anonPrivateKeyLocation = anonPrivateKeyLocation;
-        debugOut("anon (key): " + anonCertificateLocation);
+        if (SecurityUtil.anonPrivateKeyLocation == null || !SecurityUtil.anonPrivateKeyLocation.equals(anonPrivateKeyLocation)) {
+            anonKey = null;
+            SecurityUtil.anonPrivateKeyLocation = anonPrivateKeyLocation;
+            debugOut("anon (key): " + anonCertificateLocation);
+        }
     }
 
     /**
@@ -1678,7 +1699,10 @@ public class SecurityUtil {
      * @param emailCertificateLocation
      */
     public static void setEmailCertLocation(String emailCertificateLocation) {
-        SecurityUtil.emailCertificateLocation = emailCertificateLocation;
+        if (SecurityUtil.emailCertificateLocation == null || !SecurityUtil.emailCertificateLocation.equals(emailCertificateLocation)) {
+            emailCert = null;
+            SecurityUtil.emailCertificateLocation = emailCertificateLocation;
+        }
     }
 
     /**
@@ -1686,7 +1710,10 @@ public class SecurityUtil {
      * @param emailPrivateKeyLocation
      */
     public static void setEmailKeyLocation(String emailPrivateKeyLocation) {
-        SecurityUtil.emailPrivateKeyLocation = emailPrivateKeyLocation;
+        if (SecurityUtil.emailPrivateKeyLocation == null || !SecurityUtil.emailPrivateKeyLocation.equals(emailPrivateKeyLocation)) {
+            emailKey = null;
+            SecurityUtil.emailPrivateKeyLocation = emailPrivateKeyLocation;
+        }
     }
 
     /**

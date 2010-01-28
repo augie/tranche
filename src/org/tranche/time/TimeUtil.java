@@ -36,12 +36,14 @@ public final class TimeUtil {
 
     private static boolean debug = false;
     public static final TimeZone TRANCHE_TIMEZONE = TimeZone.getTimeZone("America/New_York");
-    private static long millisecondsBetweenTimeChangeChecks = 10000, millisecondsAcceptableTimeChangeDeviation = 1000, millisecondsBetweenOffsetUpdates = 21600000;
+    public static final long UPDATE_CONFIG_TIMESTAMP_MODULUS = Long.valueOf("10000000");
+    private static long lastRemainderUpdateTrancheConfig = -1;
+    private static long millisecondsBetweenTimeChangeChecks = 10000,  millisecondsAcceptableTimeChangeDeviation = 1000,  millisecondsBetweenOffsetUpdates = 21600000;
     private static int millisecondsTimeOut = 5000;
-    private static long timestampAuthorityLastChecked = -1, offset = 0;
+    private static long timestampAuthorityLastChecked = -1,  offset = 0;
     private static NTPUDPClient ntpClient = new NTPUDPClient();
     private static List<String> networkTimeServers = new ArrayList<String>();
-    private static boolean startedLoadingNetworkTimeServers = false, finishedLoadingNetworkTimeServers = false;
+    private static boolean startedLoadingNetworkTimeServers = false,  finishedLoadingNetworkTimeServers = false;
     private static Thread offsetUpdateThread = new Thread("Time Management") {
 
         @Override
@@ -61,12 +63,21 @@ public final class TimeUtil {
                         debugOut("Forcing offset update.");
                         updateOffset();
                     }
+
+                    // also use this thread to update the network configuration
+                    long remainderUpdateTrancheConfig = getTrancheTimestamp() % UPDATE_CONFIG_TIMESTAMP_MODULUS;
+                    if (remainderUpdateTrancheConfig < lastRemainderUpdateTrancheConfig) {
+                        debugOut("Updating network configuration.");
+                        ConfigureTranche.update();
+                    }
+                    lastRemainderUpdateTrancheConfig = remainderUpdateTrancheConfig;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     };
+
 
     static {
         // make sure everybody is on the same time zone

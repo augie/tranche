@@ -139,7 +139,7 @@ public class GetFileToolUtil {
         }
 
         try {
-            String[] emailRecipients = ConfigureTranche.get(ConfigureTranche.PROP_LOG_DOWNLOAD_FAILURE_EMAIL_RECIPIENTS).split(",");
+            String[] emailRecipients = ConfigureTranche.getAdminEmailAccounts();
             String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Failed Download @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
 
             StringBuffer message = new StringBuffer();

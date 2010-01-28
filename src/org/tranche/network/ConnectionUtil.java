@@ -51,8 +51,8 @@ public class ConnectionUtil {
 
         @Override
         public void run() {
-            NetworkUtil.waitForStartup();
             keepAliveThread.start();
+            NetworkUtil.waitForStartup();
             // listen to the modifications in the master status table
             NetworkUtil.getStatus().addListener(new StatusTableListener() {
 
@@ -272,7 +272,7 @@ public class ConnectionUtil {
         if (isConnected(originalHost)) {
             RemoteTrancheServer rts = getConnection(originalHost).getRemoteTrancheServer();
             // check the connection params
-            if (rts.getPort() == port && rts.isSecure() == secure) {
+            if (!rts.isClosed() && rts.getPort() == port && rts.isSecure() == secure) {
                 ts = rts;
                 if (locked) {
                     getConnection(originalHost).lock();
@@ -283,6 +283,36 @@ public class ConnectionUtil {
             // create a new connection
             debugOut("Creating connection to " + url);
             ts = new RemoteTrancheServer(host, port, secure);
+            // ping to be sure there is a connection
+            final TrancheServer verifyTS = ts;
+            final Exception[] exception = {null};
+            Thread t = new Thread("Verify connection with " + host) {
+
+                @Override
+                public void run() {
+                    for (int i = 0; i < 3; i++) {
+                        try {
+                            verifyTS.ping();
+                            exception[0] = null;
+                            break;
+                        } catch (Exception e) {
+                            exception[0] = e;
+                        }
+                    }
+                }
+            };
+            t.setDaemon(true);
+            t.start();
+            int millisToWait = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIMEOUT);
+            if (millisToWait > 0) {
+                t.join(millisToWait);
+            } else {
+                t.join();
+            }
+            if (exception.length > 0 && exception[0] != null) {
+                throw exception[0];
+            }
+
             debugOut("Connection made with " + url);
 
             // it's OK to kill the old connection now
@@ -564,27 +594,8 @@ public class ConnectionUtil {
                             if (!row.isOnline() && row.isCore()) {
                                 continue;
                             }
-                            try {
-                                connect(row, false);
-                                requiredConnections.add(row);
-                                break;
-                            } catch (Exception e) {
-                                debugErr(e);
-                                reportException(row, e);
-                            }
-                        }
-                    }
-                } else {
-                    // connect if not already connected
-                    for (StatusTableRow row : requiredConnections) {
-                        // connect if not already connected -- reporting exceptions may readjust connections again if there is a problem
-                        if (!isConnected(row.getHost())) {
-                            try {
-                                connect(row, false);
-                            } catch (Exception e) {
-                                debugErr(e);
-                                reportException(row, e);
-                            }
+                            requiredConnections.add(row);
+                            break;
                         }
                     }
                 }
@@ -596,30 +607,10 @@ public class ConnectionUtil {
                 // connect to all the servers to which we are supposed to be connected to for updates
                 for (StatusTableRowRange range : ServerStatusUpdateProcess.getStatusTableRowRanges()) {
                     requiredConnections.add(NetworkUtil.getStatus().getRow(range.getConnectionHost()));
-                    // already connected
-                    if (!isConnected(range.getConnectionHost())) {
-                        // perform the connection
-                        try {
-                            connectHost(range.getConnectionHost(), false);
-                        } catch (Exception e) {
-                            debugErr(e);
-                            reportExceptionHost(range.getConnectionHost(), e);
-                        }
-                    }
                 }
                 // connect to all the non-core servers we are supposed to be connected to for individual updates
                 for (StatusTableRowRange range : ServerStatusUpdateProcess.getNonCoreServersToUpdate()) {
                     requiredConnections.add(NetworkUtil.getStatus().getRow(range.getConnectionHost()));
-                    // already connected
-                    if (!isConnected(range.getConnectionHost())) {
-                        // perform the connection
-                        try {
-                            connectHost(range.getConnectionHost(), false);
-                        } catch (Exception e) {
-                            debugErr(e);
-                            reportExceptionHost(range.getConnectionHost(), e);
-                        }
-                    }
                 }
 
                 if (NetworkUtil.getLocalServer().getTrancheServer() instanceof FlatFileTrancheServer) {
@@ -628,19 +619,12 @@ public class ConnectionUtil {
                     // always connect with the local server
                     debugOut("Connecting to the local data server.");
                     requiredConnections.add(NetworkUtil.getLocalServerRow());
-                    try {
-                        connect(NetworkUtil.getLocalServerRow(), false);
-                    } catch (Exception e) {
-                        debugErr(e);
-                        reportException(NetworkUtil.getLocalServerRow(), e);
-                    }
 
                     // next get all servers with overlapping hash spans
                     debugOut("Getting all servers with overlapping hash spans");
                     Map<Collection<HashSpan>, String> overlappingHashSpanHosts = new HashMap<Collection<HashSpan>, String>();
-                    List<StatusTableRow> rows = NetworkUtil.getStatus().getRows();
                     debugOut("Starting to check servers with overlapping hash spans.");
-                    for (StatusTableRow row : rows) {
+                    for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
                         debugOut("Starting to check for overlapping hashspans with " + row.getURL());
                         // do not connect to self, offline servers, non-data servers, and non-core servers for overlapping hash spans
                         if (row.isLocalServer() || !row.isOnline() || !row.isCore() || !row.isDataStore()) {
@@ -654,15 +638,6 @@ public class ConnectionUtil {
                                 if (hs1.overlaps(hs2)) {
                                     overlappingHashSpanHosts.put(row.getHashSpans(), row.getHost());
                                     requiredConnections.add(row);
-                                    // perform the connection if not already connected
-                                    if (!isConnected(row.getHost())) {
-                                        try {
-                                            connect(row, false);
-                                        } catch (Exception e) {
-                                            debugErr(e);
-                                            reportException(row, e);
-                                        }
-                                    }
                                     break rowLoop;
                                 }
                             }
@@ -676,11 +651,26 @@ public class ConnectionUtil {
                     // also seed with the current connections
                     fullHashSpanSeedRows.addAll(getConnectedRows());
                     // calculate a full hash span
-                    Collection<StatusTableRow> fullHashSpanRows = StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, NetworkUtil.getStatus().getRows());
-                    requiredConnections.addAll(fullHashSpanRows);
-                    // connect to the rows as necessary
-                    for (StatusTableRow row : fullHashSpanRows) {
-                        if (!isConnected(row.getHost())) {
+                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, NetworkUtil.getStatus().getRows()));
+                } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
+                    debugOut("Local server is a RoutingTrancheServer");
+                    // connect to all servers being routed to
+                    Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
+                    for (String host : hosts) {
+                        requiredConnections.add(NetworkUtil.getStatus().getRow(host));
+                    }
+                }
+            }
+
+            Set<Thread> threads = new HashSet<Thread>();
+            // connect if not already connected
+            for (final StatusTableRow row : requiredConnections) {
+                // connect if not already connected -- reporting exceptions may readjust connections again if there is a problem
+                if (!isConnected(row.getHost())) {
+                    Thread t = new Thread("Connecting to " + row.getHost()) {
+
+                        @Override
+                        public void run() {
                             try {
                                 connect(row, false);
                             } catch (Exception e) {
@@ -688,27 +678,17 @@ public class ConnectionUtil {
                                 reportException(row, e);
                             }
                         }
-                    }
-                } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
-                    debugOut("Local server is a RoutingTrancheServer");
-                    // connect to all servers being routed to
-                    Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
-                    for (String host : hosts) {
-                        requiredConnections.add(NetworkUtil.getStatus().getRow(host));
-                        // perform the connection if not already connected
-                        if (!isConnected(host)) {
-                            try {
-                                connectHost(host, false);
-                            } catch (Exception e) {
-                                debugErr(e);
-                                reportExceptionHost(host, e);
-                            }
-                        }
-                    }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                    threads.add(t);
                 }
             }
-            debugOut("Killing unnecessary connections");
+            for (Thread t : threads) {
+                t.join();
+            }
 
+            debugOut("Killing unnecessary connections");
             // kill the unneeded connections
             Set<String> toKill = new HashSet<String>();
             for (String host : getConnectedHosts()) {
