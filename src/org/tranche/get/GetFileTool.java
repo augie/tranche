@@ -633,7 +633,7 @@ public class GetFileTool {
         if (getServersToUse().isEmpty() && !useUnspecifiedServers && getExternalServerURLsToUse().isEmpty()) {
             throw new Exception("No servers to use.");
         }
-        System.out.println("Time spent validating variables: " + (System.currentTimeMillis() - start));
+        debugOut("Time spent validating variables: " + (System.currentTimeMillis() - start));
     }
 
     /**
@@ -654,7 +654,7 @@ public class GetFileTool {
     protected void setUpConnections() throws Exception {
         long start = System.currentTimeMillis();
         NetworkUtil.waitForStartup();
-        System.out.println("Time spent waiting for network util to start up: " + (System.currentTimeMillis() - start));
+        debugOut("Time spent waiting for network util to start up: " + (System.currentTimeMillis() - start));
         start = System.currentTimeMillis();
 
         // Connect to servers on this network
@@ -718,7 +718,7 @@ public class GetFileTool {
             throw new Exception("No available connections.");
         }
 
-        System.out.println("Time spent setting up connections: " + (System.currentTimeMillis() - start));
+        debugOut("Time spent setting up connections: " + (System.currentTimeMillis() - start));
     }
 
     /**
@@ -732,7 +732,7 @@ public class GetFileTool {
         for (String url : getExternalServerURLsToUse()) {
             ConnectionUtil.unlockConnection(IOUtil.parseHost(url));
         }
-        System.out.println("Time spent tearing down connections: " + (System.currentTimeMillis() - start));
+        debugOut("Time spent tearing down connections: " + (System.currentTimeMillis() - start));
     }
 
     /**
