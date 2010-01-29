@@ -142,7 +142,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Does not clear the previous rows.</p>
      * @param rows A collection of rows
      */
-    public void setRows(Collection<StatusTableRow> rows) {
+    protected void setRows(Collection<StatusTableRow> rows) {
         Set<String> addedHosts = new HashSet<String>();
         Map<String, Boolean> updatedHosts = new HashMap<String, Boolean>();
         Map<String, Boolean> updatedHashSpans = new HashMap<String, Boolean>();
@@ -266,7 +266,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Removes the rows with host names within the given collection</p>
      * @param hosts A collection of host names
      */
-    public void removeRows(Collection<String> hosts) {
+    protected void removeRows(Collection<String> hosts) {
         Set<String> removedHosts = new HashSet<String>();
         for (String host : hosts) {
             if (!contains(host)) {
@@ -301,7 +301,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Removing many rows, use removeRows(Collection<String>) instead.</p>
      * @param host
      */
-    public void removeRow(String host) {
+    protected void removeRow(String host) {
         if (!contains(host)) {
             return;
         }

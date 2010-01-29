@@ -124,7 +124,6 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
                 // remove defunct rows
                 table.removeDefunctRows();
                 NetworkUtil.updateRows(table.getRows());
-                debugOut(NetworkUtil.getStatus().toString());
                 // check the status table for servers to clear
                 NetworkUtil.getStatus().removeDefunctRows();
             } catch (Exception e) {

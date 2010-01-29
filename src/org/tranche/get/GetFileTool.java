@@ -623,6 +623,7 @@ public class GetFileTool {
      * @throws java.lang.Exception
      */
     private void validateVariables() throws Exception {
+        long start = System.currentTimeMillis();
         // check variables
         if (hash == null) {
             throw new NullPointerException("Hash is not set.");
@@ -631,6 +632,7 @@ public class GetFileTool {
         if (getServersToUse().isEmpty() && !useUnspecifiedServers && getExternalServerURLsToUse().isEmpty()) {
             throw new Exception("No servers to use.");
         }
+        System.out.println("Time spent validating variables: " + (System.currentTimeMillis() - start));
     }
 
     /**
@@ -649,7 +651,10 @@ public class GetFileTool {
      * @throws java.lang.Exception
      */
     protected void setUpConnections() throws Exception {
+        long start = System.currentTimeMillis();
         NetworkUtil.waitForStartup();
+        System.out.println("Time spent waiting for network util to start up: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
 
         // Connect to servers on this network
         for (String host : getServersToUse()) {
@@ -711,18 +716,22 @@ public class GetFileTool {
         if (ConnectionUtil.size() == 0) {
             throw new Exception("No available connections.");
         }
+
+        System.out.println("Time spent setting up connections: " + (System.currentTimeMillis() - start));
     }
 
     /**
      * <p>Used internally to unlock connections made during set-up.</p>
      */
     protected void tearDownConnections() {
+        long start = System.currentTimeMillis();
         for (String host : getServersToUse()) {
             ConnectionUtil.unlockConnection(host);
         }
         for (String url : getExternalServerURLsToUse()) {
             ConnectionUtil.unlockConnection(IOUtil.parseHost(url));
         }
+        System.out.println("Time spent tearing down connections: " + (System.currentTimeMillis() - start));
     }
 
     /**
@@ -882,7 +891,7 @@ public class GetFileTool {
                 }
                 validateSpecifiedUploader();
                 timeEstimator = new ContextualTimeEstimator(0, hash.getLength(), 0, 1);
-                pf = TempFileUtil.createTemporaryFile();
+                pf = TempFileUtil.createTemporaryFile("pf" + System.currentTimeMillis());
                 // download the file
                 if (passphrase != null) {
                     downloadFile(null, metaData, pf, new BigHash(passphrase.getBytes()).toByteArray());

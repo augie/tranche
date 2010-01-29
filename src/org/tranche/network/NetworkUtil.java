@@ -229,6 +229,7 @@ public class NetworkUtil {
      * 
      */
     public static void reload() {
+        debugOut("Reloading the network.");
         startedLoadingNetwork = false;
         finishedLoadingNetwork = false;
         lazyLoad();
@@ -241,10 +242,9 @@ public class NetworkUtil {
         lazyLoad();
         // make sure the network is finished loading
         while (!finishedLoadingNetwork) {
-            ThreadUtil.safeSleep(500);
+            ThreadUtil.safeSleep(250);
         }
         debugOut("Finished waiting for startup.");
-        debugOut(getStatus().toString());
     }
 
     /**
@@ -480,7 +480,7 @@ public class NetworkUtil {
         Collection<StatusTableRow> rowsToSet = new HashSet<StatusTableRow>();
         for (StatusTableRow row : rows) {
             // ignore the local server
-            if (NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
+            if (!TestUtil.isTesting() && NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
                 continue;
             }
             debugOut(" Setting row: " + row.getHost());

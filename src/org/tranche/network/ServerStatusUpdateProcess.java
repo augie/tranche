@@ -182,8 +182,6 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                         ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
                     }
                 }
-                // output the status table
-                debugOut(NetworkUtil.getStatus().toString());
                 // the online server at the top of the list is responsible for notifying the administration team that servers are offline
                 try {
                     String topOnlineHost = "";

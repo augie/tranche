@@ -64,9 +64,6 @@ public class ProjectSummaryCache {
             File cacheFile = TempFileUtil.getTemporaryFile();
             try {
                 long start = TimeUtil.getTrancheTimestamp();
-                List<BigHash> hashesToTry = getNewestProjectCacheHashes();
-
-                debugOut("Total of " + hashesToTry.size() + " project cache hashes to try...");
 
                 // get from the repository
                 boolean haveCacheFile = false;
@@ -103,6 +100,8 @@ public class ProjectSummaryCache {
                 }
 
                 if (!haveCacheFile) {
+                    List<BigHash> hashesToTry = getNewestProjectCacheHashes();
+                    debugOut("Total of " + hashesToTry.size() + " project cache hashes to try...");
                     for (BigHash h : hashesToTry) {
                         debugOut("* Trying cache: " + h);
                         GetFileTool gft = new GetFileTool();

@@ -207,16 +207,20 @@ public class GFTStep1Panel extends GenericWizardPanel {
 
                         @Override()
                         public void run() {
+                            long start = System.currentTimeMillis();
                             synchronized (checkForPassphraseLock) {
+                                System.out.println("Time spent after synchronization: " + (System.currentTimeMillis() - start));
                                 // reset the color of the info label
                                 infoLabel.setForeground(Color.BLACK);
                                 try {
                                     // check for a passphrase. also downloads the meta data.
                                     MetaData metaData = GFTStep1Panel.this.wizard.summary.getGetFileTool().getMetaData();
+                                    System.out.println("Time spent after getting meta data: " + (System.currentTimeMillis() - start));
                                     GFTStep1Panel.this.wizard.summary.getGetFileTool().setUploaderName(metaData.getSignature().getUserName());
                                     GFTStep1Panel.this.wizard.summary.getGetFileTool().setUploadTimestamp(metaData.getTimestampUploaded());
                                     GFTStep1Panel.this.wizard.summary.getGetFileTool().setUploadRelativePath(metaData.getRelativePathInDataSet());
                                     uploaderPanel.setMetaData(hash, metaData);
+                                    System.out.println("Time spent after setting uploader panel: " + (System.currentTimeMillis() - start));
                                     passphrase.setEnabled(metaData.isEncrypted() && !metaData.isPublicPassphraseSet());
                                     if (passphrase.isEnabled()) {
                                         // if the in cache, use it
@@ -240,6 +244,7 @@ public class GFTStep1Panel extends GenericWizardPanel {
                                     searchButton.setVisible(true);
                                 }
                             }
+                            System.out.println("Time spent: " + (System.currentTimeMillis() - start));
                         }
                     };
                     checkForPassphraseThread.setDaemon(true);

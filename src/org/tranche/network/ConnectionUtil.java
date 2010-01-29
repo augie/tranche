@@ -675,9 +675,11 @@ public class ConnectionUtil {
                 }
             }
 
+            // connect if not already connected - connect 5 at a time
             Set<Thread> threads = new HashSet<Thread>();
-            // connect if not already connected
-            for (final StatusTableRow row : requiredConnections) {
+            StatusTableRow[] requiredConnectionsArray = requiredConnections.toArray(new StatusTableRow[0]);
+            for (int i = 0; i < requiredConnections.size(); i++) {
+                final StatusTableRow row = requiredConnectionsArray[i];
                 // connect if not already connected -- reporting exceptions may readjust connections again if there is a problem
                 if (!isConnected(row.getHost())) {
                     Thread t = new Thread("Connecting to " + row.getHost()) {
@@ -693,12 +695,17 @@ public class ConnectionUtil {
                         }
                     };
                     t.setDaemon(true);
-                    t.start();
                     threads.add(t);
                 }
-            }
-            for (Thread t : threads) {
-                t.join();
+                if (i + 1 == requiredConnections.size() || (i + 1) % 5 == 0) {
+                    for (Thread t : threads) {
+                        t.start();
+                    }
+                    for (Thread t : threads) {
+                        t.join();
+                    }
+                    threads.clear();
+                }
             }
 
             debugOut("Killing unnecessary connections");

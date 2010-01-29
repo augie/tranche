@@ -1964,7 +1964,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.getStatus().setRows(rows);
+                NetworkUtil.updateRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 
@@ -2008,7 +2008,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.getStatus().setRows(rows);
+                NetworkUtil.updateRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 

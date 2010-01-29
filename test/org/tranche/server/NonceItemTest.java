@@ -47,7 +47,7 @@ public class NonceItemTest extends TrancheTestCase {
 //            int count = 25;
 //            Set <StatusTableRow> rows = new HashSet<StatusTableRow>();
 //            rows.add(new StatusTableRow(s));
-//            NetworkUtil.getStatus().setRows(rows);
+//            NetworkUtil.updateRows(rows);
 //            String[] hosts = new String[1];
 //            hosts[0] = s.getHostName();
 //
