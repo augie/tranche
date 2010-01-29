@@ -76,6 +76,7 @@ import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.ChunkAlreadyExistsSecurityException;
 import org.tranche.get.GetFileTool;
 import org.tranche.network.MultiServerRequestStrategy;
+import org.tranche.network.StatusTable;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.util.CompressionUtil;
@@ -960,8 +961,9 @@ public class AddFileTool {
      */
     protected Collection<String> getCoreServersToUploadTo(BigHash hash) {
         List<String> hosts = new LinkedList<String>();
+        StatusTable table = NetworkUtil.getStatus().clone();
         // add all servers with the hash in their target hash spans
-        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (StatusTableRow row : table.getRows()) {
             if (!(row.isWritable() && row.isCore() && row.isOnline())) {
                 continue;
             }
@@ -976,7 +978,7 @@ public class AddFileTool {
         }
         // add all the sticky servers
         for (String host : getStickyServers()) {
-            StatusTableRow row = NetworkUtil.getStatus().getRow(host);
+            StatusTableRow row = table.getRow(host);
             if (row != null && !hosts.contains(host) && row.isWritable() && row.isCore() && row.isOnline()) {
                 if (!hosts.contains(host)) {
                     hosts.add(host);
@@ -993,8 +995,9 @@ public class AddFileTool {
      */
     protected Collection<String> getNonCoreServersToUploadTo(BigHash hash) {
         Set<String> hosts = new HashSet<String>();
+        StatusTable table = NetworkUtil.getStatus().clone();
         // add all servers with the hash in their target hash spans
-        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (StatusTableRow row : table.getRows()) {
             if (!row.isWritable() || row.isCore() || !row.isOnline()) {
                 continue;
             }
@@ -1007,7 +1010,7 @@ public class AddFileTool {
         }
         // add all the sticky servers
         for (String host : getStickyServers()) {
-            StatusTableRow row = NetworkUtil.getStatus().getRow(host);
+            StatusTableRow row = table.getRow(host);
             if (row != null && !hosts.contains(host) && row.isWritable() && !row.isCore() && row.isOnline()) {
                 hosts.add(host);
             }

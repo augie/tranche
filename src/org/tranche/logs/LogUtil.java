@@ -214,8 +214,9 @@ public class LogUtil {
      * @return
      */
     public static final String getServersDump() {
+        StatusTable table = NetworkUtil.getStatus().clone();
         int onlineCount = 0, onlineNonCoreServers = 0, connectedCount = 0;
-        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (StatusTableRow row : table.getRows()) {
             if (row.isOnline()) {
                 if (row.isCore()) {
                     onlineCount++;
@@ -229,9 +230,9 @@ public class LogUtil {
         }
         StringBuffer buf = new StringBuffer();
         buf.append("Servers: " + onlineCount + " online core servers, " + onlineNonCoreServers + " other online servers" + Text.getNewLine());
-        buf.append(NetworkUtil.getStatus().toString() + Text.getNewLine() + Text.getNewLine() + Text.getNewLine());
+        buf.append(table.toString() + Text.getNewLine() + Text.getNewLine() + Text.getNewLine());
         buf.append("Connections: " + connectedCount + " connections" + Text.getNewLine() + Text.getNewLine());
-        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (StatusTableRow row : table.getRows()) {
             if (ConnectionUtil.isConnected(row.getHost())) {
                 buf.append("  " + row.getName() + " (" + row.getHost() + ")" + Text.getNewLine());
             }

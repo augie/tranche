@@ -62,10 +62,11 @@ public class ConnectionUtil {
 
                 public void rowsUpdated(StatusTableEvent ste) {
                     boolean adjustConnections = false;
+                    StatusTable table = NetworkUtil.getStatus().clone();
                     for (String host : ste.getHosts()) {
                         // if this change affects the connectivity
                         if (ste.affectedConnectivity(host)) {
-                            StatusTableRow str = NetworkUtil.getStatus().getRow(host);
+                            StatusTableRow str = table.getRow(host);
                             if (isConnected(host) && str.isOnline()) {
                                 adjustConnection(str.getHost(), str.getPort(), str.isSSL());
                             } else {
@@ -165,8 +166,9 @@ public class ConnectionUtil {
      */
     public static Collection<StatusTableRow> getConnectedRows() {
         Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
+        StatusTable table = NetworkUtil.getStatus().clone();
         for (String host : getConnectedHosts()) {
-            rows.add(NetworkUtil.getStatus().getRow(host));
+            rows.add(table.getRow(host));
         }
         return Collections.unmodifiableCollection(rows);
     }
@@ -177,8 +179,9 @@ public class ConnectionUtil {
      */
     public static Collection<String> getConnectedURLs() {
         Set<String> URLs = new HashSet<String>();
+        StatusTable table = NetworkUtil.getStatus().clone();
         for (String host : getConnectedHosts()) {
-            URLs.add(NetworkUtil.getStatus().getRow(host).getURL());
+            URLs.add(table.getRow(host).getURL());
         }
         return Collections.unmodifiableCollection(URLs);
     }
@@ -575,6 +578,8 @@ public class ConnectionUtil {
     public synchronized static void adjustConnections() {
         debugOut("Adjusting connections");
         try {
+            // clone the status table to work with
+            StatusTable table = NetworkUtil.getStatus().clone();
             // track the connections determined necessary
             Set<StatusTableRow> requiredConnections = new HashSet<StatusTableRow>();
             // the local instance is just a client
@@ -584,7 +589,7 @@ public class ConnectionUtil {
                 // repository must be x servers in size before connecting only to a full hash span
                 int threshold = ConfigureTranche.getInt(ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
                 Set<StatusTableRow> onlineRows = new HashSet<StatusTableRow>();
-                for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+                for (StatusTableRow row : table.getRows()) {
                     if (!row.isOnline()) {
                         continue;
                     }
@@ -592,7 +597,7 @@ public class ConnectionUtil {
                 }
                 if (onlineRows.size() > threshold) {
                     // calculate a full hash span -- seeding with the currently connected rows
-                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), NetworkUtil.getStatus().getRows()));
+                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), table.getRows()));
                 } else {
                     requiredConnections.addAll(onlineRows);
                 }
@@ -600,10 +605,10 @@ public class ConnectionUtil {
                 if (requiredConnections.isEmpty()) {
                     // use an existing connection
                     if (size() != 0) {
-                        requiredConnections.add(NetworkUtil.getStatus().getRow(getConnectedHosts().toArray(new String[0])[0]));
+                        requiredConnections.add(table.getRow(getConnectedHosts().toArray(new String[0])[0]));
                     } else {
                         // need to make a connection with a random row
-                        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+                        for (StatusTableRow row : table.getRows()) {
                             if (!row.isOnline() && row.isCore()) {
                                 continue;
                             }
@@ -619,11 +624,11 @@ public class ConnectionUtil {
                 ServerStatusUpdateProcess.adjustStatusTableRowRanges();
                 // connect to all the servers to which we are supposed to be connected to for updates
                 for (StatusTableRowRange range : ServerStatusUpdateProcess.getStatusTableRowRanges()) {
-                    requiredConnections.add(NetworkUtil.getStatus().getRow(range.getConnectionHost()));
+                    requiredConnections.add(table.getRow(range.getConnectionHost()));
                 }
                 // connect to all the non-core servers we are supposed to be connected to for individual updates
                 for (StatusTableRowRange range : ServerStatusUpdateProcess.getNonCoreServersToUpdate()) {
-                    requiredConnections.add(NetworkUtil.getStatus().getRow(range.getConnectionHost()));
+                    requiredConnections.add(table.getRow(range.getConnectionHost()));
                 }
 
                 if (NetworkUtil.getLocalServer().getTrancheServer() instanceof FlatFileTrancheServer) {
@@ -637,7 +642,7 @@ public class ConnectionUtil {
                     debugOut("Getting all servers with overlapping hash spans");
                     Map<Collection<HashSpan>, String> overlappingHashSpanHosts = new HashMap<Collection<HashSpan>, String>();
                     debugOut("Starting to check servers with overlapping hash spans.");
-                    for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+                    for (StatusTableRow row : table.getRows()) {
                         debugOut("Starting to check for overlapping hashspans with " + row.getURL());
                         // do not connect to self, offline servers, non-data servers, and non-core servers for overlapping hash spans
                         if (row.isLocalServer() || !row.isOnline() || !row.isCore() || !row.isDataStore()) {
@@ -664,13 +669,13 @@ public class ConnectionUtil {
                     // also seed with the current connections
                     fullHashSpanSeedRows.addAll(getConnectedRows());
                     // calculate a full hash span
-                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, NetworkUtil.getStatus().getRows()));
+                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, table.getRows()));
                 } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
                     debugOut("Local server is a RoutingTrancheServer");
                     // connect to all servers being routed to
                     Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
                     for (String host : hosts) {
-                        requiredConnections.add(NetworkUtil.getStatus().getRow(host));
+                        requiredConnections.add(table.getRow(host));
                     }
                 }
             }

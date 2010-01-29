@@ -49,6 +49,7 @@ import org.tranche.logs.LogUtil;
 import org.tranche.meta.MetaData;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
+import org.tranche.network.StatusTable;
 import org.tranche.network.StatusTableRow;
 import org.tranche.project.ProjectFile;
 import org.tranche.project.ProjectFilePart;
@@ -743,6 +744,7 @@ public class GetFileTool {
      * @return An ordered collection of server host names that should be used to download a chunk with the given hash.
      */
     protected Collection<String> getConnections(BigHash hash) {
+        long start = System.currentTimeMillis();
         debugOut("Getting connections for " + hash);
         debugOut("There are " + ConnectionUtil.getConnectedRows().size() + " connections available.");
         List<String> writableHosts = new LinkedList<String>();
@@ -767,9 +769,10 @@ public class GetFileTool {
                 }
             }
         }
+        StatusTable table = NetworkUtil.getStatus().clone();
         for (String host : getServersToUse()) {
             try {
-                StatusTableRow row = NetworkUtil.getStatus().getRow(host);
+                StatusTableRow row = table.getRow(host);
                 if (!writableHosts.contains(host) && !nonWritableHosts.contains(host) && row.isReadable()) {
                     if (row.isWritable()) {
                         writableHosts.add(host);
@@ -799,6 +802,8 @@ public class GetFileTool {
         List<String> hosts = new LinkedList<String>(writableHosts);
         hosts.addAll(nonWritableHosts);
         hosts.addAll(externalHosts);
+
+        debugOut("Time spent getting connections: " + (System.currentTimeMillis() - start));
 
         return Collections.unmodifiableCollection(hosts);
     }

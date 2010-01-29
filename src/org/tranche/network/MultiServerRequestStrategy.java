@@ -69,10 +69,11 @@ public class MultiServerRequestStrategy {
      * @return
      */
     public static Collection<MultiServerRequestStrategy> findFastestStrategiesUsingConnectedCoreServers(Collection<String> serverHostsToRequest, Tertiary readable, Tertiary writable) {
-        List<MultiServerRequestStrategy> strategies = new LinkedList();
+        StatusTable table = NetworkUtil.getStatus().clone();
 
+        List<MultiServerRequestStrategy> strategies = new LinkedList();
         List<String> coreServerHosts = new LinkedList();
-        for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (StatusTableRow row : table.getRows()) {
             if (row.isCore() && row.isOnline() && ConnectionUtil.isConnected(row.getHost()) && (readable.equals(Tertiary.DONT_CARE) || (readable.equals(Tertiary.TRUE) && row.isReadable()) || (readable.equals(Tertiary.FALSE) && !row.isReadable())) && (writable.equals(Tertiary.DONT_CARE) || (writable.equals(Tertiary.TRUE) && row.isWritable()) || (writable.equals(Tertiary.FALSE) && !row.isWritable()))) {
                 coreServerHosts.add(row.getHost());
             }
@@ -133,9 +134,10 @@ public class MultiServerRequestStrategy {
      * @return The MultiServerRequestStrategy object
      */
     public static MultiServerRequestStrategy create(String hostReceivingRequest, Collection<String> serverHostsToRequest) {
+        StatusTable table = NetworkUtil.getStatus().clone();
 
         // If server offline, everything is unreachable! Depth is infinite.
-        if (!NetworkUtil.getStatus().getRow(hostReceivingRequest).isOnline()) {
+        if (!table.getRow(hostReceivingRequest).isOnline()) {
             return new MultiServerRequestStrategy(hostReceivingRequest, new HashMap(), new HashMap(), serverHostsToRequest, serverHostsToRequest, INFINITE_DEPTH);
         }
 
@@ -145,7 +147,7 @@ public class MultiServerRequestStrategy {
         // Unfulfillable. For now, this means offline or no route to host from hostReceivingRequest!
         Set<String> unfulfillable = new HashSet();
         for (String nextServerHost : serverHostsToRequest) {
-            if (!NetworkUtil.getStatus().contains(nextServerHost) || !NetworkUtil.getStatus().getRow(nextServerHost).isOnline()) {
+            if (!table.contains(nextServerHost) || !table.getRow(nextServerHost).isOnline()) {
                 unfulfillable.add(nextServerHost);
             }
         }
@@ -173,7 +175,7 @@ public class MultiServerRequestStrategy {
         Map<String, Set<Host>> hostMap = new HashMap();
         for (String host : info.getConnectedCoreServerHosts()) {
 
-            if (!NetworkUtil.getStatus().getRow(host).isOnline()) {
+            if (!table.getRow(host).isOnline()) {
                 continue;
             }
 
@@ -223,11 +225,11 @@ public class MultiServerRequestStrategy {
                     System.err.println("   Printing network status table");
                     System.err.println("*************************************************************************************************");
 
-                    for (String host : NetworkUtil.getStatus().getHosts()) {
+                    for (String host : table.getHosts()) {
                         if (unpartitionedHosts.contains(host)) {
-                            System.err.println(" [FAILED] " + NetworkUtil.getStatus().getRow(host));
+                            System.err.println(" [FAILED] " + table.getRow(host));
                         } else {
-                            System.err.println(" [SUCCESS] " + NetworkUtil.getStatus().getRow(host));
+                            System.err.println(" [SUCCESS] " + table.getRow(host));
                         }
                     }
 
@@ -392,7 +394,7 @@ public class MultiServerRequestStrategy {
         }
 
         return new MultiServerRequestStrategy(hostReceivingRequest, hostMap, requestMap, unfulfillable, serverHostsToRequest, depth);
-    } // create
+    }
 
     /**
      * <p>The host name for the server to receive the request, per this strategy object.</p>
