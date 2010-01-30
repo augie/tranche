@@ -64,7 +64,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>Static references to the activities this thread will undertake</p>
      */
-    public static final byte ACTIVITY_NOTHING = 0, ACTIVITY_HEALING = 1, ACTIVITY_DELETING = 2, ACTIVITY_DOWNLOADING = 3, ACTIVITY_BALANCING = 4;
+    public static final byte ACTIVITY_NOTHING = 0,  ACTIVITY_HEALING = 1,  ACTIVITY_DELETING = 2,  ACTIVITY_DOWNLOADING = 3,  ACTIVITY_BALANCING = 4;
     /**
      * <p>a reference to the current activity handled by this thread.</p>
      */
@@ -72,7 +72,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>Keep track of times spent doing things.</p>
      */
-    private long timeSpentDoingNothing = 0, timeSpentHealing = 0, timeSpentDeleting = 0, timeSpentDownloading = 0, timeSpentBalancing = 0;
+    private long timeSpentDoingNothing = 0,  timeSpentHealing = 0,  timeSpentDeleting = 0,  timeSpentDownloading = 0,  timeSpentBalancing = 0;
     /**
      * Instead of core, use these!
      */
@@ -400,7 +400,7 @@ public class HashSpanFixingThread extends Thread {
                     checkForDataDirectoriesToBalance();
 
                     // if no hash spans are configured
-                    if (getLocalHashSpans().isEmpty()) {
+                    if (getLocalServerTargetHashSpans().isEmpty()) {
                         continue OUTER_LOOP;
                     }
 
@@ -430,7 +430,7 @@ public class HashSpanFixingThread extends Thread {
                         setDownloadServer(nextHost);
                         try {
 
-                            // If host is this local server, skip
+                            // If verifyHost is this local server, skip
                             if (isLocalServerHost(nextHost, config)) {
                                 continue CORE_SERVERS;
                             }
@@ -536,7 +536,7 @@ public class HashSpanFixingThread extends Thread {
     } // run
 
     /**
-     * <p>Check whether host is current server host.</p>
+     * <p>Check whether verifyHost is current server verifyHost.</p>
      * @param hostToCheck
      * @return
      */
@@ -625,7 +625,7 @@ public class HashSpanFixingThread extends Thread {
                     }
 
                     // Check each hash to see if it is in the configured hash span
-                    Set<HashSpan> hashSpans = getLocalHashSpans();
+                    Set<HashSpan> hashSpans = getLocalServerTargetHashSpans();
 
                     HASHES:
                     for (int i = 0; i < chunks.length; i++) {
@@ -730,7 +730,7 @@ public class HashSpanFixingThread extends Thread {
                                         /**
                                          * Going to verify that the chunk is good! We have
                                          * a known problem: some data and meta data corrupted
-                                         * due to Tranche 213 problems on host adapter, leading
+                                         * due to Tranche 213 problems on verifyHost adapter, leading
                                          * to corrupted data that was injected to 209.
                                          *
                                          * This will really heal the network by replacing any bad data.
@@ -797,14 +797,14 @@ public class HashSpanFixingThread extends Thread {
 
                                                 continue;
                                             }
-                                            // -------------------------------------------------------------------------
-                                            // + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D +
-                                            // -------------------------------------------------------------------------
+                                        // -------------------------------------------------------------------------
+                                        // + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D +
+                                        // -------------------------------------------------------------------------
 
                                         } /**
                                          * Going to verify that the chunk is good! We have
                                          * a known problem: some data and meta data corrupted
-                                         * due to Tranche 213 problems on host adapter, leading
+                                         * due to Tranche 213 problems on verifyHost adapter, leading
                                          * to corrupted data that was injected to 209.
                                          *
                                          * This will really heal the network by replacing any bad meta data.
@@ -870,9 +870,9 @@ public class HashSpanFixingThread extends Thread {
 
                                                 continue;
                                             }
-                                            // -------------------------------------------------------------------------
-                                            // + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD +
-                                            // -------------------------------------------------------------------------
+                                        // -------------------------------------------------------------------------
+                                        // + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD +
+                                        // -------------------------------------------------------------------------
                                         }
                                     }
                                 } catch (Exception ex) {
@@ -898,7 +898,7 @@ public class HashSpanFixingThread extends Thread {
     } // iterateChunksOnHost
 
     /**
-     * <p>Helper method to determine whether specific host is local.</p>
+     * <p>Helper method to determine whether specific verifyHost is local.</p>
      * @param hostToCheck
      * @param config
      * @return
@@ -929,24 +929,12 @@ public class HashSpanFixingThread extends Thread {
         ROWS:
         for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
 
-            if (!row.isCore()) {
-                continue ROWS;
-            }
-
-            if (!row.isOnline()) {
+            if (!row.isCore() || !row.isOnline() || !row.isWritable()) {
                 continue ROWS;
             }
 
             // If any target hash spans, use those; otherwise, use hash spans
-            Collection<HashSpan> hashSpansToUse = null;
-            if (row.getTargetHashSpans().size() > 0) {
-                hashSpansToUse = row.getTargetHashSpans();
-            } else {
-                hashSpansToUse = row.getHashSpans();
-            }
-
-            for (HashSpan hs : hashSpansToUse) {
-
+            for (HashSpan hs : row.getTargetHashSpans()) {
                 if (hs.contains(h)) {
                     hostsSet.add(row.getHost());
                     continue ROWS;
@@ -958,7 +946,7 @@ public class HashSpanFixingThread extends Thread {
     }
 
     /**
-     * <p>Get a connected host, preferring those that include in hash span, but defaulting to random server. Uses following precedence:</p>
+     * <p>Get a connected verifyHost, preferring those that include in hash span, but defaulting to random server. Uses following precedence:</p>
      * <ul>
      *   <li>If server contains in target hash span</li>
      *   <li>If server contains in normal hash span</li>
@@ -969,8 +957,8 @@ public class HashSpanFixingThread extends Thread {
      */
     public String getConnectedHost(BigHash h) {
 
-        // Try to find host with target hash span. Efficient since helps balance
-        // network if host doesn't have chunk yet.
+        // Try to find verifyHost with target hash span. Efficient since helps balance
+        // network if verifyHost doesn't have chunk yet.
         HOSTS:
         for (String connectedHost : ConnectionUtil.getConnectedHosts()) {
             StatusTableRow row = NetworkUtil.getStatus().getRow(connectedHost);
@@ -987,7 +975,7 @@ public class HashSpanFixingThread extends Thread {
             }
         }
 
-        // Try to find host with correct hash span
+        // Try to find verifyHost with correct hash span
         HOSTS:
         for (String connectedHost : ConnectionUtil.getConnectedHosts()) {
 
@@ -1005,7 +993,7 @@ public class HashSpanFixingThread extends Thread {
             }
         }
 
-        // If host not found, just pick a connected host at random
+        // If verifyHost not found, just pick a connected verifyHost at random
         HOSTS:
         for (String connectedHost : ConnectionUtil.getConnectedHosts()) {
 
@@ -1065,7 +1053,7 @@ public class HashSpanFixingThread extends Thread {
 
     /**
      * <p>Check to see whether a server is really online. Uses multiple heuristics.</p>
-     * @param host
+     * @param verifyHost
      * @return
      */
     private boolean isServerReallyOnline(final String host) {
@@ -1076,10 +1064,10 @@ public class HashSpanFixingThread extends Thread {
     }
 
     /**
-     * <p>Returns target hash spans, and defaults to regular hash spans.</p>
+     * 
      * @return
      */
-    private Set<HashSpan> getLocalHashSpans() {
+    private Set<HashSpan> getLocalServerHashSpans() {
         StatusTableRow row = null;
 
         // If testing, multiple local server's. Find the correct one.
@@ -1093,19 +1081,37 @@ public class HashSpanFixingThread extends Thread {
         }
 
         Set<HashSpan> hashSpans = new HashSet();
+        hashSpans.addAll(row.getHashSpans());
 
-        if (row.getTargetHashSpans().size() > 0) {
-            hashSpans.addAll(row.getTargetHashSpans());
-        } else {
-            hashSpans.addAll(row.getHashSpans());
+        return hashSpans;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    private Set<HashSpan> getLocalServerTargetHashSpans() {
+        StatusTableRow row = null;
+
+        // If testing, multiple local server's. Find the correct one.
+        if (TestUtil.isTesting()) {
+            String hostName = ffts.getHost();
+            row = NetworkUtil.getStatus().getRow(hostName);
         }
+
+        if (row == null) {
+            row = NetworkUtil.getLocalServerRow();
+        }
+
+        Set<HashSpan> hashSpans = new HashSet();
+        hashSpans.addAll(row.getTargetHashSpans());
 
         return hashSpans;
     }
 
     /**
      * <p>Returns target hash spans, and defaults to regular hash spans.</p>
-     * @param host
+     * @param verifyHost
      * @return
      */
     private Set<HashSpan> getHashSpans(String host) {
@@ -1125,7 +1131,7 @@ public class HashSpanFixingThread extends Thread {
 
     /**
      * <p>Reports exceptions and handles any exceptions.</p>
-     * @param host
+     * @param verifyHost
      * @param ex
      */
     private void reportException(String host, Exception ex) {
@@ -1264,7 +1270,7 @@ public class HashSpanFixingThread extends Thread {
 
                         boolean isReplaced = false;
 
-                        // Find a connected host, preferrably with chunk in hash span
+                        // Find a connected verifyHost, preferrably with chunk in hash span
                         String host = getConnectedHost(h);
 
                         try {
@@ -1291,7 +1297,7 @@ public class HashSpanFixingThread extends Thread {
                             byte[] remoteChunk = returnedArr[0];
 
                             if (isDataChunkValid(remoteChunk, h)) {
-//
+
                                 ffts.getDataBlockUtil().deleteData(h, "Healing thread: repairLocalChunks");
                                 ffts.getDataBlockUtil().addData(h, remoteChunk);
 
@@ -1302,7 +1308,7 @@ public class HashSpanFixingThread extends Thread {
                         } catch (AssertionFailedException afe) {
                             // Ignore for now
                         } catch (Exception ex) {
-//                            reportException(host, ex);
+//                            reportException(verifyHost, ex);
                             // Could be a remote or local problem, so cannot report
                         } finally {
                             releaseConnection(host);
@@ -1388,7 +1394,7 @@ public class HashSpanFixingThread extends Thread {
 
                         boolean isReplaced = false;
 
-                        // Find a connected host, preferrably with chunk in hash span
+                        // Find a connected verifyHost, preferrably with chunk in hash span
                         String host = getConnectedHost(h);
 
                         try {
@@ -1476,6 +1482,9 @@ public class HashSpanFixingThread extends Thread {
         }
     } // repairLocalChunks
 
+    /**
+     * 
+     */
     private void checkForChunksToDelete() {
 
         // No deleting if no authority to set on other servers.
@@ -1518,8 +1527,6 @@ public class HashSpanFixingThread extends Thread {
             // users can see current activity in configuration
             setCurrentActivity(HashSpanFixingThread.ACTIVITY_DELETING);
 
-            String[] coreServerHosts = getHostsToUse();
-
             BigInteger batchSizes = BigInteger.valueOf(this.getBatchSizeForChunksToDelete(config));
 
             long metaDataIndex = getDeleteMetaDataIndex();
@@ -1554,7 +1561,7 @@ public class HashSpanFixingThread extends Thread {
                     }
 
                     // Check if belongs on server
-                    for (HashSpan span : getLocalHashSpans()) {
+                    for (HashSpan span : getLocalServerTargetHashSpans()) {
 
                         // If contained in span or is sticky element
                         if (span.contains(metaDataHash)) {
@@ -1631,19 +1638,35 @@ public class HashSpanFixingThread extends Thread {
 
                         PropagationReturnWrapper prw = IOUtil.setMetaData(ts, authCert, authKey, true, metaDataHash, metaData, hostsArr);
 
-                        // Let's calculate the replications
-                        int reps = hostsSet.size();
-
-                        ERRORS:
-                        for (PropagationExceptionWrapper pew : prw.getErrors()) {
-                            // It's okay if chunk already exists...
-                            if (pew.exception instanceof ChunkAlreadyExistsSecurityException) {
-                                continue ERRORS;
+//                        // Let's calculate the replications
+//                        int reps = hostsSet.size();
+//
+//                        ERRORS:
+//                        for (PropagationExceptionWrapper pew : prw.getErrors()) {
+//                            // It's okay if chunk already exists...
+//                            if (pew.exception instanceof ChunkAlreadyExistsSecurityException) {
+//                                continue ERRORS;
+//                            }
+//                            // ... otherwise, assume server doesn't have
+//                            reps--;
+//                        }
+//
+//                        final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
+                        
+                        // Let's count the reps
+                        int reps = 0;
+                       
+                        for (String verifyHost : hostsArr) {
+                            try {
+                                TrancheServer verifyTs = getConnection(verifyHost);
+                                if (IOUtil.hasMetaData(verifyTs, metaDataHash)) {
+                                    reps++;
+                                }
+                            } finally {
+                                releaseConnection(verifyHost);
                             }
-                            // ... otherwise, assume server doesn't have
-                            reps--;
-                        }
-
+                        } 
+                        
                         final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
 
                         if (isEnoughToDelete) {
@@ -1703,7 +1726,7 @@ public class HashSpanFixingThread extends Thread {
                     }
 
                     // Check if belongs on server
-                    for (HashSpan span : getLocalHashSpans()) {
+                    for (HashSpan span : getLocalServerTargetHashSpans()) {
                         // If in hash span or is a sticky element
                         if (span.contains(dataHash)) {
                             continue DATA;
@@ -1771,21 +1794,37 @@ public class HashSpanFixingThread extends Thread {
 
                         PropagationReturnWrapper prw = IOUtil.setData(ts, authCert, authKey, dataHash, data, hostsArr);
 
-                        // Let's calculate the replications
-                        int reps = hostsSet.size();
+//                        // Let's calculate the replications
+//                        int reps = hostsSet.size();
+//
+//                        ERRORS:
+//                        for (PropagationExceptionWrapper pew : prw.getErrors()) {
+//                            // It's okay if chunk already exists...
+//                            if (pew.exception instanceof ChunkAlreadyExistsSecurityException) {
+//                                continue ERRORS;
+//                            }
+//                            // ... otherwise, assume server doesn't have
+//                            reps--;
+//                        }
+//
+//                        final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
 
-                        ERRORS:
-                        for (PropagationExceptionWrapper pew : prw.getErrors()) {
-                            // It's okay if chunk already exists...
-                            if (pew.exception instanceof ChunkAlreadyExistsSecurityException) {
-                                continue ERRORS;
+                        // Let's count the reps
+                        int reps = 0;
+                       
+                        for (String verifyHost : hostsArr) {
+                            try {
+                                TrancheServer verifyTs = getConnection(verifyHost);
+                                if (IOUtil.hasData(verifyTs, dataHash)) {
+                                    reps++;
+                                }
+                            } finally {
+                                releaseConnection(verifyHost);
                             }
-                            // ... otherwise, assume server doesn't have
-                            reps--;
-                        }
-
+                        } 
+                        
                         final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
-
+                        
                         if (isEnoughToDelete) {
                             this.ffts.getDataBlockUtil().deleteData(dataHash, "Not in hash span; was replicated.");
                             isDeleted = true;
@@ -1908,20 +1947,7 @@ public class HashSpanFixingThread extends Thread {
             this.setCurrentActivity(HashSpanFixingThread.ACTIVITY_NOTHING);
         }
     }
-
-    /**
-     * Helper method to help determine if a hash falls in a server's configuration regarding hash spans.
-     * @return True if falls in hash spans, false otherwise
-     */
-    private boolean isContainedByLocalHashSpans(BigHash hash, StatusTableRow row) {
-        for (HashSpan span : getLocalHashSpans()) {
-            if (span.contains(hash)) {
-                return true;
-            }
-        }
-
-        return false;
-    } // Need contains method
+    
     private Configuration lastConfig = null;
 
     /**
@@ -1940,7 +1966,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>Get the connection.</p>
      * <p>Make sure you call releaseConnection. Any locks will be released.</p>
-     * @param host
+     * @param verifyHost
      * @return
      * @throws java.lang.Exception
      */
@@ -1957,7 +1983,7 @@ public class HashSpanFixingThread extends Thread {
 
     /**
      * <p>Any locks will be released.</p>
-     * @param host
+     * @param verifyHost
      */
     private void releaseConnection(String host) {
         if (hostsToRelease.contains(host)) {
@@ -2243,7 +2269,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>The required difference in percentage between the data directories with least and most available space before transfering.</p>
      * <p>This only matters if healing thread is set to auto balance.</p>
-     * <p>Note that host the calculation is determined:</p>
+     * <p>Note that verifyHost the calculation is determined:</p>
      * <ol>
      *   <li><strong>Find data directory with most available space</strong>: Must have at least 1GB of space available (the size of 10 full DataBlock's). Calculate percentage of its available space is used.</li>
      *   <li><strong>Find data directory with least available space</strong>: Calculate percentage of its available space is used. Must meet user-defined minimum used percentage of its space. </li>
@@ -2466,7 +2492,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>Add a server to use. If any servers are add, the healing thread will stop using core server and will use these instead.</p>
      * <p>To use core servers again, you will have to clear the added servers to use. See clearServersToUse().</p>
-     * @param host
+     * @param verifyHost
      * @return True if added, false otherwise. Generally, will only return false if already added.
      */
     public boolean addServerHostToUse(String host) {
@@ -2481,7 +2507,7 @@ public class HashSpanFixingThread extends Thread {
 
     /**
      * <p>If specified alternative servers to use, remove one.</p>
-     * @param host
+     * @param verifyHost
      * @return
      */
     public boolean removeServerHostToUse(String host) {
@@ -3052,7 +3078,7 @@ public class HashSpanFixingThread extends Thread {
 
     /**
      * 
-     * @param host
+     * @param verifyHost
      * @throws java.io.IOException
      */
     private void setDownloadServer(String host) throws IOException {

@@ -122,6 +122,10 @@ public class DataBlockUtil {
      * <p>If true, we're in the process of balancing.</p>
      */
     private boolean isBalancing = false;
+    /**
+     * 
+     */
+    private static final String CORRUPTED_DATA_BLOCK_FILENAME = "corrupted-data-block.healingthread";
 
     /**
      * 
@@ -172,6 +176,14 @@ public class DataBlockUtil {
                 }
             }
         } catch (Exception e) { /* nope */ }
+        try {
+            if (this.corruptedDataBlockWriter != null) {
+                synchronized (this.corruptedDataBlockWriter) {
+                    this.corruptedDataBlockWriter.flush();
+                    this.corruptedDataBlockWriter.close();
+                }
+            }
+        } catch (Exception e) { /* nope */ }
     }
 
     /**
@@ -210,7 +222,7 @@ public class DataBlockUtil {
     public final synchronized void add(DataDirectoryConfiguration ddc) {
         add(ddc, "No reason was offered.");
     }
-    
+
     /**
      * <p>Add a DataDirectoryConfiguration object to the DataBlockUtil so that its directory can be used by the server.</p>
      * @param ddc
@@ -222,9 +234,9 @@ public class DataBlockUtil {
             // set the appropriate parent DataBlockUtil reference. not static so that more than one can be in the same JVM
             ddc.dbu = this;
             ddcs.add(ddc);
-            debugOut("Add data directory configuration: "+ddc.getDirectory()+" <reason: "+reason+">");
+            debugOut("Add data directory configuration: " + ddc.getDirectory() + " <reason: " + reason + ">");
         } else {
-            debugOut("Ha-ha! Tried to a DDC that I already had!: "+ddc.getDirectory()+" <reason: "+reason+">");
+            debugOut("Ha-ha! Tried to a DDC that I already had!: " + ddc.getDirectory() + " <reason: " + reason + ">");
         }
     }
 
@@ -540,7 +552,7 @@ public class DataBlockUtil {
         int iteration = 0;
         for (DataDirectoryConfiguration ddc : ddcs) {
 
-            debugOut("Checking DDC: " + ddc.getDirectory()+", iteration: "+iteration);
+            debugOut("Checking DDC: " + ddc.getDirectory() + ", iteration: " + iteration);
             iteration++;
 
             // first check if this ddc already has the block
@@ -550,11 +562,11 @@ public class DataBlockUtil {
                 if (checkFile.isFile()) {
                     existingFiles.add(checkFile);
                     existingFilesDDCs.add(ddc);
-                    debugOut("  - Found regular file: " + checkFile.getAbsolutePath() +", iteration: "+iteration);
+                    debugOut("  - Found regular file: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
                 } else {
                     existingDirectories.add(checkFile);
                     existingDirectoriesDDCs.add(ddc);
-                    debugOut("  - Found directory: " + checkFile.getAbsolutePath() +", iteration: "+iteration);
+                    debugOut("  - Found directory: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
                 }
             }
 
@@ -566,8 +578,8 @@ public class DataBlockUtil {
                 mostSpace = ddc;
             }
         }
-        
-        debugOut("Total exiting files <"+existingFiles.size()+">, total existing directories <"+existingDirectories.size()+">, test <"+test+">");
+
+        debugOut("Total exiting files <" + existingFiles.size() + ">, total existing directories <" + existingDirectories.size() + ">, test <" + test + ">");
 
         // start with a null data block
         DataBlock block = null;
@@ -603,13 +615,13 @@ public class DataBlockUtil {
         // this is a check to make sure that the tree is in the expected shape, e.g. no duplicate leaf nodes
         // this should never normally happen! It is just a logical bit of code to prevent most any error in the b-tree
         if (existingFiles.size() > 0) {
-            
-            debugOut("Uh-oh! Found "+existingFiles.size()+" existing file(s). Need to merge. Here are the files:");
-            
+
+            debugOut("Uh-oh! Found " + existingFiles.size() + " existing file(s). Need to merge. Here are the files:");
+
             for (File existingFile : existingFiles) {
-                debugOut("  - "+existingFile.getAbsolutePath());
+                debugOut("  - " + existingFile.getAbsolutePath());
             }
-            
+
             // keep track of the moved files
             ArrayList<File> filesToMerge = new ArrayList();
             // move all of the files to a different name
@@ -892,7 +904,25 @@ public class DataBlockUtil {
 
         logDeletion(bh, desc, true);
     }
-    private  BufferedWriter dataDeletionWriter = null,   metaDataDeletionWriter  = null;
+    private BufferedWriter dataDeletionWriter = null,  metaDataDeletionWriter = null,  corruptedDataBlockWriter = null;
+
+    /**
+     * 
+     * @param path
+     * @param foundMsg
+     */
+    private void logCorruptedDataBlock(String path, String msg) {
+        try {
+            final String date = Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+
+            lazyLoadCorruptedDataBlockWriter();
+
+            corruptedDataBlockWriter.write(date + ", \"" + path + "\", \"" + msg + "\"" + Text.getNewLine());
+        } catch (Exception e) {
+            System.err.println(e.getClass().getSimpleName() + " occurred while trying to log corrupted data block: " + e.getMessage() + "; " + "path: " + path + "; msg: " + msg);
+            e.printStackTrace(System.err);
+        }
+    }
 
     /**
      * 
@@ -978,6 +1008,31 @@ public class DataBlockUtil {
             // In append mode
             metaDataDeletionWriter = new BufferedWriter(new FileWriter(logFile, true));
         }
+    }
+
+    /**
+     * <p>Create the log writer if not created already.</p>
+     * @throws java.lang.Exception
+     */
+    private void lazyLoadCorruptedDataBlockWriter() throws Exception {
+        synchronized (lazyLoadLock) {
+            if (corruptedDataBlockWriter != null) {
+                return;
+            }
+
+            File logFile = getCorruptedDataBlocksLog();
+
+            // In append mode
+            corruptedDataBlockWriter = new BufferedWriter(new FileWriter(logFile, true));
+        }
+    }
+
+    /**
+     * <p>Get the data deletion log. Check for existance before reading; may not exist if not logging, or might exist even if not logging if logged in past.</p>
+     * @return
+     */
+    public File getCorruptedDataBlocksLog() {
+        return new File(this.ffts.getHomeDirectory(), "corrupted-datablocks.log");
     }
 
     /**
@@ -1236,8 +1291,11 @@ public class DataBlockUtil {
             this.incrementCorruptedDataBlockCount();
         }
 
-        System.err.println("Found corrupted data block <" + description + ">, going to attempt to repair: " + dataBlockFile.getAbsolutePath());
+        String foundMsg = "Found corrupted data block <" + description + ">, going to attempt to repair.";
+        System.err.println(foundMsg+": " + dataBlockFile.getAbsolutePath());
 
+        logCorruptedDataBlock(dataBlockFile.getAbsolutePath(), foundMsg);
+        
         File tmpFile = null;
         try {
             // Get data block size so can make sure entirely copied.
@@ -1293,6 +1351,7 @@ public class DataBlockUtil {
 
             boolean wasHeaderCorrupted = false;
             boolean wasBodyCorrupted = false;
+            int metaSalvaged = 0, dataSalvaged = 0;
             for (int i = 0; i < DataBlock.HEADERS_PER_FILE; i++) {
                 int offset = i * DataBlock.bytesPerEntry;
 
@@ -1344,9 +1403,11 @@ public class DataBlockUtil {
                     if (chunkType == DataBlock.DATA) {
                         this.addData(chunkHash, chunk);
                         this.incrementSalvagedChunksFromCorruptedDataBlockCount();
+                        dataSalvaged++;
                     } else if (chunkType == DataBlock.META_DATA) {
                         this.addMetaData(chunkHash, chunk);
                         this.incrementSalvagedChunksFromCorruptedDataBlockCount();
+                        metaSalvaged++;
                     }
 
                 } catch (UnexpectedEndOfDataBlockException ex) {
@@ -1364,6 +1425,9 @@ public class DataBlockUtil {
             if (wasBodyCorrupted) {
                 this.incrementCorruptedDataBlockBodyCount();
             }
+            
+            String fixMsg = "Was corrupted in header: "+wasHeaderCorrupted+"; Was corrupted in body: "+wasBodyCorrupted+"; data chunks salvaged: "+dataSalvaged+"; meta chunks salvaged: "+metaSalvaged+".";
+            logCorruptedDataBlock(dataBlockFile.getAbsolutePath(), fixMsg);
 
             // Wait a bit for queue to empty. This will alleviate resources as the server
             // repairs critical data blocks.
@@ -1736,7 +1800,7 @@ public class DataBlockUtil {
 
     /**
      * <p>Print tracers particular to balancing funcitonality.</p>
-     * @param msg
+     * @param foundMsg
      */
     private static void printTracerBalancing(String msg) {
         if (isDebugBalancing) {

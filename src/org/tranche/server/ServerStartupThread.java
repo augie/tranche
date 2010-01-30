@@ -15,6 +15,9 @@
  */
 package org.tranche.server;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,6 +50,14 @@ import org.tranche.util.Text;
 public class ServerStartupThread extends Thread {
 
     private static boolean debug = false;
+    /**
+     * 
+     */
+    private static final String DELETE_DATA_SAVE_FILENAME = "delete-data.server-startup-thread";
+    /**
+     * 
+     */
+    private static final String DELETE_META_DATA_SAVE_FILENAME = "delete-meta-data.server-startup-thread";
     /**
      * <p>The maximum number of log entries to get at once when dealing with deletions.</p>
      * <p>Network latency is the major concern, so make high. Approximately a little over 1000 entries is around 1MB.</p>
@@ -94,205 +105,205 @@ public class ServerStartupThread extends Thread {
         long step1Time = -1, step2Time = -1, step3Time = -1, step4Time = -1, step5Time = -1, step6Time = -1, step7Time = -1;
 
         try {
-            /**
-             * =================================================================================================
-             *  IF THIS IS A DATA SERVER (i.e., wrapping a FlatFileTrancheServer object)...
-             * =================================================================================================
-             */
-            if (wrappedServer instanceof FlatFileTrancheServer) {
-                debugOut("Starting for data server");
-                /**
-                 * GET SERVERS TO USE: When our new network functionality is finished, this will likely
-                 *                     need to change.
-                 */
-                Set<String> hostsToUse = new HashSet();
-                SERVERS_TO_USE:
-                for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
 
-                    // Don't check self!
-                    if (row.getHost().equals(socketServer.getHostName()) || this.wrappedServer.getHost().equals(row.getHost()) || row.isLocalServer()) {
-                        continue SERVERS_TO_USE;
-                    }
+            boolean isFlatFileTrancheServer = (wrappedServer instanceof FlatFileTrancheServer);
 
-                    // If testing, need to just check port. This is because we don't know whether
-                    // address is 192.168 or 127.0.0.1 (the loopback address).
-                    if (TestUtil.isTesting() || TestUtil.isTestingServerStartupThread()) {
-                        try {
-                            int thisPort = socketServer.getPort();
-                            int nextPort = row.getPort();
-                            if (thisPort == nextPort) {
-                                continue SERVERS_TO_USE;
-                            }
-                        } catch (Exception e) {
-                            debugErr(e);
-                            // Since this is a test, I'd like to know about this. Rethrow
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    hostsToUse.add(row.getHost());
-                }
-
-                for (String host : hostsToUse) {
-                    debugOut("Using server: " + host);
-                }
-
-                final FlatFileTrancheServer ffts = (FlatFileTrancheServer) wrappedServer;
-                final long lastRecordedActivityTimestamp = ffts.getActivityLog().getLastRecordedTimestamp();
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 1: Data is not available yet. Make 'write-only'.
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 1: ");
-                final long step1Start = TimeUtil.getTrancheTimestamp();
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 1: Limiting server to write-only (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_WRITE));
-                final long startWriteOnlyTimestamp = TimeUtil.getTrancheTimestamp();
-
-                // Record time took to complete step
-                step1Time = TimeUtil.getTrancheTimestamp() - step1Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 2: Wait for it to load data blocks
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 2: ");
-                final long step2Start = TimeUtil.getTrancheTimestamp();
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 2: Waiting for datablocks to load (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-                try {
-                    ffts.waitToLoadExistingDataBlocks();
-                } catch (Exception e) {
-                    debugErr(e);
-                }
-
-                // Record time took to complete step
-                step2Time = TimeUtil.getTrancheTimestamp() - step2Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 3: Check other servers for logs, and see if anything should be deleted.
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 3: ");
-                long step3Start = TimeUtil.getTrancheTimestamp();
-
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Waiting for startup (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-                if (!TestUtil.isTesting()) {
-                    NetworkUtil.waitForStartup();
-                }
-                List<String> serversToCheckForDeletes = new LinkedList();
-
-                CHECK_SERVERS_FOR_DELETES:
-                for (String host : hostsToUse) {
-                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Checking " + host + " for chunks to delete (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-
-                    boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
-                    if (!wasChecked) {
-                        serversToCheckForDeletes.add(host);
-                    }
-                } // For each server, look for deletes to perform
-
-                // Record time took to complete step
-                step3Time = TimeUtil.getTrancheTimestamp() - step3Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 4: Check for replaced meta data.
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 4: ");
-                final long step4Start = TimeUtil.getTrancheTimestamp();
-
-                List<String> serversToCheckForReplacedMetaData = new LinkedList();
-
-                CHECK_SERVERS_FOR_REPLACED_META_DATA:
-                for (String host : hostsToUse) {
-                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 4: Checking " + host + " for meta data to replace (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-
-                    boolean wasChecked = checkServerForMetaDataToReplace(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, replacedMetaDataCount);
-                    if (!wasChecked) {
-                        serversToCheckForReplacedMetaData.add(host);
-                    }
-                } // For each server, look for deletes to perform
-
-                step4Time = TimeUtil.getTrancheTimestamp() - step4Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 5: Data is now available. Unrestrict.
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 5: ");
-                final long step5Start = TimeUtil.getTrancheTimestamp();
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 5: Putting server in unrestricted mode (read/write) (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
-
-                // Record time took to complete step
-                step5Time = TimeUtil.getTrancheTimestamp() - step5Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 6: Check other servers for newly-added chunks
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 6: ");
-                final long step6Start = TimeUtil.getTrancheTimestamp();
-
-                List<String> serversToCheckForAdds = new LinkedList();
-
-                CHECK_SERVERS_FOR_CHUNKS:
-                for (String host : hostsToUse) {
-                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 6: Checking " + host + " for chunks to add (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-                    boolean wasChecked = checkServerForChunksToAdd(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, addCount, deleteCount);
-
-                    if (!wasChecked) {
-                        serversToCheckForAdds.add(host);
-                    }
-                } // For each server, look for new chunks to add
-
-                // Record time took to complete step
-                step6Time = TimeUtil.getTrancheTimestamp() - step6Start;
-
-                // ----------------------------------------------------------------------------------------------
-                //  STEP 7: Wait for servers to come online to perform deletes and adds from them
-                // ----------------------------------------------------------------------------------------------
-                debugOut("Step 7: ");
-                final long step7Start = TimeUtil.getTrancheTimestamp();
-
-                while (serversToCheckForAdds.size() > 0 || serversToCheckForDeletes.size() > 0 || serversToCheckForReplacedMetaData.size() > 0) {
-
-                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 7: Waiting for servers to check for deletes <" + serversToCheckForDeletes.size() + "> and adds <" + serversToCheckForAdds.size() + "> and meta data to replace <" + serversToCheckForReplacedMetaData.size() + "> (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-
-                    // Perform: deletes
-                    Iterator<String> serversToCheckForDeletesIt = serversToCheckForDeletes.iterator();
-                    while (serversToCheckForDeletesIt.hasNext()) {
-                        String host = serversToCheckForDeletesIt.next();
-                        boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
-                        if (wasChecked) {
-                            serversToCheckForDeletesIt.remove();
-                        }
-                    }
-
-                    // Perform: replace
-                    Iterator<String> serversToCheckForReplacedMetaDataIt = serversToCheckForReplacedMetaData.iterator();
-                    while (serversToCheckForReplacedMetaDataIt.hasNext()) {
-                        String host = serversToCheckForReplacedMetaDataIt.next();
-                        boolean wasChecked = checkServerForMetaDataToReplace(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, replacedMetaDataCount);
-                        if (wasChecked) {
-                            serversToCheckForReplacedMetaDataIt.remove();
-                        }
-                    }
-
-                    // Perform: adds
-                    Iterator<String> serversToCheckForAddsIt = serversToCheckForAdds.iterator();
-                    while (serversToCheckForAddsIt.hasNext()) {
-                        String host = serversToCheckForAddsIt.next();
-                        boolean wasChecked = checkServerForChunksToAdd(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, addCount, deleteCount);
-                        if (wasChecked) {
-                            serversToCheckForAddsIt.remove();
-                        }
-                    }
-
-                    // Sleep a bit to wait for things to come online
-                    Thread.sleep(1000 * 30);
-                }
-
-                // Record time took to complete step
-                step7Time = TimeUtil.getTrancheTimestamp() - step7Start;
-            } else {
+            if (!isFlatFileTrancheServer) {
                 debugOut("Not a data server");
+                return;
             }
+
+            debugOut("Starting for data server");
+            /**
+             * GET SERVERS TO USE: When our new network functionality is finished, this will likely
+             *                     need to change.
+             */
+            Set<String> hostsToUse = new HashSet();
+            SERVERS_TO_USE:
+            for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+
+                // Don't check self!
+                if (row.getHost().equals(socketServer.getHostName()) || this.wrappedServer.getHost().equals(row.getHost()) || row.isLocalServer()) {
+                    continue SERVERS_TO_USE;
+                }
+
+                // If testing, need to just check port. This is because we don't know whether
+                // address is 192.168 or 127.0.0.1 (the loopback address).
+                if (TestUtil.isTesting() || TestUtil.isTestingServerStartupThread()) {
+                    try {
+                        int thisPort = socketServer.getPort();
+                        int nextPort = row.getPort();
+                        if (thisPort == nextPort) {
+                            continue SERVERS_TO_USE;
+                        }
+                    } catch (Exception e) {
+                        debugErr(e);
+                        // Since this is a test, I'd like to know about this. Rethrow
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                hostsToUse.add(row.getHost());
+            }
+
+            for (String host : hostsToUse) {
+                debugOut("Using server: " + host);
+            }
+
+            final FlatFileTrancheServer ffts = (FlatFileTrancheServer) wrappedServer;
+            final long lastRecordedActivityTimestamp = ffts.getActivityLog().getLastRecordedTimestamp();
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 1: Data is not available yet. Make 'write-only'.
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 1: ");
+            final long step1Start = TimeUtil.getTrancheTimestamp();
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 1: Limiting server to write-only (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_WRITE));
+            final long startWriteOnlyTimestamp = TimeUtil.getTrancheTimestamp();
+
+            // Record time took to complete step
+            step1Time = TimeUtil.getTrancheTimestamp() - step1Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 2: Wait for it to load data blocks
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 2: ");
+            final long step2Start = TimeUtil.getTrancheTimestamp();
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 2: Waiting for datablocks to load (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            try {
+                ffts.waitToLoadExistingDataBlocks();
+            } catch (Exception e) {
+                debugErr(e);
+            }
+
+            // Record time took to complete step
+            step2Time = TimeUtil.getTrancheTimestamp() - step2Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 3: Check other servers for logs, and see if anything should be deleted.
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 3: ");
+            long step3Start = TimeUtil.getTrancheTimestamp();
+
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Waiting for startup (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            if (!TestUtil.isTesting()) {
+                NetworkUtil.waitForStartup();
+            }
+            List<String> serversToCheckForDeletes = new LinkedList();
+
+            CHECK_SERVERS_FOR_DELETES:
+            for (String host : hostsToUse) {
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Checking " + host + " for chunks to delete (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+
+                boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
+                if (!wasChecked) {
+                    serversToCheckForDeletes.add(host);
+                }
+            } // For each server, look for deletes to perform
+
+            // Record time took to complete step
+            step3Time = TimeUtil.getTrancheTimestamp() - step3Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 4: Check for replaced meta data.
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 4: ");
+            final long step4Start = TimeUtil.getTrancheTimestamp();
+
+            List<String> serversToCheckForReplacedMetaData = new LinkedList();
+
+            CHECK_SERVERS_FOR_REPLACED_META_DATA:
+            for (String host : hostsToUse) {
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 4: Checking " + host + " for meta data to replace (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+
+                boolean wasChecked = checkServerForMetaDataToReplace(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, replacedMetaDataCount);
+                if (!wasChecked) {
+                    serversToCheckForReplacedMetaData.add(host);
+                }
+            } // For each server, look for deletes to perform
+
+            step4Time = TimeUtil.getTrancheTimestamp() - step4Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 5: Data is now available. Unrestrict.
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 5: ");
+            final long step5Start = TimeUtil.getTrancheTimestamp();
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 5: Putting server in unrestricted mode (read/write) (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
+
+            // Record time took to complete step
+            step5Time = TimeUtil.getTrancheTimestamp() - step5Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 6: Check other servers for newly-added chunks
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 6: ");
+            final long step6Start = TimeUtil.getTrancheTimestamp();
+
+            List<String> serversToCheckForAdds = new LinkedList();
+
+            CHECK_SERVERS_FOR_CHUNKS:
+            for (String host : hostsToUse) {
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 6: Checking " + host + " for chunks to add (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                boolean wasChecked = checkServerForChunksToAdd(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, addCount, deleteCount);
+
+                if (!wasChecked) {
+                    serversToCheckForAdds.add(host);
+                }
+            } // For each server, look for new chunks to add
+
+            // Record time took to complete step
+            step6Time = TimeUtil.getTrancheTimestamp() - step6Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 7: Wait for servers to come online to perform deletes and adds from them
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 7: ");
+            final long step7Start = TimeUtil.getTrancheTimestamp();
+
+            while (serversToCheckForAdds.size() > 0 || serversToCheckForDeletes.size() > 0 || serversToCheckForReplacedMetaData.size() > 0) {
+
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 7: Waiting for servers to check for deletes <" + serversToCheckForDeletes.size() + "> and adds <" + serversToCheckForAdds.size() + "> and meta data to replace <" + serversToCheckForReplacedMetaData.size() + "> (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+
+                // Perform: deletes
+                Iterator<String> serversToCheckForDeletesIt = serversToCheckForDeletes.iterator();
+                while (serversToCheckForDeletesIt.hasNext()) {
+                    String host = serversToCheckForDeletesIt.next();
+                    boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
+                    if (wasChecked) {
+                        serversToCheckForDeletesIt.remove();
+                    }
+                }
+
+                // Perform: replace
+                Iterator<String> serversToCheckForReplacedMetaDataIt = serversToCheckForReplacedMetaData.iterator();
+                while (serversToCheckForReplacedMetaDataIt.hasNext()) {
+                    String host = serversToCheckForReplacedMetaDataIt.next();
+                    boolean wasChecked = checkServerForMetaDataToReplace(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, replacedMetaDataCount);
+                    if (wasChecked) {
+                        serversToCheckForReplacedMetaDataIt.remove();
+                    }
+                }
+
+                // Perform: adds
+                Iterator<String> serversToCheckForAddsIt = serversToCheckForAdds.iterator();
+                while (serversToCheckForAddsIt.hasNext()) {
+                    String host = serversToCheckForAddsIt.next();
+                    boolean wasChecked = checkServerForChunksToAdd(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, addCount, deleteCount);
+                    if (wasChecked) {
+                        serversToCheckForAddsIt.remove();
+                    }
+                }
+
+                // Sleep a bit to wait for things to come online
+                Thread.sleep(1000 * 30);
+            }
+
+            // Record time took to complete step
+            step7Time = TimeUtil.getTrancheTimestamp() - step7Start;
+
         } catch (Exception e) {
             debugErr(e);
         } finally {
@@ -501,6 +512,15 @@ public class ServerStartupThread extends Thread {
         return checkServerForChunksToDelete(fromTimestamp, toTimestamp, host, localServerToUpdate, null);
     }
 
+    /**
+     * <p>Update a local server (FlatFileTrancheServer) by checking specific server at a specific url is there any deletes to consider between two timestamps. If so, will perform deletes only if user is trusted.</p>
+     * @param fromTimestamp Starting of period to check (inclusive)
+     * @param toTimestamp End of period to check (inclusive)
+     * @param host Host name for server to check for deletions
+     * @param localServerToUpdate The FlatFileTrancheServer to check
+     * @param deleteCount An integer array of size one to count number of chunks deleted. (Use final array so can use within thread.)
+     * @return
+     */
     private static boolean checkServerForChunksToDelete(final long fromTimestamp, final long toTimestamp, final String host, final FlatFileTrancheServer localServerToUpdate, final int[] deleteCount) {
         long timestampToStartAt = fromTimestamp;
         ATTEMPT:
@@ -549,46 +569,44 @@ public class ServerStartupThread extends Thread {
                         }
 
                         if (a.isMetaData()) {
-                            if (IOUtil.hasMetaData(localServerToUpdate, a.hash)) {
 
-                                // Only delete if user has permission on this server
-                                if (!user.canDeleteMetaData()) {
-                                    continue DELETES;
-                                }
+                            // Only delete if user has permission on this server
+                            if (!user.canDeleteMetaData()) {
+                                continue DELETES;
+                            }
+
+                            // ----------------------------------------------------------------------------------------
+                            // TODO>
+                            //   Meta data should not be deleted this way. The activity log should log deletes 
+                            //   on user+path+timestamp basis, and remove that 'signature' only.
+                            // ----------------------------------------------------------------------------------------
+
+                            if (IOUtil.hasMetaData(localServerToUpdate, a.hash)) {
 
                                 localServerToUpdate.getDataBlockUtil().deleteMetaData(a.hash, "ServerStartThread found deleted meta data on " + host);
 
                                 // Don't log; creates an infinite cycles between servers!
-//                                if (localServerToUpdate.getActivityLog() != null) {
-//                                    // Use current timestamp. Entries must absolutely be in order, so no back-dated entries!
-//                                    localServerToUpdate.getActivityLog().write(new Activity(Activity.DELETE_META_DATA, a.signature, a.hash));
-//                                }
+
                                 if (deleteCount != null) {
                                     deleteCount[0]++;
                                 }
-                            } else {
-//                                System.err.println("DEBUG> Cannot delete (not found): meta data chunk: " + a.hash);
                             }
                         } else {
-                            if (IOUtil.hasData(localServerToUpdate, a.hash)) {
 
-                                // Only delete if user has permission on this server
-                                if (!user.canDeleteData()) {
-                                    continue DELETES;
-                                }
+                            // Only delete if user has permission on this server
+                            if (!user.canDeleteData()) {
+                                continue DELETES;
+                            }
+
+                            if (IOUtil.hasData(localServerToUpdate, a.hash)) {
 
                                 localServerToUpdate.getDataBlockUtil().deleteData(a.hash, "ServerStartThread found deleted data on " + host);
 
                                 // Don't log: creates an infinite cycles between servers!
-//                                if (localServerToUpdate.getActivityLog() != null) {
-//                                    // Use current timestamp. Entries must absolutely be in order, so no back-dated entries!
-//                                    localServerToUpdate.getActivityLog().write(new Activity(Activity.DELETE_DATA, a.signature, a.hash));
-//                                }
+
                                 if (deleteCount != null) {
                                     deleteCount[0]++;
                                 }
-                            } else {
-//                                System.err.println("DEBUG> Cannot delete (not found): data chunk: " + a.hash);
                             }
                         }
                     } // For all deletes in this batch
@@ -831,16 +849,13 @@ public class ServerStartupThread extends Thread {
 
                                 ADD:
                                 for (Activity add : addedChunks) {
+                                    
+                                    boolean isAfter = (delete.timestamp > add.timestamp);
+                                    boolean isSameType = (add.isMetaData() == delete.isMetaData());
+                                    boolean isSameChunk = isAfter && isSameType && add.hash.equals(delete.hash);
+                                    
                                     // Don't bother--only care about deletes for chunks after they were added!
-                                    if (delete.timestamp < add.timestamp) {
-                                        continue ADD;
-                                    }
-
-                                    // Make sure was correct chunk
-                                    if (add.isMetaData() != delete.isMetaData()) {
-                                        continue ADD;
-                                    }
-                                    if (add.hash.equals(delete.hash)) {
+                                    if (!isSameChunk) {
                                         continue ADD;
                                     }
 

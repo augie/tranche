@@ -178,6 +178,15 @@ public class ServersTable extends GenericTable {
     }
 
     public void monitorSelected(Component relativeTo) {
+
+        final int serverCount = getSelectedHosts().size();
+        if (serverCount > 1) {
+            int returnValue = GenericOptionPane.showConfirmDialog(ServersTable.this.getParent(), "You selected to open "+serverCount+" server monitors. Continue?", "Open "+serverCount+" monitors?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (returnValue != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
         for (String host : getSelectedHosts()) {
             ServerMonitor monitor = new ServerMonitor(host);
             if (relativeTo == null) {

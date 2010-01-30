@@ -986,7 +986,17 @@ public class DataBlockTest extends TrancheTestCase {
             // check that all of the data is in the tree
             for (int i = 0; i < contrivedHashes.size(); i++) {
                 // get the bytes
-                byte[] data = (byte[]) IOUtil.getData(ffts, contrivedHashes.get(i), false).getReturnValueObject();
+                Object o = IOUtil.getData(ffts, contrivedHashes.get(i), false).getReturnValueObject();
+                
+                byte[] data = null;
+                
+                if (o instanceof byte[]) {
+                    data = (byte[])o;
+                } else if (o instanceof byte[][]) {
+                    data = ((byte[][])o)[0];
+                } else {
+                    fail("Expected return object to be type byte[] or byte[][], but wasn't.");
+                }
                 // check the hash
                 BigHash check = new BigHash(data);
                 // hashes should be the same
@@ -2665,8 +2675,20 @@ public class DataBlockTest extends TrancheTestCase {
             // Should be able to find data
             for (BigHash hash : dataChunks) {
                 assertTrue("Better have data; added second ddc, but not balanced yet", IOUtil.hasData(ffts, hash));
-                byte[] bytes = (byte[]) IOUtil.getData(ffts, hash, false).getReturnValueObject();
-                assertNotNull(bytes);
+//                byte[] bytes = (byte[]) IOUtil.getData(ffts, hash, false).getReturnValueObject();
+                // get the bytes
+                Object o = IOUtil.getData(ffts, hash, false).getReturnValueObject();
+                
+                byte[] data = null;
+                
+                if (o instanceof byte[]) {
+                    data = (byte[])o;
+                } else if (o instanceof byte[][]) {
+                    data = ((byte[][])o)[0];
+                } else {
+                    fail("Expected return object to be type byte[] or byte[][], but wasn't.");
+                }
+                assertNotNull(data);
             }
             for (BigHash hash : metaDataChunks) {
                 assertTrue("Better have meta data; added second ddc, but not balanced yet", IOUtil.hasMetaData(ffts, hash));
