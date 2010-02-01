@@ -467,7 +467,7 @@ Tranche underwent a significant architectural redesign that began in the summer 
 
 =Related Work=
 
-|| || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
+|| *AUGIE IS WORKING ON THIS!* || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
 || *Decentralized Architecture* || ||
 || *Large Files* || ||
 || *Persistence* || ||
