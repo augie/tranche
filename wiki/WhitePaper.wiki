@@ -44,6 +44,7 @@
     * [WhitePaper#Controlled_Measurements Controlled Measurements]
     * [WhitePaper#Real_World_Measurements Real World Measurements]
   * [WhitePaper#Experiences Experiences]
+  * [WhitePaper#Related_Work Related Work]
   * [WhitePaper#Conclusions Conclusions]
   * [WhitePaper#Acknowledgements Acknowledgements]
   * [WhitePaper#References References]
@@ -462,6 +463,59 @@ Many of the design decisions took some trial-and-error experimentation to reach,
 At least of of our design improvements occurred because of an accident that happened after setting up a group of four computers to run a process counting the number of chunk replications for each data set. With about 20 million chunks and about 12 servers on the network at the time, this process was expected to take a few weeks to finish. A couple of days into the process, we received an urgent email from the medical center IT at the University of Michigan instructing us to immediately turn off the processes – the requests were causing a denial of service to some key university systems (like voicemail). We still needed to run the process, so we developed a solution: to batch together many small requests into a single packet. After comparing the average latency time to the processing time of a simple request, it became clear that batching was a solution that could be applied to Tranche in general.
 
 Tranche underwent a significant architectural redesign that began in the summer of 2009. Before the redesign, all clients and servers had to connect to every server on the network, and updated information about each server's status by regularly pinging it as well as requesting its configuration.  Also prior to the redesign, hash spans were only suggestions, which meant that chunk location was non-deterministic; a process would need to check every server before determining a chunk was not in the repository. When presented with a use-case for several petabytes of data, it was clear that the system would not be able to scale. The network status problem was addressed by making a serializable table where each of the servers was represented by a row in the table, then designing propagation rules to notify the network of a server's connectivity and configuration changes. The work of updating the network status was cut to a small fraction of its previous traffic and clients could get the status of the entire network in a single request. The chunk location problem was addressed by changing the system design to require a deterministic location for chunks based on hash spans, so as the scale of the repository grows exponentially, the time to download does not increase at all.
+
+
+=Related Work=
+
+|| || [https://trancheproject.org Tranche] ||
+|| *Decentralized Architecture* || || || || || ||
+|| *Large Files* || || || || || ||
+|| *Persistence* || || || || || ||
+|| *Immutability/Integrity* || || || || || ||
+|| *Provenance* || || || || || ||
+|| *Encryption* || || || || || ||
+|| *Licensing* || || || || || ||
+|| *Citability* || || || || || ||
+
+|| || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
+|| *Decentralized Architecture* || || || || || ||
+|| *Large Files* || || || || || ||
+|| *Persistence* || || || || || ||
+|| *Immutability/Integrity* || || || || || ||
+|| *Provenance* || || || || || ||
+|| *Encryption* || || || || || ||
+|| *Licensing* || || || || || ||
+|| *Citability* || || || || || ||
+
+|| || [http://current.cs.ucsb.edu/projects/chimera/ Chimera] ||
+|| *Decentralized Architecture* || || || || || ||
+|| *Large Files* || || || || || ||
+|| *Persistence* || || || || || ||
+|| *Immutability/Integrity* || || || || || ||
+|| *Provenance* || || || || || ||
+|| *Encryption* || || || || || ||
+|| *Licensing* || || || || || ||
+|| *Citability* || || || || || ||
+
+|| || [http://www.bittorrent.com/ BitTorrent] ||
+|| *Decentralized Architecture* || || || || || ||
+|| *Large Files* || || || || || ||
+|| *Persistence* || || || || || ||
+|| *Immutability/Integrity* || || || || || ||
+|| *Provenance* || || || || || ||
+|| *Encryption* || || || || || ||
+|| *Licensing* || || || || || ||
+|| *Citability* || || || || || ||
+
+|| || [http://en.wikipedia.org/wiki/Tapestry_(DHT) Tapestry] ||
+|| *Decentralized Architecture* || || || || || ||
+|| *Large Files* || || || || || ||
+|| *Persistence* || || || || || ||
+|| *Immutability/Integrity* || || || || || ||
+|| *Provenance* || || || || || ||
+|| *Encryption* || || || || || ||
+|| *Licensing* || || || || || ||
+|| *Citability* || || || || || ||
 
 
 =Conclusions=
