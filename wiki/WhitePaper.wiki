@@ -467,16 +467,6 @@ Tranche underwent a significant architectural redesign that began in the summer 
 
 =Related Work=
 
-|| || [https://trancheproject.org Tranche] ||
-|| *Decentralized Architecture* || ||
-|| *Large Files* || ||
-|| *Persistence* || ||
-|| *Immutability/Integrity* || ||
-|| *Provenance* || ||
-|| *Encryption* || ||
-|| *Licensing* || || 
-|| *Citability* || ||
-
 || || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
 || *Decentralized Architecture* || ||
 || *Large Files* || ||
