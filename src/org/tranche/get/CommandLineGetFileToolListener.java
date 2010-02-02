@@ -24,11 +24,12 @@ import org.tranche.util.Text;
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - bryanesmith@gmail.com
  */
 public class CommandLineGetFileToolListener implements GetFileToolListener {
 
     private static NumberFormat nf = NumberFormat.getInstance();
-
+    
 
     static {
         nf.setGroupingUsed(true);
@@ -70,6 +71,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void failedMetaData(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
+        out.println("Meta data chunk from file <" + event.getFileName() + "> failed: " + event.getChunkHash());
     }
 
     /**
@@ -98,6 +100,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void failedData(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
+        out.println("Data chunk from file <" + event.getFileName() + "> failed: " + event.getChunkHash());
     }
 
     /**
@@ -204,7 +207,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
     public String getTimeLeftString() {
         String string = "time left: ";
         if (gft.getTimeEstimator().getHours() != 0) {
-              string = string + gft.getTimeEstimator().getHours() + "h ";
+            string = string + gft.getTimeEstimator().getHours() + "h ";
         }
         if (gft.getTimeEstimator().getHours() != 0 || gft.getTimeEstimator().getMinutes() != 0) {
             string = string + gft.getTimeEstimator().getMinutes() + "m ";
