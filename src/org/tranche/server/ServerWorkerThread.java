@@ -221,7 +221,7 @@ public class ServerWorkerThread extends Thread {
 
                         ServerWorkerThreadQueueItem queueItem = new ServerWorkerThreadQueueItem(id, buffer);
 
-                        if (itemName != null && (itemName.equals(Token.PING_STRING) || itemName.equals(Token.GET_NONCES_STRING))) {
+                        if (itemName != null && itemName.equals(Token.PING_STRING)) {
                             try {
                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                 server.getItem(itemName).doAction(bais, baos, s.getInetAddress().getHostAddress());
