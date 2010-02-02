@@ -180,7 +180,7 @@ public class ConfigureTranche {
     /**
      * <p></p>
      */
-    public static final String DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS = "2";
+    public static final String DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS = "3";
     /**
      * <p>The number of requests a single server can have executed simultaneously on a server. Must be at >= 2.</p>
      */

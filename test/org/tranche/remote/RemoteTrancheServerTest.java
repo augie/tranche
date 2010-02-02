@@ -2489,7 +2489,6 @@ public class RemoteTrancheServerTest extends TrancheServerTest {
         TestUtil.printTitle("RemoteTrancheServerTest:testDeleteMetaDataNoHosts");
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
-
         try {
             testNetwork.start();
 
@@ -2509,6 +2508,19 @@ public class RemoteTrancheServerTest extends TrancheServerTest {
             } catch (NoHostProvidedException nhpe) {
                 // Expected
             }
+        } finally {
+            testNetwork.stop();
+        }
+    }
+
+    public void testPing() throws Exception {
+        TestUtil.printTitle("RemoteTrancheServerTest:testPing()");
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
+        try {
+            testNetwork.start();
+            TrancheServer ts = ConnectionUtil.connectHost(HOST1, true);
+            ts.ping();
         } finally {
             testNetwork.stop();
         }

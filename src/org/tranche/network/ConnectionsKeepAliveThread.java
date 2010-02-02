@@ -29,10 +29,10 @@ public class ConnectionsKeepAliveThread extends Thread {
                 for (String host : ConnectionUtil.getConnectedHosts()) {
                     try {
                         RemoteTrancheServer ts = ConnectionUtil.getConnection(host).getRemoteTrancheServer();
-                        if (TimeUtil.getTrancheTimestamp() - ts.getTimeLastUsed() > conditionalPingInterval) {
+                        //if (TimeUtil.getTrancheTimestamp() - ts.getTimeLastUsed() > conditionalPingInterval) {
                             // Application-level activity so socket timeout not triggered.
                             ts.ping();
-                        }
+                        //}
                     } catch (Exception e) {
                         debugErr(e);
                         ConnectionUtil.reportExceptionHost(host, e);

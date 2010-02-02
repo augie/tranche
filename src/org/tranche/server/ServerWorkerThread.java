@@ -112,6 +112,24 @@ public class ServerWorkerThread extends Thread {
         }
     }
 
+    private void sendError(ServerWorkerThreadQueueItem queueItem, Exception e) throws Exception {
+        // send back the error -- don't close the communication channel. Won't disrupt other actions
+        ByteArrayOutputStream baos = null;
+        try {
+            baos = new ByteArrayOutputStream();
+            // close the socket
+            RemoteUtil.writeError(e.getMessage(), baos);
+            // optionally send the local server info
+            if (e instanceof ServerIsNotReadableException || e instanceof ServerIsNotWritableException || e instanceof ChunkDoesNotBelongException) {
+                NetworkUtil.getLocalServerRow().serialize(baos);
+            }
+            // send back the data
+            sendOutput(queueItem.id, baos.toByteArray());
+        } finally {
+            IOUtil.safeClose(baos);
+        }
+    }
+
     @Override
     public void run() {
         InputStream in = null;
@@ -188,8 +206,33 @@ public class ServerWorkerThread extends Thread {
                         logInput.log("Reading: Finished; ID: " + id + "; Bytes: " + buffer.length + "; Queuing: started");
                         Server.debugOut("Server " + IOUtil.createURL(server.getHostName(), server.getPort(), server.isSSL()) + "; Received request (ID = " + id + ", bytes = " + buffer.length + ")");
 
-                        // add to the queue, blocking if full
-                        queue.put(new ServerWorkerThreadQueueItem(id, buffer));
+                        String itemName = null;
+                        ByteArrayInputStream bais = null;
+                        try {
+                            try {
+                                bais = new ByteArrayInputStream(buffer);
+                                itemName = RemoteUtil.readLine(bais);
+                            } finally {
+                                IOUtil.safeClose(bais);
+                            }
+                        } catch (Exception e) {
+                            debugErr(e);
+                        }
+
+                        ServerWorkerThreadQueueItem queueItem = new ServerWorkerThreadQueueItem(id, buffer);
+
+                        if (itemName != null && (itemName.equals(Token.PING_STRING) || itemName.equals(Token.GET_NONCES_STRING))) {
+                            try {
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                server.getItem(itemName).doAction(bais, baos, s.getInetAddress().getHostAddress());
+                                sendOutput(id, baos.toByteArray());
+                            } catch (Exception e) {
+                                sendError(queueItem, e);
+                            }
+                        } else {
+                            // add to the queue, blocking if full
+                            queue.put(queueItem);
+                        }
                         logInput.log("Queuing: Stopped");
                     }
                 } finally {
@@ -354,12 +397,6 @@ public class ServerWorkerThread extends Thread {
                     // read the command line
                     String line = RemoteUtil.readLine(bais);
 
-                    // check for close -- a special case of actions
-                    if (line.equals(Token.CLOSE_STRING)) {
-                        // return. the finally clause will safely close resources
-                        return;
-                    }
-
                     // handle the remote command
                     try {
                         ServerItem serverItem = server.getItem(line);
@@ -395,22 +432,14 @@ public class ServerWorkerThread extends Thread {
 
                         // send back the data
                         sendOutput(queueItem.id, baos.toByteArray());
-                    } catch (Exception e) {
-                        // send back the error -- don't close the communication channel. Won't disrupt other actions
-                        ByteArrayOutputStream baos = null;
-                        try {
-                            baos = new ByteArrayOutputStream();
-                            // close the socket
-                            RemoteUtil.writeError(e.getMessage(), baos);
-                            // optionally send the local server info
-                            if (e instanceof ServerIsNotReadableException || e instanceof ServerIsNotWritableException || e instanceof ChunkDoesNotBelongException) {
-                                NetworkUtil.getLocalServerRow().serialize(baos);
-                            }
-                            // send back the data
-                            sendOutput(queueItem.id, baos.toByteArray());
-                        } finally {
-                            IOUtil.safeClose(baos);
+
+                        // check for close -- a special case of actions
+                        if (line.equals(Token.CLOSE_STRING)) {
+                            // return. the finally clause will safely close resources
+                            return;
                         }
+                    } catch (Exception e) {
+                        sendError(queueItem, e);
                     }
                 }
             } catch (Exception e) {
