@@ -43,7 +43,7 @@
     <!-- set the variables needed for the server build -->
     <property name="dir.server" location="build/server"/>
     <property name="build.server" location="${build}/server"/>
-    <property name="build.server.jar" location="${build.get}/tranche-server.jar"/>
+    <property name="build.server.jar" location="${build.server}/tranche-server.jar"/>
     <property name="dist.server.zip" location="${dist}/tranche-server-b${buildNumber}.zip"/>
     
     <!-- set the variables needed for the GetFileTool JAR build -->
