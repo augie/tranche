@@ -46,8 +46,8 @@ import org.tranche.security.SecurityUtil;
  * @author Jayson Falkner - jfalkner@umich.edu
  */
 public class MakeUserZipFileTool {
+    
     // make up a random name
-
     private String name = "Custom User - " + (int) (Math.random() * Integer.MAX_VALUE);
     private String organizationalUnit = "Tranche Participant";
     private String organization = "Tranche";

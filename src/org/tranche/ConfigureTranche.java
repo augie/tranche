@@ -611,7 +611,7 @@ public class ConfigureTranche {
         try {
             is = ConfigureTranche.class.getResourceAsStream(file);
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            debugErr(e);
         }
 
         // is it a file on the local file system?
@@ -619,7 +619,7 @@ public class ConfigureTranche {
             try {
                 is = new File(file).toURL().openStream();
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                debugErr(e);
             }
         }
 

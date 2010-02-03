@@ -127,13 +127,15 @@ public class StatusTable extends Object implements Serializable {
      */
     protected void removeDefunctRows() {
         long threshold = ConfigureTranche.getLong(ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
-        Set<String> toRemove = new HashSet<String>();
-        for (StatusTableRow row : getRows()) {
-            if (!row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
-                toRemove.add(row.getHost());
+        if (threshold > 0) {
+            Set<String> toRemove = new HashSet<String>();
+            for (StatusTableRow row : getRows()) {
+                if (!row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
+                    toRemove.add(row.getHost());
+                }
             }
+            removeRows(toRemove);
         }
-        removeRows(toRemove);
     }
 
     /**

@@ -23,6 +23,7 @@ import org.tranche.server.Server;
 import org.tranche.servers.ServerUtil;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.PreferencesUtil;
+import org.tranche.util.TempFileUtil;
 
 /**
  * <p>There can be only one local data server.</p>
@@ -126,12 +127,61 @@ public class LocalDataServer {
         ffts = null;
     }
 
+    public static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [OPTIONS]");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Runs a Tranche data sserver.");
+        System.out.println();
+        System.out.println("MEMORY ALLOCATION");
+        System.out.println("    You should use the JVM option: -Xmx512m");
+        System.out.println();
+        System.out.println("    The allocates 512m of memory for the tool. You can adjust this amount (e.g., you don't have 512MB available memory or you want to allocate more.)");
+        System.out.println();
+        System.out.println("OUTPUT FLAGS");
+        System.out.println("    -b, --buildnumber           Value: none.                    Print version number and exit. All other arguments will be ignored.");
+        System.out.println("    -h, --help                  Value: none.                    Print usage and exit. All other arguments will be ignored.");
+        System.out.println("    -u, --usage                 Value: none.                    Print usage and exit. All other arguments will be ignored.");
+        System.out.println("    -v, --version               Value: none.                    Print version number and exit. All other arguments will be ignored.");
+        System.out.println();
+        System.out.println("STANDARD PARAMETERS");
+        System.out.println("    -H, --host                  Value: any string.              The host name / IP address by which the server will be known.");
+        System.out.println("    -d, --directory             Value: any string.              The file system location where all server configuration files will be located.");
+        System.out.println("    -p, --port                  Value: positive integer.        The port number to which the server will be bound.");
+        System.out.println("    -s, --ssl                   Value: true/false.              Whether the server should operate over SSL connections.");
+        System.out.println("    -z, --userzipfile           Values: any two strings.        The file system location of the user zip file for the server and the passphrase to unlock it.");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    To check the return code for a process in UNIX bash System.out, use $? special variable. If non-zero, check standard error for messages.");
+        System.out.println();
+        System.out.println("    0:     Program exited normally (e.g., download succeeded, help displayed, etc.)");
+        System.out.println("    1:     Unknown error.");
+        System.out.println();
+    }
+
     public static void main(String[] args) {
         ConfigureTranche.load(args);
 
+        // printing usage
+        if (args.length < 1) {
+            printUsage();
+            System.exit(0);
+        }
+        for (int i = 1; i < args.length; i++) {
+            if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-u") || args[i].equals("--usage")) {
+                printUsage();
+                System.exit(0);
+            } else if (args[i].equals("-b") || args[i].equals("--buildnumber") || args[i].equals("-v") || args[i].equals("--version")) {
+                System.out.println("Tranche, build #@buildNumber");
+                System.exit(0);
+            }
+        }
+
         // read the arguments
         for (int i = 1; i < args.length; i += 2) {
-            if (args[i].equals("-h") || args[i].equals("--host")) {
+            if (args[i].equals("-H") || args[i].equals("--host")) {
                 ServerUtil.setHostName(args[i + 1]);
             } else if (args[i].equals("-d") || args[i].equals("--directory")) {
                 rootDir = new File(args[i + 1]);

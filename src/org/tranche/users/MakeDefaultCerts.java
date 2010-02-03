@@ -21,13 +21,11 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.tranche.users.MakeUserZipFileTool;
-import org.tranche.users.UserZipFile;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 
 /**
- * <p>Creates a new default set of certificates that are to be used for a Tranche network.</p>
+ * <p>Creates a new default set of certificates that are to be used for a Tranche repository.</p>
  * @author James "Augie" Hill - augman85@gmail.com
  */
 public class MakeDefaultCerts {
@@ -69,8 +67,8 @@ public class MakeDefaultCerts {
             // Look for help request. If one, print and exit.
             for (String arg : args) {
                 try {
-                    if (arg.equals("-n") || arg.equals("--buildnumber")) {
-                        System.out.println("Tranche network certificates creator, build: @buildNumber");
+                    if (arg.equals("-n") || arg.equals("--buildnumber") || arg.equals("--version")) {
+                        System.out.println("Tranche, build #@buildNumber");
                         System.exit(0);
                     } else if (arg.equals("-h") || arg.equals("--help")) {
                         printUsage();

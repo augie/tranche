@@ -40,15 +40,11 @@
     <property name="dist.zip" location="${dist}/tranche-b${buildNumber}.zip"/>
     <property name="dist.gui.zip" location="${dist}/tranche-gui-b${buildNumber}.zip"/>
     
-    <!-- set the variables needed for the linux server build -->
-    <property name="dir.server.linux" location="build/server-linux"/>
-    <property name="build.server.linux" location="${build}/server-linux"/>
-    <property name="dist.server.linux.zip" location="${dist}/tranche-server-linux-b${buildNumber}.zip"/>
-    
-    <!-- set the variables needed for the windows server build -->
-    <property name="dir.server.windows" location="build/server-windows"/>
-    <property name="build.server.windows" location="${build}/server-windows"/>
-    <property name="dist.server.windows.zip" location="${dist}/tranche-server-windows-b${buildNumber}.zip"/>
+    <!-- set the variables needed for the server build -->
+    <property name="dir.server" location="build/server"/>
+    <property name="build.server" location="${build}/server"/>
+    <property name="build.server.jar" location="${build.get}/tranche-server.jar"/>
+    <property name="dist.server.zip" location="${dist}/tranche-server-b${buildNumber}.zip"/>
     
     <!-- set the variables needed for the GetFileTool JAR build -->
     <property name="dir.get" location="build/get"/>
@@ -278,42 +274,18 @@
         </javadoc>
     </target>
     
-    <target name="dist.linux" description="Make a server code release for linux.">
-        <mkdir dir="${build.server.linux}"/>
-        
-        <!-- copy all supporting JARs -->
-        <copy todir="${build.server.linux}/lib">
+    <target name="dist.server" description="Make a server code release.">
+        <mkdir dir="${build.server}"/>
+		<mkdir dir="${build.server}/lib"/>
+		<copy todir="${build.server}/lib">
 			<fileset dir="${lib}" includes="*.jar"/>
-            <fileset file="${dist.jar}"/>
-        </copy>
-        
-        <!-- copy files -->
-        <copy todir="${build.server.linux}">
-            <fileset dir="${dir.server.linux}"/>
-        </copy>
-        
-        <!-- make a zip of the whole release -->
-        <zip destfile="${dist.server.linux.zip}" basedir="${build.server.linux}" />
+		</copy>
+		<jar jarfile="${build.server.jar}"
+			manifest="${dir.server}/MANIFEST.MF"
+			basedir="${build.rt}" />
+        <zip destfile="${dist.server.zip}" basedir="${build.server}" />
     </target>
-    
-    <target name="dist.windows" description="Make a server code release for windows.">
-        <mkdir dir="${build.server.windows}"/>
 
-        <!-- copy all supporting JARs -->
-        <copy todir="${build.server.windows}/lib">
-			<fileset dir="${lib}" includes="*.jar"/>
-            <fileset file="${dist.jar}"/>
-        </copy>
-
-        <!-- copy files -->
-        <copy todir="${build.server.windows}">
-            <fileset dir="${dir.server.windows}"/>
-        </copy>
-
-        <!-- make a zip of the whole release -->
-        <zip destfile="${dist.server.windows.zip}" basedir="${build.server.windows}" />
-    </target>
-    
     <target name="dist.certs" description="Makes a JAR for the make default certificates tool.">
         <mkdir dir="${build.certs}"/>
 		<mkdir dir="${build.certs}/lib"/>
