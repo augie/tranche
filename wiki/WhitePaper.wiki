@@ -475,7 +475,7 @@ Tranche underwent a significant architectural redesign that began in the summer 
 || *Provenance* || ||
 || *Encryption* ||  ||
 || *Licensing* || || 
-|| *Versioning* || Same idea as Tranche. Previous versions are left as-is. They seem to not allow for deletion? Well-thought out implementation of versioning. ||
+|| *Versioning* || Same idea as Tranche. Previous versions are left as-is. They seem to not allow for deletion? Well-thought out implementation of versioning. New versions only write out the changed data blocks, then point to the existing data blocks. ||
 || *Citability* || ||
 || *Usage* || "Pond" is the !OceanStore prototype implementation. "Pond contains a sufficiently complete implementation of the !OceanStore design to give a reasonable estimate of the performance of a full system." (*1*) Last stable build of Pond released in 2004 (*2*) and is still said to be in "Alpha" (*3*). ||
 || *Sources* || *1* Pond: the !OceanStore Prototype. Sean Rhea, Patrick Eaton, Dennis Geels, Hakim Weatherspoon, Ben Zhao, and John Kubiatowicz. <br> *2* [http://oceanstore.sourceforge.net/] <br> *3* [http://sourceforge.net/projects/oceanstore/] ||
