@@ -100,8 +100,7 @@
 
     <target name="dist.quick" description="Builds the code, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui"/>
-        <antcall target="dist.linux"/>
-        <antcall target="dist.windows"/>
+        <antcall target="dist.server"/>
         <antcall target="dist.get"/>
         <antcall target="dist.add"/>
 		<antcall target="dist.certs"/>
@@ -127,8 +126,7 @@
 
     <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui" />
-        <antcall target="dist.linux" />
-        <antcall target="dist.windows" />
+        <antcall target="dist.server" />
         <antcall target="dist.get" />
         <antcall target="dist.add" />
 		<antcall target="dist.certs" />
