@@ -468,16 +468,37 @@ Tranche underwent a significant architectural redesign that began in the summer 
 =Related Work=
 
 || || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
-|| *Decentralized Architecture* || Described as a "cooperative file system" (*1*). ||
+|| *Decentralized Architecture* || Described as a "cooperative file system" (*1*). Data blocks are unique to the files to which they belong. In other words, there is no sharing between files, and thus no space saving. ||
 || *Large Files* || ||
 || *Persistence* || ||
 || *Immutability/Integrity* || ||
 || *Provenance* || ||
 || *Encryption* ||  ||
 || *Licensing* || || 
+|| *Versioning* || Same idea as Tranche. Previous versions are left as-is. They seem to not allow for deletion? Well-thought out implementation of versioning. ||
 || *Citability* || ||
 || *Usage* || "Pond" is the !OceanStore prototype implementation. "Pond contains a sufficiently complete implementation of the !OceanStore design to give a reasonable estimate of the performance of a full system." (*1*) Last stable build of Pond released in 2004 (*2*) and is still said to be in "Alpha" (*3*). ||
 || *Sources* || *1* Pond: the !OceanStore Prototype. Sean Rhea, Patrick Eaton, Dennis Geels, Hakim Weatherspoon, Ben Zhao, and John Kubiatowicz. <br> *2* [http://oceanstore.sourceforge.net/] <br> *3* [http://sourceforge.net/projects/oceanstore/] ||
+
+|| || [http://labs.google.com/papers/gfs.html Google File System] ||
+|| *Decentralized Architecture* || ||
+|| *Large Files* || ||
+|| *Persistence* || ||
+|| *Immutability/Integrity* || ||
+|| *Provenance* || ||
+|| *Encryption* || ||
+|| *Licensing* || || 
+|| *Citability* || ||
+
+|| || [http://hadoop.apache.org/ Hadoop] ||
+|| *Decentralized Architecture* || ||
+|| *Large Files* || ||
+|| *Persistence* || ||
+|| *Immutability/Integrity* || ||
+|| *Provenance* || ||
+|| *Encryption* || ||
+|| *Licensing* || || 
+|| *Citability* || ||
 
 || || [http://current.cs.ucsb.edu/projects/chimera/ Chimera] ||
 || *Decentralized Architecture* || ||
