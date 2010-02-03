@@ -7,4 +7,5 @@
 
   # At least skim through [WhitePaper the white paper].
   # Read through [ToDo what needs to be done]. Get an idea of something to do or make sure what you want to do isn't already being done.
+  # Introduce yourself in the [http://groups.google.com/group/tranche-developers Developer's Group] and say why you would like to participate. We'll then give you permissions to commit changes.
   # Check out the source code and get started. Please write JUnit tests for everything you make.
