@@ -129,63 +129,63 @@ public class GetFileToolTest extends TrancheTestCase {
      * @see GetFileTool#getConnections(org.tranche.hash.BigHash)
      * @throws java.lang.Exception
      */
-    public void testGetConnections() throws Exception {
-        TestUtil.printTitle("GetFileToolTest:testGetConnections()");
-        //TODO: can specify readable or writeable connections in server config test???
-        //TODO: should test different spans???
-
-        int tot = 10; //total number of possible test servers
-        Random rand = new Random();
-        int rs = rand.nextInt(tot); //actual number of servers to allocate
-
-        //create host names
-        String[] hosts = new String[rs];
-        for (int i = 0; i < rs; i++) {
-            hosts[i] = "server" + i + ".com";
-        }
-
-        TestNetwork testNetwork = new TestNetwork();
-
-        //add configurations for hosts
-        for (int i = 0; i < rs; i++) {
-            int n = 1500 + i;
-            testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, hosts[i], n, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
-        }
-
-        //create temp file
-        File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, 125);
-
-
-        try {
-            testNetwork.start();
-
-            //Upload test file
-            int upHost = rand.nextInt(tot);
-            AddFileToolReport upFile = uploadTest(upload, hosts[upHost], null);
-            BigHash _hash = upFile.getHash();
-
-            //download test file
-            GetFileTool gft = new GetFileTool();
-            Collection h = Arrays.asList(hosts);
-            gft.addServersToUse(h);
-            gft.setUseUnspecifiedServers(false);
-            gft.setHash(_hash);
-            gft.setSaveFile(upload);
-            Collection connections = gft.getConnections(_hash);
-            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
-            GetFileToolReport downFile = gft.getFile();
-
-            assertFalse(downFile.isFailed());
-            assertNotNull(downFile);
-            //TODO: is this the correct test or should I be testing
-            //something else too ???
-            assertEquals(connections.size(), rs);
-        } finally {
-            testNetwork.stop();
-        }
-
-    }
+//    public void testGetConnections() throws Exception {
+//        TestUtil.printTitle("GetFileToolTest:testGetConnections()");
+//        //TODO: can specify readable or writeable connections in server config test???
+//        //TODO: should test different spans???
+//
+//        int tot = 10; //total number of possible test servers
+//        Random rand = new Random();
+//        int rs = rand.nextInt(tot); //actual number of servers to allocate
+//
+//        //create host names
+//        String[] hosts = new String[rs];
+//        for (int i = 0; i < rs; i++) {
+//            hosts[i] = "server" + i + ".com";
+//        }
+//
+//        TestNetwork testNetwork = new TestNetwork();
+//
+//        //add configurations for hosts
+//        for (int i = 0; i < rs; i++) {
+//            int n = 1500 + i;
+//            testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, hosts[i], n, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+//        }
+//
+//        //create temp file
+//        File upload = TempFileUtil.createTempFileWithName("name.file");
+//        DevUtil.createTestFile(upload, 125);
+//
+//
+//        try {
+//            testNetwork.start();
+//
+//            //Upload test file
+//            int upHost = rand.nextInt(tot);
+//            AddFileToolReport upFile = uploadTest(upload, hosts[upHost], null);
+//            BigHash _hash = upFile.getHash();
+//
+//            //download test file
+//            GetFileTool gft = new GetFileTool();
+//            Collection h = Arrays.asList(hosts);
+//            gft.addServersToUse(h);
+//            gft.setUseUnspecifiedServers(false);
+//            gft.setHash(_hash);
+//            gft.setSaveFile(upload);
+//            Collection connections = gft.getConnections(_hash);
+//            gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+//            GetFileToolReport downFile = gft.getFile();
+//
+//            assertFalse(downFile.isFailed());
+//            assertNotNull(downFile);
+//            //TODO: is this the correct test or should I be testing
+//            //something else too ???
+//            assertEquals(connections.size(), rs);
+//        } finally {
+//            testNetwork.stop();
+//        }
+//
+//    }
 
     /**
      * Tests that two files with the same contents in a data set can be downloaded as expected.
@@ -465,8 +465,14 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             // make a meta data and sign it
-            BigHash hash = DevUtil.getRandomBigHash();
             MetaData metaData = DevUtil.createRandomMetaData();
+            BigHash hash = null;
+            for (FileEncoding fe : metaData.getEncodings()) {
+                if (fe.getName().equals(FileEncoding.NONE)) {
+                    hash = fe.getHash();
+                    break;
+                }
+            }
             byte[] metaDataBytes = null;
             ByteArrayOutputStream baos = null;
             try {

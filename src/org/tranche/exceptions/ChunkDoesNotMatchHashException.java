@@ -42,4 +42,11 @@ public class ChunkDoesNotMatchHashException extends IOException {
     public ChunkDoesNotMatchHashException(String serializedMessage) {
         super(serializedMessage);
     }
+
+    /**
+     * 
+     */
+    public ChunkDoesNotMatchHashException() {
+        super(MESSAGE);
+    }
 }

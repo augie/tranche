@@ -965,6 +965,11 @@ public class GetFileTool {
                 report.setFilesDownloaded(0);
                 report.setBytesDownloaded(0);
             }
+            if (report.isFailed()) {
+                for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                    debugErr(pew.exception);
+                }
+            }
             // register our download only if nothing was skipped during download and there were no failures
             if (!skippedFile && !report.isFailed() && !TestUtil.isTesting()) {
                 GetFileToolUtil.registerDownload(this, report);
@@ -1054,7 +1059,11 @@ public class GetFileTool {
         } finally {
             tearDownConnections();
             report.setTimestampEnd(TimeUtil.getTrancheTimestamp());
-
+            if (report.isFailed()) {
+                for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                    debugErr(pew.exception);
+                }
+            }
             if (timeEstimator != null) {
                 report.setFilesDownloaded(timeEstimator.getFilesDone());
                 report.setBytesDownloaded(timeEstimator.getTotalBytes());

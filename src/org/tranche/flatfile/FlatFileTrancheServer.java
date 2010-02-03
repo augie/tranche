@@ -991,6 +991,9 @@ public class FlatFileTrancheServer extends TrancheServer {
             hasDataCount++;
         }
         try {
+            if (!canRead()) {
+                throw new ServerIsNotReadableException();
+            }
             boolean[] hasList = new boolean[hashes.length];
             for (int i = 0; i < hashes.length; i++) {
                 hasList[i] = getDataBlockUtil().hasData(hashes[i]);
@@ -1014,6 +1017,9 @@ public class FlatFileTrancheServer extends TrancheServer {
             hasMetaDataCount++;
         }
         try {
+            if (!canRead()) {
+                throw new ServerIsNotReadableException();
+            }
             boolean[] hasList = new boolean[hashes.length];
             for (int i = 0; i < hashes.length; i++) {
                 hasList[i] = getDataBlockUtil().hasMetaData(hashes[i]);
@@ -2171,6 +2177,24 @@ public class FlatFileTrancheServer extends TrancheServer {
                 newMetaData = MetaData.createFromBytes(metaData);
             } catch (Exception e) {
                 throw new MetaDataIsCorruptedException();
+            }
+
+            // check for valid hash
+            if (newMetaData != null) {
+                boolean found = false;
+                UPLOADERS:
+                for (int i = 0; i < newMetaData.getUploaderCount(); i++) {
+                    newMetaData.selectUploader(i);
+                    for (FileEncoding fe : newMetaData.getEncodings()) {
+                        if (fe.getName().equals(FileEncoding.NONE) && fe.getHash().equals(hash)) {
+                            found = true;
+                            break UPLOADERS;
+                        }
+                    }
+                }
+                if (!found) {
+                    throw new ChunkDoesNotMatchHashException();
+                }
             }
 
             // remember the actions taken

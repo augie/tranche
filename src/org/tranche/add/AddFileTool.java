@@ -1178,6 +1178,9 @@ public class AddFileTool {
             }
             // need to be sure the reported hash is null when there is a failure
             if (report.isFailed()) {
+                for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                    debugErr(pew.exception);
+                }
                 report.setHash(null);
             }
             // register our upload only if there were no failures
