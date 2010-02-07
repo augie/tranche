@@ -775,6 +775,9 @@ public final class BigHash implements Comparable<BigHash> {
     
         // Top-down Aflavus. Reuploaded on 01/27/2010, Bryan
         hashRedirects.put("PfBBXOHKrcjh9hm6pygUhqOIXvohLKq4dS8A/c5U3Qaj5HfAhG+M9YjN3hZVIJuNmKlwfkFgXKsV4sNEYvJjQ8cLP+4AAAAAAAAD+Q==", "1N/JJSgBp/o4loXOhaTRdx3KD+DMGIxLoQjzaVqfu3wBOfh+lbb2lO5PbO8+7rSpXRdbY+Y66lIo9XUaM4sBYXxZZ9oAAAAAAAACyg==");
+    
+        // CPTAC study 3
+        hashRedirects.put("awK+SLwnGYqiJODu5nIO0xA1RzRRRI8K6buVjR8ZuamY344hLSjojGlM+kf/fAUSVOzJBiSt/kwJjJY4MORM0MpeEL8AAAAAAAACjg==", "R2XTcq0/SmwpnD4ZrHE14RiRHvmYN6RmYTL1BlEtNrRrNH6WQVulz4DEUQ8nYqThTkhqMYv6fkqSAcE0DDuPaHYrjkgAAAAAAAAC9g==");
     }
     // *** This is only a bug fix ***
     // Unfortunately we had to make a compromise to make some Tranche uploads
