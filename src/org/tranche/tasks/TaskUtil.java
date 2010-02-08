@@ -221,7 +221,7 @@ public class TaskUtil {
         Set<String> offlineHosts = new HashSet();
         ROWS:
         for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
-            if (row.isOnline()) {
+            if (row.isOnline() && row.isWritable()) {
                 HASH_SPANS:
                 for (HashSpan hs : row.getHashSpans()) {
                     if (hs.contains(hash)) {
