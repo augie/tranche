@@ -1,6 +1,7 @@
 #labels Featured,Phase-Implementation
   * [WhitePaper Read the white paper.]
   * [StartingRepository How to start a repository]
+  * [ToDo To-Do List]
 
 
 ==Contributing==
