@@ -40,6 +40,8 @@ An object similar to the !GetFileTool that gives an easy-to-use API for deleting
 
 An object similar to the !GetFileTool that gives an easy-to-use API for editing the meta data that exists on the repository. 
 
+If the meta data that needs to be edited is on a non-writable server, it should be deleted only if the changes were successful on another server.
+
 (NEED DETAILS - contact Augie augman85@gmail.com)
 
 
