@@ -52,9 +52,14 @@ Add functionality to the Tranche server that allows users to browse the contents
 (NEED DETAILS - contact Augie augman85@gmail.com)
 
 
-===HTTP or FTP Download===
+==Proxy Download==
 
-Wishlist item. Haven't planned how it would work.
+Download from a Tranche repository, tarring the contents on the fly and make it available as an InputStream.
+
+
+===HTTP &/ FTP Download===
+
+Wishlist item. Use the proxy download to send the InputStream to users upon request.
 
 
 ===HTTP or FTP Upload===
