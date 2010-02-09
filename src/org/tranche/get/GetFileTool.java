@@ -134,7 +134,15 @@ public class GetFileTool {
      */
     private boolean locked = false;
     private Pattern regExPattern = Pattern.compile(regEx);
+    private final GetFileToolFailedChunksListener failedChunksListener;
 
+    public GetFileTool() {
+        
+        // Create and add listener for failed chunks
+        failedChunksListener = new GetFileToolFailedChunksListener();
+        this.addListener(failedChunksListener);
+    }
+    
     /**
      * 
      * @return
@@ -2162,6 +2170,10 @@ public class GetFileTool {
         if (debug) {
             DebugUtil.reportException(e);
         }
+    }
+
+    public GetFileToolFailedChunksListener getFailedChunksListener() {
+        return failedChunksListener;
     }
 
     private class FileDecoding {

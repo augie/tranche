@@ -71,7 +71,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void failedMetaData(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
-        out.println("Meta data chunk from file <name: "+event.getFileName()+"; hash:" + event.getFileHash() + "> failed: " + event.getChunkHash());
+        out.println("Meta data chunk failed: " + event.getFileHash());
     }
 
     /**

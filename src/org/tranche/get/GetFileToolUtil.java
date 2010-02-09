@@ -15,7 +15,9 @@
  */
 package org.tranche.get;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Set;
 import org.apache.commons.httpclient.HttpClient;
@@ -23,6 +25,7 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.tranche.ConfigureTranche;
 import org.tranche.hash.Base16;
+import org.tranche.hash.BigHash;
 import org.tranche.logs.LogUtil;
 import org.tranche.project.ProjectFilePart;
 import org.tranche.server.PropagationExceptionWrapper;
@@ -160,9 +163,68 @@ public class GetFileToolUtil {
             message.append("Hash: " + gft.getHash().toString() + "\n");
             message.append("Using passphrase?: " + String.valueOf(gft.getPassphrase() != null) + "\n");
 
+
             File tempFile = null;
             try {
                 tempFile = LogUtil.getTroubleshootingInformationFile();
+
+                if (gft.getFailedChunksListener() != null) {
+
+                    BufferedWriter writer = null;
+                    try {
+                        writer = new BufferedWriter(new FileWriter(tempFile, true));
+                        GetFileToolFailedChunksListener failedChunksListener = gft.getFailedChunksListener();
+
+                        // Any missing meta data chunks
+                        int missingMDSize = failedChunksListener.getMissingMetaDataChunks().size();
+                        if (missingMDSize > 0) {
+                            writer.write("* Data set missing "+missingMDSize+" meta chunk"+(missingMDSize==1?"":"s")+":");
+                            writer.newLine();
+                            for (BigHash metaHash : failedChunksListener.getMissingMetaDataChunks()) {
+                                writer.write("    - "+metaHash);
+                                writer.newLine();
+                            }
+                        } else {
+                            writer.write("* Data set not missing any meta data chunks.");
+                            writer.newLine();
+                        }
+                        writer.newLine();
+                        
+                        // Any missing data chunks
+                        int missingDataChunksSize = 0, missingFromFiles = failedChunksListener.getMissingDataChunks().size();
+                        
+                        if (missingFromFiles > 0) {
+                            for (BigHash metaHash : failedChunksListener.getMissingDataChunks().keySet()) {
+                                Set<BigHash> dataChunks = failedChunksListener.getMissingDataChunks().get(metaHash);
+                                missingDataChunksSize += dataChunks.size();
+                            }
+                            
+                            writer.write("A total of "+missingDataChunksSize+" data chunks missing in "+missingFromFiles+" files:");
+                            writer.newLine();
+                            
+                            for (BigHash metaHash : failedChunksListener.getMissingDataChunks().keySet()) {
+                                Set<BigHash> dataChunks = failedChunksListener.getMissingDataChunks().get(metaHash);
+                                writer.write("    - File: "+metaHash);
+                                writer.newLine();
+                                
+                                for (BigHash dataHash : dataChunks) {
+                                    writer.write("        -> "+dataHash);
+                                    writer.newLine();
+                                }
+                            }
+                        } else {
+                            writer.write("* No missing data chunks were reported. (Note: data chunks might be missing and not reported because associated meta data not found.)");
+                            writer.newLine();
+                        }
+                        
+                        writer.newLine();
+                        writer.newLine();
+                        
+                    } finally {
+                        IOUtil.safeClose(writer);
+                    }
+                }
+
                 EmailUtil.sendEmail(subject, emailRecipients, message.toString(), tempFile);
             } finally {
                 IOUtil.safeDelete(tempFile);
