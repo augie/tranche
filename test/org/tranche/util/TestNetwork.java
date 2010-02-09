@@ -87,7 +87,7 @@ public class TestNetwork {
         prevStartupServers = NetworkUtil.getStartupServerURLs();
 
         Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
-        NetworkUtil.updateRows(rows);
+        NetworkUtil.getStatus().setRows(rows);
 
         // -----------------------------------------------------------------------
         // STEP 1: Add the host-to-url map entries
@@ -188,7 +188,7 @@ public class TestNetwork {
                 rows.add(row);
             }
         } finally {
-            NetworkUtil.updateRows(rows);
+            NetworkUtil.getStatus().setRows(rows);
         }
     }
 
@@ -427,7 +427,7 @@ public class TestNetwork {
 
             allRows.add(newRow);
 
-            NetworkUtil.updateRows(allRows);
+            NetworkUtil.getStatus().setRows(allRows);
         }
 
         /**

@@ -285,15 +285,7 @@ public class TaskUtil {
 
         metaData.setPublicPassphrase(passphrase);
 
-        ByteArrayOutputStream baos = null;
-        byte[] metaDataBytes = null;
-        try {
-            baos = new ByteArrayOutputStream();
-            MetaDataUtil.write(metaData, baos);
-            metaDataBytes = baos.toByteArray();
-        } finally {
-            IOUtil.safeClose(baos);
-        }
+        byte[] metaDataBytes = metaData.toByteArray();
 
         Set<String> publishedTo = new HashSet<String>();
         STRATEGIES:

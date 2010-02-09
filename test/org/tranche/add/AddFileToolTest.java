@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.tranche.ConfigureTranche;
 import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
@@ -85,6 +86,7 @@ public class AddFileToolTest extends TrancheTestCase {
         super.setUp();
         AddFileTool.setDebug(true);
         GetFileTool.setDebug(true);
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, "1");
     }
 
     @Override()
@@ -92,6 +94,7 @@ public class AddFileToolTest extends TrancheTestCase {
         super.tearDown();
         AddFileTool.setDebug(false);
         GetFileTool.setDebug(false);
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, ConfigureTranche.DEFAULT_REPLICATIONS);
     }
 
     /**
@@ -1579,8 +1582,10 @@ public class AddFileToolTest extends TrancheTestCase {
 
         // create a certificate that expires one day ago
         MakeUserZipFileTool userTool = new MakeUserZipFileTool();
+        userTool.setName("user");
+        userTool.setPassphrase("");
         userTool.setValidDays(-1);
-        userTool.setUserFile(TempFileUtil.createTemporaryFile());
+        userTool.setSaveFile(TempFileUtil.createTemporaryFile());
         UserZipFile uzf = userTool.makeCertificate();
         uzf.setFlags(SecurityUtil.getAdmin().getFlags());
 
@@ -1596,8 +1601,10 @@ public class AddFileToolTest extends TrancheTestCase {
 
         // create a certificate that expires one day ago
         MakeUserZipFileTool userTool = new MakeUserZipFileTool();
+        userTool.setName("user");
+        userTool.setPassphrase("");
         userTool.setValidDays(new Date(TimeUtil.getTrancheTimestamp() + 100000000), 1);
-        userTool.setUserFile(TempFileUtil.createTemporaryFile());
+        userTool.setSaveFile(TempFileUtil.createTemporaryFile());
         UserZipFile uzf = userTool.makeCertificate();
         uzf.setFlags(SecurityUtil.getAdmin().getFlags());
 
@@ -1643,8 +1650,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
         String HOST1 = "server1.com";
         TestNetwork testNetwork = new TestNetwork();
-        UserZipFile user = DevUtil.makeNewUser();
-        user.setFlags(User.CAN_GET_CONFIGURATION);
+        UserZipFile user = DevUtil.makeNewUser(User.CAN_GET_CONFIGURATION);
         HashSet<User> userSet = new HashSet<User>();
         userSet.add(user);
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, userSet));
@@ -1964,7 +1970,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.updateRows(rows);
+                NetworkUtil.getStatus().setRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 
@@ -2008,7 +2014,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.updateRows(rows);
+                NetworkUtil.getStatus().setRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 

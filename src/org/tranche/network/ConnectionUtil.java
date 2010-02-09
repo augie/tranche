@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
+import org.tranche.exceptions.UnresponsiveServerException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteTrancheServer;
@@ -264,6 +265,9 @@ public class ConnectionUtil {
             url = TestUtil.getServerTestURL(originalHost);
         }
         String host = IOUtil.parseHost(url);
+        if (NetworkUtil.isBannedServer(host)) {
+            return null;
+        }
         int port = IOUtil.parsePort(url);
         if (port == 0) {
             return null;
@@ -407,7 +411,7 @@ public class ConnectionUtil {
             }
             debugErr(e);
             // connection exceptions mean the server is absolutely offlikne
-            if (e instanceof ConnectException || e instanceof NoRouteToHostException) {
+            if (e instanceof ConnectException || e instanceof NoRouteToHostException || e instanceof UnresponsiveServerException) {
                 flagOffline(host);
             } // timeout exceptions mean that the server is no longer responding for some reason (transmission error, offline, etc)
             else if (e instanceof TimeoutException) {
@@ -443,11 +447,9 @@ public class ConnectionUtil {
             newRow = row.clone();
         } else {
             newRow = new StatusTableRow(host);
-            newRow.setName(host);
-            newRow.setGroup(StatusTableRow.DEFAULT_GROUP);
         }
         newRow.setIsOnline(false);
-        NetworkUtil.updateRow(newRow);
+        NetworkUtil.getStatus().setRow(newRow);
     }
 
     /**

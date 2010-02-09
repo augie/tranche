@@ -151,24 +151,23 @@ public class GFTStep3Panel extends GenericWizardPanel {
 
             // This condition might be met even if the download location is intended to be
             // a directory but doesn't exist. In any case, we'll just look at the parent!
-            if (!directory.isDirectory()) {
+            if (directory.exists() && !directory.isDirectory()) {
                 directory = directory.getParentFile();
             }
 
-            // Make the path. Shouldn't throw exception if fails. 
+            // Make the path. Shouldn't throw exception if fails.
             if (!directory.exists()) {
-                directory.mkdirs();
+                if (!directory.mkdirs()) {
+                    GenericOptionPane.showMessageDialog(
+                            wizard,
+                            "Tried to create directory <" + directory.getAbsolutePath() + ">, but couldn't.\n\nPlease verify that you have write permissions for the selected location, or select a different download directory.",
+                            "Cannot download to selected location",
+                            JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
             }
 
             // Test that directory exists
-            if (!directory.exists()) {
-                GenericOptionPane.showMessageDialog(
-                        wizard,
-                        "Tried to create directory <" + directory.getAbsolutePath() + ">, but couldn't.\n\nPlease verify that you have write permissions for the selected location, or select a different download directory.",
-                        "Cannot download to selected location",
-                        JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
             if (!directory.canWrite()) {
                 GenericOptionPane.showMessageDialog(
                         wizard,

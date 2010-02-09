@@ -108,7 +108,7 @@ public class AddFileTool {
     public static boolean DEFAULT_DATA_ONLY = false;
     public static boolean DEFAULT_SHOW_SUMMARY = false;
     public static boolean DEFAULT_SHOW_META_DATA_IF_ENCRYPTED = false;
-    public static boolean DEFAULT_EMAIL_ON_FAILURE = true;
+    public static boolean DEFAULT_EMAIL_ON_FAILURE = false;
     /**
      * Startup runtime parameters
      */
@@ -2717,11 +2717,11 @@ public class AddFileTool {
                         Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
-                            debugOut(dataChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
                             // break point
                             if (stopped || AddFileTool.this.isStopped()) {
                                 break DOWHILE;
                             }
+                            debugOut(dataChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
                             try {
                                 Collection<PropagationExceptionWrapper> innerExceptions = upload(dataChunk, strategy.getHostReceivingRequest(), toUploadCoreHosts.toArray(new String[0]));
                                 // TODO: MAKE SURE HOST NAME BEING RETURNED IS CORRECT
@@ -2731,13 +2731,40 @@ public class AddFileTool {
                                         thisUploadedHosts.remove(pew.host);
                                     }
                                 }
+                                // verify upload
+                                for (String host : thisUploadedHosts) {
+                                    // break point
+                                    if (stopped || AddFileTool.this.isStopped()) {
+                                        break DOWHILE;
+                                    }
+                                    try {
+                                        TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                        if (ts == null) {
+                                            throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
+                                        }
+                                        try {
+                                            if (!IOUtil.hasData(ts, dataChunk.hash)) {
+                                                thisUploadedHosts.remove(host);
+                                            }
+                                        } catch (Exception e) {
+                                            thisUploadedHosts.remove(host);
+                                            debugErr(e);
+                                            ConnectionUtil.reportExceptionHost(host, e);
+                                        } finally {
+                                            ConnectionUtil.unlockConnection(host);
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        thisUploadedHosts.remove(host);
+                                    }
+                                }
                                 uploadedCoreHosts.addAll(thisUploadedHosts);
                                 if (!thisUploadedHosts.isEmpty()) {
                                     toUploadCoreHosts.removeAll(thisUploadedHosts);
                                     for (String uploadedHost : thisUploadedHosts) {
                                         fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, uploadedHost);
                                     }
-                                    if (uploadedCoreHosts.size() >= 2 || toUploadCoreHosts.isEmpty()) {
+                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
                                         break;
                                     }
                                 }
@@ -2750,6 +2777,7 @@ public class AddFileTool {
                         }
 
                         // upload to non-core hosts directly
+                        Set<String> uploadedNonCoreHosts = new HashSet<String>();
                         for (String host : nonCoreHosts) {
                             // break point
                             if (stopped || AddFileTool.this.isStopped()) {
@@ -2764,7 +2792,28 @@ public class AddFileTool {
                                         doubleInnerExceptions.add(pew);
                                     }
                                 }
-                                if (doubleInnerExceptions.isEmpty()) {
+                                // verify upload
+                                boolean verified = false;
+                                try {
+                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                    if (ts == null) {
+                                        throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
+                                    }
+                                    try {
+                                        if (IOUtil.hasData(ts, dataChunk.hash)) {
+                                            verified = true;
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        ConnectionUtil.reportExceptionHost(host, e);
+                                    } finally {
+                                        ConnectionUtil.unlockConnection(host);
+                                    }
+                                } catch (Exception e) {
+                                    debugErr(e);
+                                }
+                                if (doubleInnerExceptions.isEmpty() && verified) {
+                                    uploadedNonCoreHosts.add(host);
                                     fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
                                 } else {
                                     exceptions.addAll(innerExceptions);
@@ -2775,7 +2824,7 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        if (uploadedCoreHosts.isEmpty()) {
+                        if (uploadedCoreHosts.size() < ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
                             failChunk(dataChunk, exceptions);
                         } else {
                             fireFinishedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash);
@@ -2884,7 +2933,7 @@ public class AddFileTool {
                 for (PropagationExceptionWrapper pew : wrapper.getErrors()) {
                     debugOut(pew.toString());
                 }
-                debugOut("Time spent uploading a meta data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
+                debugOut("Time spent uploading meta data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
                 return wrapper.getErrors();
             } finally {
                 ConnectionUtil.unlockConnection(host);
@@ -2967,6 +3016,10 @@ public class AddFileTool {
                                 }
                             }
                             if (!allDataThreadsDone) {
+                                // break point
+                                if (stopped || AddFileTool.this.isStopped()) {
+                                    break DOWHILE;
+                                }
                                 // sleep for data to upload
                                 ThreadUtil.safeSleep(250);
                                 // make sure it's put at the end of the queue
@@ -3003,11 +3056,11 @@ public class AddFileTool {
                         Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
-                            debugOut(metaChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
                             // break point
                             if (stopped || AddFileTool.this.isStopped()) {
                                 break DOWHILE;
                             }
+                            debugOut(metaChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
                             try {
                                 Collection<PropagationExceptionWrapper> innerExceptions = upload(metaChunk, metaDataBytes, strategy.getHostReceivingRequest(), toUploadCoreHosts.toArray(new String[0]));
                                 // TODO: MAKE SURE HOST NAME BEING RETURNED IS CORRECT
@@ -3017,13 +3070,40 @@ public class AddFileTool {
                                         thisUploadedHosts.remove(pew.host);
                                     }
                                 }
+                                // verify upload
+                                for (String host : thisUploadedHosts) {
+                                    // break point
+                                    if (stopped || AddFileTool.this.isStopped()) {
+                                        break DOWHILE;
+                                    }
+                                    try {
+                                        TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                        if (ts == null) {
+                                            throw new Exception("Could not connect to " + host + " to verify the upload of meta data " + metaChunk.hash.toString().substring(0, 5) + "...");
+                                        }
+                                        try {
+                                            if (!IOUtil.hasMetaData(ts, metaChunk.hash)) {
+                                                thisUploadedHosts.remove(host);
+                                            }
+                                        } catch (Exception e) {
+                                            thisUploadedHosts.remove(host);
+                                            debugErr(e);
+                                            ConnectionUtil.reportExceptionHost(host, e);
+                                        } finally {
+                                            ConnectionUtil.unlockConnection(host);
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        thisUploadedHosts.remove(host);
+                                    }
+                                }
                                 uploadedCoreHosts.addAll(thisUploadedHosts);
                                 if (!thisUploadedHosts.isEmpty()) {
                                     toUploadCoreHosts.removeAll(thisUploadedHosts);
                                     for (String uploadedHost : thisUploadedHosts) {
                                         fireUploadedMetaData(metaChunk.hash, uploadedHost);
                                     }
-                                    if (uploadedCoreHosts.size() >= 2 || toUploadCoreHosts.isEmpty()) {
+                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
                                         break;
                                     }
                                 }
@@ -3036,7 +3116,7 @@ public class AddFileTool {
                         }
 
                         // upload to non-core hosts directly
-                        boolean nonCoreSuccess = false;
+                        Set<String> uploadedNonCoreHosts = new HashSet<String>();
                         for (String host : nonCoreHosts) {
                             // break point
                             if (stopped || AddFileTool.this.isStopped()) {
@@ -3051,8 +3131,32 @@ public class AddFileTool {
                                         doubleInnerExceptions.add(pew);
                                     }
                                 }
-                                if (doubleInnerExceptions.isEmpty()) {
-                                    nonCoreSuccess = true;
+                                // break point
+                                if (stopped || AddFileTool.this.isStopped()) {
+                                    break DOWHILE;
+                                }
+                                // verify upload
+                                boolean verified = false;
+                                try {
+                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                    if (ts == null) {
+                                        throw new Exception("Could not connect to " + host + " to verify the upload of meta data " + metaChunk.hash.toString().substring(0, 5) + "...");
+                                    }
+                                    try {
+                                        if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
+                                            verified = true;
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        ConnectionUtil.reportExceptionHost(host, e);
+                                    } finally {
+                                        ConnectionUtil.unlockConnection(host);
+                                    }
+                                } catch (Exception e) {
+                                    debugErr(e);
+                                }
+                                if (doubleInnerExceptions.isEmpty() && verified) {
+                                    uploadedNonCoreHosts.add(host);
                                     fireUploadedMetaData(metaChunk.hash, host);
                                 } else {
                                     exceptions.addAll(innerExceptions);
@@ -3063,7 +3167,7 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        if (uploadedCoreHosts.isEmpty() && !nonCoreSuccess) {
+                        if (uploadedCoreHosts.size() < ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
                             failChunk(metaChunk, exceptions);
                         } else {
                             fireFinishedMetaData(metaChunk.metaData, metaChunk.hash);

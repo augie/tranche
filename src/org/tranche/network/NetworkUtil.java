@@ -28,7 +28,6 @@ import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.routing.RoutingTrancheServerListener;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
-import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
@@ -45,9 +44,13 @@ public class NetworkUtil {
 
     private static boolean debug = false;
     /**
-     * <p>The software comes with a list of Tranche servers to begin contact with the network.</p>
+     * <p>A list of Tranche servers to begin contact with the network.</p>
      */
     private static final Set<String> startupServerURLs = new HashSet<String>();
+    /**
+     * 
+     */
+    private static final Set<String> bannedServerHosts = new HashSet<String>();
     /**
      * <p>Data structure for server information.</p>
      */
@@ -55,7 +58,7 @@ public class NetworkUtil {
     /**
      * <p>Used in the lazy-load process.</p>
      */
-    private static boolean startedLoadingNetwork = false,  finishedLoadingNetwork = false;
+    private static boolean startedLoadingNetwork = false, finishedLoadingNetwork = false;
     /**
      * <p>Need to modify behavior depending on whether there is a server running on this JVM.</p>
      */
@@ -76,7 +79,6 @@ public class NetworkUtil {
             }
         }
     };
-
 
     static {
         // This listener allows the NetworkUtil to automatically update itself when test conditions change.
@@ -112,8 +114,8 @@ public class NetworkUtil {
                 }
 
                 debugOut("Connection made: " + event.getHost());
+                StatusTableRow row = masterStatusTable.getRow(event.getHost());
                 // is this not in the status table?
-                StatusTableRow row = getStatus().getRow(event.getHost());
                 if (row == null) {
                     // add it for reference
                     row = new StatusTableRow(event.getHost());
@@ -121,15 +123,14 @@ public class NetworkUtil {
                     row.setIsOnline(true);
                     row.setIsSSL(event.isSSL());
                     row.setPort(event.getPort());
-                    updateRow(row);
+                    masterStatusTable.setRow(row);
                 } else {
                     // update the connection parameters
                     StatusTableRow newRow = row.clone();
-                    newRow.setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
                     newRow.setIsOnline(true);
                     newRow.setPort(event.getPort());
                     newRow.setIsSSL(event.isSSL());
-                    updateRow(newRow);
+                    masterStatusTable.setRow(newRow);
                 }
             }
         });
@@ -151,20 +152,59 @@ public class NetworkUtil {
     }
 
     /**
+     * 
+     * @param serverHosts
+     */
+    public static void setBannedServerHosts(Collection<String> serverHosts) {
+        synchronized (bannedServerHosts) {
+            bannedServerHosts.clear();
+            for (String host : serverHosts) {
+                if (host == null) {
+                    continue;
+                }
+                String normalizedHost = normalize(host);
+                debugOut("Adding banned server host: " + normalizedHost);
+                bannedServerHosts.add(normalizedHost);
+            }
+        }
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public static Collection<String> getBannedServerHosts() {
+        List<String> list = new LinkedList<String>();
+        synchronized (bannedServerHosts) {
+            list.addAll(bannedServerHosts);
+        }
+        return Collections.unmodifiableCollection(list);
+    }
+
+    /**
+     * 
+     * @param host
+     * @return
+     */
+    public static boolean isBannedServer(String host) {
+        synchronized (bannedServerHosts) {
+            return bannedServerHosts.contains(host);
+        }
+    }
+
+    /**
      * <p>Clears all the startup server URL's and adds the ones from the given collection of server URL's.</p>
      * @param serverURLs A collection of Tranche server URL's
      */
     public static void setStartupServerURLs(Collection<String> serverURLs) {
         synchronized (startupServerURLs) {
             startupServerURLs.clear();
-        }
-        for (String serverURL : serverURLs) {
-            if (serverURL == null) {
-                continue;
-            }
-            String normalizedURL = normalize(serverURL);
-            debugOut("Adding startup server URL: " + normalizedURL);
-            synchronized (startupServerURLs) {
+            for (String serverURL : serverURLs) {
+                if (serverURL == null) {
+                    continue;
+                }
+                String normalizedURL = normalize(serverURL);
+                debugOut("Adding startup server URL: " + normalizedURL);
                 startupServerURLs.add(normalizedURL);
             }
         }
@@ -270,7 +310,7 @@ public class NetworkUtil {
                     WHILE:
                     while (serversTried.size() < getStartupServerURLs().size()) {
                         // go to three random startup servers to request the network status
-                        Collection<String> serversToAsk = getRandomStartupServerURLs(4, serversTried);
+                        Collection<String> serversToAsk = getRandomStartupServerURLs(10, serversTried);
                         // dummy check
                         if (serversToAsk.isEmpty()) {
                             break;
@@ -304,7 +344,7 @@ public class NetworkUtil {
                                         if (ts != null) {
                                             StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
                                             table.removeDefunctRows();
-                                            updateRows(table.getRows());
+                                            masterStatusTable.setRows(table.getRows());
                                             success[j] = true;
                                             debugOut("Retreived the network status table from " + serverURL);
                                         }
@@ -325,11 +365,12 @@ public class NetworkUtil {
                                 debugErr(e);
                             }
                         }
-                        for (boolean s : success) {
-                            if (s) {
-                                break WHILE;
-                            }
-                        }
+                        // TODO: uncomment when the online status in the network status table is stablized
+//                        for (boolean s : success) {
+//                            if (s) {
+//                                break WHILE;
+//                            }
+//                        }
                     }
                     // adjust the connections
                     ConnectionUtil.adjustConnections();
@@ -439,55 +480,6 @@ public class NetworkUtil {
      */
     public static StatusTable getStatus() {
         return masterStatusTable;
-    }
-
-    /**
-     * <p>Updates the master status table with the given rows except when trying to update the local server row.</p>
-     * <p>If the local server row needs to be updated use NetworkUtil.getLocalServerRow().update(NetworkUtil.getLocalServer()) method.</p>
-     * @param row A status row
-     */
-    public static void updateRow(StatusTableRow row) {
-        debugOut("Updating a row in the master status table.");
-        // ignore the local server
-        if (NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
-            return;
-        }
-        debugOut(" Setting row: " + row.getHost());
-        // check for port, secure in startup server list
-        if (row.getPort() == 0) {
-            for (String url : getStartupServerURLs()) {
-                try {
-                    String host = IOUtil.parseHost(url);
-                    if (row.getHost().equals(normalize(host))) {
-                        row.setPort(IOUtil.parsePort(url));
-                        row.setIsSSL(IOUtil.parseSecure(url));
-                    }
-                } catch (Exception e) {
-                }
-            }
-        }
-        // update the master status table
-        masterStatusTable.setRow(row);
-    }
-
-    /**
-     * <p>Updates the master status table with the given rows except when trying to update the local server row.</p>
-     * <p>If the local server row needs to be updated use NetworkUtil.getLocalServerRow().update(NetworkUtil.getLocalServer()) method.</p>
-     * @param rows A collection of status rows
-     */
-    public static void updateRows(Collection<StatusTableRow> rows) {
-        debugOut("Updating rows in the master status table.");
-        Collection<StatusTableRow> rowsToSet = new HashSet<StatusTableRow>();
-        for (StatusTableRow row : rows) {
-            // ignore the local server
-            if (!TestUtil.isTesting() && NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
-                continue;
-            }
-            debugOut(" Setting row: " + row.getHost());
-            rowsToSet.add(row);
-        }
-        // update the master status table
-        masterStatusTable.setRows(rowsToSet);
     }
 
     /**

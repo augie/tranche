@@ -288,6 +288,23 @@ public class MetaDataTest extends TrancheTestCase {
         assertEquals(mimeType, md.getMimeType());
     }
 
+    public void testGetHash() throws Exception {
+        TestUtil.printTitle("MetaDataTest:testGetHash()");
+
+        MetaData md = createMetaData(RandomUtil.getString(15), TimeUtil.getTrancheTimestamp(), RandomUtil.getString(50), false);
+
+        // hash should be the the NONE hash
+        BigHash expectedHash = null;
+        for (FileEncoding encoding : md.getEncodings()) {
+            if (encoding.getName().equals(FileEncoding.NONE)) {
+                expectedHash = encoding.getHash();
+                break;
+            }
+        }
+
+        assertEquals(expectedHash.toString(), md.getHash().toString());
+    }
+
     public void testStickyServers() throws Exception {
         TestUtil.printTitle("MetaDataTest:testStickyServers()");
 

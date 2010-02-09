@@ -12,6 +12,5 @@ PREREQUISITES:
 
 3. Navigate to the top-most directory in the unzipped file.
 
-4. Run the following command and read the output to determine what to put in palce of {OPTIONS} in the next step: java -jar ./tranche.jar
+4. Run the following command to learn usage: java -jar ./tranche-server.jar
 
-5. Run the following command to start your Tranche server, replacing {CONFIGURATION FILE LOCATION} with the classpath location, file system location , or URL of the configuration file for your repository: java -Xmx512m -jar ./tranche.jar {CONFIGURATION FILE LOCATION} {OPTIONS}

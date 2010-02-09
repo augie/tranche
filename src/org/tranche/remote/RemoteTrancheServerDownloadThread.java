@@ -64,14 +64,14 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                 // Keep track of last two times woke up from wait.
                 this.rts.setLastTimeWakeUp(TimeUtil.getTrancheTimestamp());
 
-                RemoteTrancheServer.debugOut("Server " + IOUtil.createURL(rts) + "; Released block on download thread");
+                RemoteTrancheServer.debugOut("Server " + rts.getHost() + "; Released block on download thread");
 
                 DataInputStream dis = rts.getDataInputStream();
                 // check for the ok byte
                 int okCheck = dis.read();
                 // check for the OK byte
                 if (okCheck != RemoteTrancheServer.OK_BYTE) {
-                    throw new Exception("Broken transmission sequence! Expected '" + RemoteTrancheServer.OK_BYTE + "', but found '" + okCheck + "'");
+                    throw new Exception("Server " + rts.getHost() + "; Broken transmission sequence! Expected '" + RemoteTrancheServer.OK_BYTE + "', but found '" + okCheck + "'");
                 }
 
                 // get the id of the action
@@ -102,7 +102,6 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                 rts.setTimeLastUsed(TimeUtil.getTrancheTimestamp());
 
                 // is this a keep alive signal?
-                boolean isKeepAlive = false;
                 if (buffer.length == Token.KEEP_ALIVE.length && new String(buffer).trim().equals(Token.KEEP_ALIVE_STRING.trim())) {
                     RemoteCallback rc = null;
                     synchronized (rts.outgoingSent) {
@@ -113,34 +112,44 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                         continue;
                     }
                     // has this been kept alive too long?
-                    int timeout = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_KEEP_ALIVE_TIMEOUT);
-                    if (TimeUtil.getTrancheTimestamp() - rc.getTimeStarted() < timeout) {
+                    long timeout = ConfigureTranche.getLong(ConfigureTranche.PROP_SERVER_KEEP_ALIVE_TIMEOUT);
+                    RemoteTrancheServer.debugOut("Keep-alive timeout: " + timeout);
+                    if (timeout == 0 || TimeUtil.getTrancheTimestamp() - rc.getTimeStarted() < timeout) {
+                        RemoteTrancheServer.debugOut("Keeping alive " + rts.getHost());
                         rc.keepAlive();
-                        isKeepAlive = true;
+                        continue;
                     } else {
-                        buffer = Token.REJECTED_CONNECTION;
-                    }
-                }
-                if (!isKeepAlive) {
-                    // remove the pending item
-                    rts.fireFinishedDownloadingBytes(id, buffer.length, buffer.length);
-
-                    RemoteCallback ra = null;
-                    synchronized (rts.outgoingSent) {
-                        ra = rts.outgoingSent.remove(id);
-                    }
-
-                    // unregister the callback
-                    RemoteCallbackRegistry.unregister(ra);
-
-                    // If null, was removed (probably timeout related)
-                    if (ra == null) {
+                        RemoteTrancheServer.debugOut("Keep-alive timed out: " + rts.getHost());
+                        // remove
+                        synchronized (rts.outgoingSent) {
+                            rts.outgoingSent.remove(id);
+                        }
+                        // unregister the callback
+                        RemoteCallbackRegistry.unregister(rc);
+                        // wake up threads waiting and the item will time out
+                        rc.notifyTimedOut();
                         continue;
                     }
-
-                    // invoke the callback
-                    ra.callback(buffer);
                 }
+
+                // remove the pending item
+                rts.fireFinishedDownloadingBytes(id, buffer.length, buffer.length);
+
+                RemoteCallback ra = null;
+                synchronized (rts.outgoingSent) {
+                    ra = rts.outgoingSent.remove(id);
+                }
+
+                // unregister the callback
+                RemoteCallbackRegistry.unregister(ra);
+
+                // If null, was removed (probably timeout related)
+                if (ra == null) {
+                    continue;
+                }
+
+                // invoke the callback
+                ra.callback(buffer);
             } catch (NullPointerException npe) {
                 RemoteTrancheServer.debugErr(npe);
             } catch (InterruptedException ie) {

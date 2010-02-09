@@ -43,16 +43,17 @@ import org.tranche.time.TimeUtil;
  */
 public class UserZipFile extends User {
 
+    private static boolean debug = false;
     public static final int VERSION_ONE = 1;
     public static final int VERSION_LATEST = VERSION_ONE;
     /**
      * <p>Name of the public certificate file.</p>
      */
-    public static final String PUBLIC_CERTIFICATE = "public.certificate";
+    public static final String PUBLIC_CERTIFICATE_NAME = "public.certificate";
     /**
      * <p>Name of the private key file.</p>
      */
-    public static final String PRIVATE_KEY = "private.key";
+    public static final String PRIVATE_KEY_NAME = "private.key";
     private int version = VERSION_LATEST;
     private File file;
     private String passphrase = null, email = null;
@@ -91,7 +92,7 @@ public class UserZipFile extends User {
     /**
      * 
      */
-    private void lazyLoad() {
+    private synchronized void lazyLoad() {
         // check if the class has already been loaded
         if (lazyLoaded) {
             return;
@@ -151,7 +152,7 @@ public class UserZipFile extends User {
             // handle the data
             for (ZipEntry ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
                 // if it is the certificate, load it
-                if (ze.getName().equals(UserZipFile.PUBLIC_CERTIFICATE)) {
+                if (ze.getName().equals(UserZipFile.PUBLIC_CERTIFICATE_NAME)) {
                     // read in the bytes from the entry
                     byte[] certBytes = IOUtil.getBytes(zis);
                     X509Certificate cert = SecurityUtil.getCertificate(certBytes);
@@ -160,7 +161,7 @@ public class UserZipFile extends User {
                     continue;
                 }
                 // if it is the certificate, load it
-                if (ze.getName().equals(UserZipFile.PRIVATE_KEY)) {
+                if (ze.getName().equals(UserZipFile.PRIVATE_KEY_NAME)) {
                     // read in the bytes from the entry
                     byte[] keyBytes = IOUtil.getBytes(zis);
                     PrivateKey key = SecurityUtil.getPrivateKey(keyBytes);
@@ -194,7 +195,7 @@ public class UserZipFile extends User {
 
             // write the certificate
             {
-                ZipEntry certEntry = new ZipEntry(UserZipFile.PUBLIC_CERTIFICATE);
+                ZipEntry certEntry = new ZipEntry(UserZipFile.PUBLIC_CERTIFICATE_NAME);
                 byte[] certBytes = getCertificate().getEncoded();
                 certEntry.setSize(certBytes.length);
                 zos.putNextEntry(certEntry);
@@ -203,7 +204,7 @@ public class UserZipFile extends User {
 
             // write the certificate
             {
-                ZipEntry keyEntry = new ZipEntry(UserZipFile.PRIVATE_KEY);
+                ZipEntry keyEntry = new ZipEntry(UserZipFile.PRIVATE_KEY_NAME);
                 byte[] keyBytes = getPrivateKey().getEncoded();
                 keyEntry.setSize(keyBytes.length);
                 zos.putNextEntry(keyEntry);
@@ -389,5 +390,41 @@ public class UserZipFile extends User {
     @Override
     public int hashCode() {
         return getCertificate().hashCode();
+    }
+
+    /**
+     * <p>Sets the flag for whether the output and error information should be written.</p>
+     * @param debug The flag for whether the output and error information should be written.</p>
+     */
+    public static final void setDebug(boolean debug) {
+        UserZipFile.debug = debug;
+    }
+
+    /**
+     * <p>Returns whether the output and error information is being written.</p>
+     * @return Whether the output and error information is being written.
+     */
+    public static final boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     *
+     * @param line
+     */
+    private static final void debugOut(String line) {
+        if (debug) {
+            DebugUtil.printOut(UserZipFile.class.getName() + "> " + line);
+        }
+    }
+
+    /**
+     *
+     * @param e
+     */
+    private static final void debugErr(Exception e) {
+        if (debug) {
+            DebugUtil.reportException(e);
+        }
     }
 }

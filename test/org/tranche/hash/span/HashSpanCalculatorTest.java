@@ -15,11 +15,7 @@
  */
 package org.tranche.hash.span;
 
-import org.tranche.security.SecurityUtil;
 import org.tranche.util.*;
-import org.tranche.users.MakeUserZipFileTool;
-import org.tranche.users.UserZipFile;
-import java.io.File;
 import org.tranche.exceptions.TodoException;
 
 /**
@@ -630,23 +626,5 @@ public class HashSpanCalculatorTest extends TrancheTestCase {
 //                IOUtil.recursiveDeleteWithWarning(tmpDir);
 //            }
 //        }
-
-    }
-    // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    // Helper method to create user. Can specify whether admin or not
-    private UserZipFile createUser(String username, String password, String filename, boolean admin) throws Exception {
-
-        MakeUserZipFileTool maker = new MakeUserZipFileTool();
-        maker.setName(username);
-        maker.setPassphrase(password);
-        maker.setUserFile(new File(filename));
-        UserZipFile zip = (UserZipFile) maker.makeCertificate();
-
-        // Set user permissions as admin (server needs user registered or it will
-        // throw a SecurityException on attempted file upload)
-        if (admin) {
-            zip.setFlags((new SecurityUtil()).getAdmin().getFlags());
-        }
-        return zip;
     }
 }

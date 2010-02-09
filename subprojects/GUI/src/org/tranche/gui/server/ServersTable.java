@@ -48,7 +48,6 @@ import org.tranche.gui.IndeterminateProgressBar;
 import org.tranche.gui.server.monitor.ServerMonitor;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.network.ConnectionUtil;
-import org.tranche.network.NetworkUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.ThreadUtil;
@@ -98,7 +97,7 @@ public class ServersTable extends GenericTable {
 
     private void updateColumnRendering() {
         // size of columns
-        int c = 2;
+        int c = 3;
         if (model.getShowUseColumn()) {
             getColumnModel().getColumn(0).setMaxWidth(20);
             getColumnModel().getColumn(0).setMinWidth(20);
@@ -141,13 +140,13 @@ public class ServersTable extends GenericTable {
             int column = columnAtPoint(e.getPoint());
             if (!model.getShowUseColumn()) {
                 column++;
-            } else if (column == 3) {
+            } else if (column == 4) {
                 if (model.isOnline(row)) {
                     returnVal = "Online";
                 } else {
                     returnVal = "Offline";
                 }
-            } else if (column == 4) {
+            } else if (column == 5) {
                 if (model.isConnected(row)) {
                     returnVal = "Connected";
                 } else {
@@ -158,8 +157,8 @@ public class ServersTable extends GenericTable {
 
         // if the text for the tool tip text is too long, shorten it.
         if (returnVal != null) {
-            if (returnVal.length() > 80) {
-                returnVal = returnVal.substring(0, 80) + "...";
+            if (returnVal.length() > 50) {
+                returnVal = returnVal.substring(0, 50) + "...";
             } else if (returnVal.equals("")) {
                 returnVal = null;
             }
@@ -181,7 +180,11 @@ public class ServersTable extends GenericTable {
 
         final int serverCount = getSelectedHosts().size();
         if (serverCount > 1) {
-            int returnValue = GenericOptionPane.showConfirmDialog(ServersTable.this.getParent(), "You selected to open "+serverCount+" server monitors. Continue?", "Open "+serverCount+" monitors?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            Component popupRelativeTo = relativeTo;
+            if (popupRelativeTo == null) {
+                popupRelativeTo = ServersTable.this;
+            }
+            int returnValue = GenericOptionPane.showConfirmDialog(relativeTo, "You selected to open " + serverCount + " server monitors. Continue?", "Open " + serverCount + " monitors?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (returnValue != JOptionPane.YES_OPTION) {
                 return;
             }

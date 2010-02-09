@@ -34,157 +34,63 @@ import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.tranche.time.TimeUtil;
-import org.tranche.security.SecurityUtil;
+import org.tranche.util.DebugUtil;
 
 /**
- * <p>This is a helper class that makes user files, i.e. X.509 certificates and 
- * assocated private keys. The information is saved in a password protected ZIP 
- * file. Default values are generated for everything except the file location. 
- * If you don't want to customize the user, you can simply specify a location 
- * for the file and invoke the makeCertificate() method.</p>
- * 
+ * <p>This is a helper class that makes user files, i.e. X.509 certificates and assocated private keys. The information is saved in a password protected ZIP file.</p>
  * @author Jayson Falkner - jfalkner@umich.edu
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class MakeUserZipFileTool {
-    
-    // make up a random name
-    private String name = "Custom User - " + (int) (Math.random() * Integer.MAX_VALUE);
-    private String organizationalUnit = "Tranche Participant";
-    private String organization = "Tranche";
-    private String location = "Ann Arbor";
-    private String state = "Michigan";
-    private String country = "US";
-    private Date startDate = new Date(TimeUtil.getTrancheTimestamp());
-    private long validDays = 14;    // track the signer
-    private X509Certificate signerCertificate = null;
-    private PrivateKey signerPrivateKey = null;    // the keypair
-    private KeyPair kp = null;    // the passphrase
-    private String passphrase = "";
-    // the file to save to
-    private File userFile = null;
 
-    /**
-     * 
-     * @param args
-     * @throws java.lang.Exception
-     */
-    public static void main(String[] args) throws Exception {
-        if (args.length < 1) {
-            System.out.println("Usage: java -jar X509CertificateTool <options>\n");
-            System.out.println("Options:");
-            System.out.println("  name  The name that'll appear on the certificate. For websites this should be your website name.");
-            return;
-        }
+    private static boolean debug = false;
+    private String name,  passphrase;
+    private Date startDate;
+    private long validDays;
+    private X509Certificate signerCertificate;
+    private PrivateKey signerPrivateKey;
+    private File saveFile;
 
-        // use bouncy castle
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-
-        // make the tool
-        MakeUserZipFileTool ct = new MakeUserZipFileTool();
-
-        // load the parameters
-        for (int i = 0; i < args.length - 1; i++) {
-            // check for the name
-            if (args[i].equals("--name")) {
-                // get the name
-                ct.setName(args[i + 1]);
-            }
-            // check for the name
-            if (args[i].equals("--issuer")) {
-                // load the issuer if appropriate
-                String fileName = args[i + 1].replaceAll("\"", "");
-                ct.setSignerCertificate(SecurityUtil.getCertificate(new File(fileName)));
-            }
-            // check for the name
-            if (args[i].equals("--issuerKey")) {
-                // load the issuer if appropriate
-                String fileName = args[i + 1].replaceAll("\"", "");
-                ct.setSignerPrivateKey(SecurityUtil.getPrivateKeyFromKeyStore(fileName, "password", "jfalkner", "password"));
-            }
-            // check for the key file
-            if (args[i].equals("--issuerKeyFile")) {
-                // load the issuer if appropriate
-                String fileName = args[i + 1].replaceAll("\"", "");
-                ct.setSignerPrivateKey(SecurityUtil.getPrivateKey(new File(fileName)));
-            }
-        }
-
-        // make the certificate
-        UserZipFile uzf = ct.makeCertificate();
-//        makeFiles(cert, ct);
-
-        System.out.println("User file saved as " + ct.getUserFile());
-    }
-
-//    public static void makeFiles(final X509Certificate cert, final X509CertificateTool ct) throws CertificateEncodingException, FileNotFoundException, IOException {
-//        
-//        {
-//            System.out.println("Saving public certificate to 'public.certificate'");
-//            // save the certificate
-//            FileOutputStream pubOut = new FileOutputStream("public.certificate");
-//            pubOut.write(cert.getEncoded());
-//            pubOut.flush();
-//            pubOut.close();
-//        }
-//        
-//        {
-//            System.out.println("Saving Base64 encoded public certificate to 'public.certificate.b64'");
-//            // save the certificate
-//            FileOutputStream pubOut = new FileOutputStream("public.certificate.b64");
-//            pubOut.write(Base64.encodeBytes(cert.getEncoded()).getBytes());
-//            pubOut.flush();
-//            pubOut.close();
-//        }
-//        
-//        System.out.println("Saving private key to 'private.key'");
-//        // save the private key
-//        FileOutputStream privOut = new FileOutputStream("private.key");
-//        privOut.write(ct.getKp().getPrivate().getEncoded());
-//        privOut.flush();
-//        privOut.close();
-//    }
     /**
      * <p>Executes the creation of the UserZipFile.</p>
      * @return
+     * @throws java.lang.NullPointerException
      * @throws java.security.NoSuchAlgorithmException
      * @throws java.security.NoSuchProviderException
      * @throws java.security.SignatureException
      * @throws java.security.InvalidKeyException
      */
-    public UserZipFile makeCertificate() throws NoSuchAlgorithmException, NoSuchProviderException, SignatureException, InvalidKeyException {
-        // check for user file
-        if (userFile == null) {
-            throw new RuntimeException("Must specify a file to save the user information.");        // make up a new authority
+    public UserZipFile makeCertificate() throws NullPointerException, NoSuchAlgorithmException, NoSuchProviderException, SignatureException, InvalidKeyException {
+        // checks
+        if (name == null) {
+            throw new NullPointerException("Name is not set.");
         }
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        if (passphrase == null) {
+            throw new NullPointerException("Passphrase is not set.");
+        }
+        if (saveFile == null) {
+            throw new RuntimeException("Save location is not set.");
+        }
+
+        // execute
+        Security.addProvider(new BouncyCastleProvider());
         // make up a new RSA keypair
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
         keyGen.initialize(1024);
 
-        //ca key pair
-        kp = keyGen.generateKeyPair();
-
-        // set the private key
-        PrivateKey privateKey = getKp().getPrivate();
-        PublicKey publicKey = getKp().getPublic();
-        // register bouncy castle
-        Security.addProvider(new BouncyCastleProvider());
+        // key pair
+        KeyPair keyPair = keyGen.generateKeyPair();
+        PrivateKey privateKey = keyPair.getPrivate();
+        PublicKey publicKey = keyPair.getPublic();
 
         // make a new certificate
         Hashtable attrs = new Hashtable();
-        attrs.put(X509Principal.CN, getName());
-        attrs.put(X509Principal.OU, getOrganizationalUnit());
-        attrs.put(X509Principal.O, getOrganization());
-        attrs.put(X509Principal.L, getLocation());
-        attrs.put(X509Principal.ST, getState());
-        attrs.put(X509Principal.C, getCountry());
-
-        Date lastDate = new Date(startDate.getTime() + validDays * (24l * 60l * 60l * 1000l));
+        attrs.put(X509Principal.CN, name);
 
         // Serialnumber is random bits, where random generator is initialized with Date.getTime()
         byte[] serno = new byte[8];
         SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-        random.setSeed((new Date().getTime()));
+        random.setSeed(TimeUtil.getTrancheTimestamp());
         random.nextBytes(serno);
         BigInteger sn = new java.math.BigInteger(serno).abs();
 
@@ -195,31 +101,31 @@ public class MakeUserZipFileTool {
         X509V3CertificateGenerator gen = new X509V3CertificateGenerator();
         gen.setSerialNumber(sn);
         // use the give issuer if appropriate
-        if (getSignerCertificate() != null && getSignerPrivateKey() != null) {
-            gen.setIssuerDN((X509Principal) getSignerCertificate().getSubjectDN());
+        if (signerCertificate != null && signerPrivateKey != null) {
+            gen.setIssuerDN((X509Principal) signerCertificate.getSubjectDN());
         } else {
             gen.setIssuerDN(principal);
         }
         gen.setNotBefore(startDate);
-        gen.setNotAfter(lastDate);
+        gen.setNotAfter(new Date(startDate.getTime() + (validDays * Long.valueOf("86400000"))));
         gen.setSubjectDN(principal);
         gen.setSignatureAlgorithm("SHA1WITHRSA");
         gen.setPublicKey(publicKey);
 
         // make the certificate
         X509Certificate cert = null;
-        if (getSignerCertificate() != null && getSignerPrivateKey() != null) {
+        if (signerCertificate != null && signerPrivateKey != null) {
             cert = gen.generateX509Certificate(getSignerPrivateKey());
         } else {
             cert = gen.generateX509Certificate(privateKey);
         }
 
         // make the user file
-        UserZipFile uzf = new UserZipFile(getUserFile());
+        UserZipFile uzf = new UserZipFile(saveFile);
         uzf.setCertificate(cert);
         uzf.setPrivateKey(privateKey);
-        uzf.setPassphrase(getPassphrase());
-        uzf.saveTo(getUserFile());
+        uzf.setPassphrase(passphrase);
+        uzf.saveTo(saveFile);
 
         // return the user
         return uzf;
@@ -242,94 +148,6 @@ public class MakeUserZipFileTool {
     }
 
     /**
-     * <p>Gets the organizational unit.</p>
-     * @return
-     */
-    public String getOrganizationalUnit() {
-        return organizationalUnit;
-    }
-
-    /**
-     * <p>Sets the certificate organizational unit.</p>
-     * @param organizationalUnit
-     */
-    public void setOrganizationalUnit(String organizationalUnit) {
-        this.organizationalUnit = organizationalUnit;
-    }
-
-    /**
-     * <p>Gets the certificate organization.</p>
-     * @return
-     */
-    public String getOrganization() {
-        return organization;
-    }
-
-    /**
-     * <p>Sets the certificate organization.</p>
-     * @param organization
-     */
-    public void setOrganization(String organization) {
-        this.organization = organization;
-    }
-
-    /**
-     * <p>Gets the certificate location.</p>
-     * @return
-     */
-    public String getLocation() {
-        return location;
-    }
-
-    /**
-     * <p>Sets the certificate location.</p>
-     * @param location
-     */
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    /**
-     * <p>Gets the certificate state</p>
-     * @return
-     */
-    public String getState() {
-        return state;
-    }
-
-    /**
-     * <p>Sets the certificate state</p>
-     * @param state
-     */
-    public void setState(String state) {
-        this.state = state;
-    }
-
-    /**
-     * <p>Gets the certificate country.</p>
-     * @return
-     */
-    public String getCountry() {
-        return country;
-    }
-
-    /**
-     * <p>Sets the certificate country.</p>
-     * @param country
-     */
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    /**
-     * <p>Gets the key pair.</p>
-     * @return
-     */
-    public KeyPair getKp() {
-        return kp;
-    }
-
-    /**
      * <p>Returns the number of days that the user's X.509 certificate should be considered valid.</p>
      * @return The number of days that the user's X.509 certificate should be considered valid.
      */
@@ -342,7 +160,7 @@ public class MakeUserZipFileTool {
      * @param validDays The number of days that ther user's X.509 certificate should be considered valid.
      */
     public void setValidDays(long validDays) {
-        this.validDays = validDays;
+        setValidDays(new Date(TimeUtil.getTrancheTimestamp()), validDays);
     }
 
     /**
@@ -375,16 +193,16 @@ public class MakeUserZipFileTool {
      * <p>Returns a File object representing the file on the local disk that contains the user information. This file is normally a ZIP archive that has been AES 256 bit encrypted.</p>
      * @return A File object that represents the file that contains the user's information.
      */
-    public File getUserFile() {
-        return userFile;
+    public File getSaveFile() {
+        return saveFile;
     }
 
     /**
-     * <p>A method to get the file that the user's information is or will be saved to. This can be any file on the local filesystem.</p>
-     * @param userFile A File object representing the file with the user information.
+     * <p>A method to get the file that the user zip file will be saved to. This can be any file on the local filesystem.</p>
+     * @param saveFile
      */
-    public void setUserFile(File userFile) {
-        this.userFile = userFile;
+    public void setSaveFile(File saveFile) {
+        this.saveFile = saveFile;
     }
 
     /**
@@ -417,5 +235,136 @@ public class MakeUserZipFileTool {
      */
     public void setSignerPrivateKey(PrivateKey signerPrivateKey) {
         this.signerPrivateKey = signerPrivateKey;
+    }
+
+    /**
+     *
+     */
+    private static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [FLAGS / PARAMETERS] <NAME> <PASSPHRASE> <VALID DAYS> <FILE>");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Creates a user zip file with the user name <NAME> and passphrase <PASSPHRASE> that is valid for <VALID DAYS> days and saves it to <FILE>.");
+        System.out.println();
+        System.out.println("OUTPUT FLAGS");
+        System.out.println("    -d, --debug                 Values: none.               If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
+        System.out.println("    -h, --help                  Values: none.               Print usage and exit. All other arguments will be ignored.");
+        System.out.println("    -n, --buildnumber           Values: none.               Print version number and exit. All other arguments will be ignored.");
+        System.out.println("    -V, --version               Values: none.               Print version number and exit. All other arguments will be ignored.");
+        System.out.println();
+        System.out.println("PARAMETERS");
+        System.out.println("    -s, --signer                Values: two strings.        Optional. A user zip file and its passphrase used to sign the new user zip file.");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    0:     Exited normally");
+        System.out.println("    1:     Unknown error");
+        System.out.println("    2:     Bad argument");
+        System.out.println("    3:     Known error");
+        System.out.println();
+    }
+
+    /**
+     * 
+     * @param args
+     * @throws java.lang.Exception
+     */
+    public static void main(String args[]) throws Exception {
+        try {
+            if (args.length < 4) {
+                printUsage();
+                System.exit(0);
+            }
+
+            // Look for help request. If one, print and exit.
+            for (int i = 0; i < args.length - 4; i++) {
+                if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    System.exit(0);
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    System.exit(0);
+                } else if (args[i].equals("-d") || args[i].equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                    UserZipFile.setDebug(true);
+                }
+            }
+
+            //
+            MakeUserZipFileTool tool = new MakeUserZipFileTool();
+
+            // parameters
+            for (int i = 0; i < args.length - 4; i += 2) {
+                if (args[i].equals("-s") || args[i].equals("--signer")) {
+                    try {
+                        UserZipFile signer = new UserZipFile(new File(args[i + 1]));
+                        signer.setPassphrase(args[i + 2]);
+                        tool.setSignerCertificate(signer.getCertificate());
+                        tool.setSignerPrivateKey(signer.getPrivateKey());
+                        i++;
+                    } catch (Exception e) {
+                        System.out.println("ERROR: " + e.getMessage());
+                        System.exit(2);
+                    }
+                }
+            }
+
+            // read the args
+            tool.setName(args[args.length - 4]);
+            tool.setPassphrase(args[args.length - 3]);
+            try {
+                tool.setValidDays(Integer.valueOf(args[args.length - 2]));
+            } catch (Exception e) {
+                System.out.println("ERROR: Invalid value for <DAYS VALID>.");
+                System.exit(2);
+            }
+            tool.setSaveFile(new File(args[args.length - 1]));
+
+            // execute
+            tool.makeCertificate();
+
+            System.exit(0);
+        } catch (Exception e) {
+            debugErr(e);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * <p>Sets the flag for whether the output and error information should be written.</p>
+     * @param debug The flag for whether the output and error information should be written.</p>
+     */
+    public static final void setDebug(boolean debug) {
+        MakeUserZipFileTool.debug = debug;
+    }
+
+    /**
+     * <p>Returns whether the output and error information is being written.</p>
+     * @return Whether the output and error information is being written.
+     */
+    public static final boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     *
+     * @param line
+     */
+    private static final void debugOut(String line) {
+        if (debug) {
+            DebugUtil.printOut(MakeUserZipFileTool.class.getName() + "> " + line);
+        }
+    }
+
+    /**
+     *
+     * @param e
+     */
+    private static final void debugErr(Exception e) {
+        if (debug) {
+            DebugUtil.reportException(e);
+        }
     }
 }

@@ -340,7 +340,7 @@ public class MetaData {
         if (targetUploaderName == null) {
             throw new NullPointerException("Null uploader name.");
         }
-        if (targetUploadTimestamp == null)  {
+        if (targetUploadTimestamp == null) {
             throw new NullPointerException("Null upload timestamp.");
         }
         String targetUploadTimestampString = String.valueOf(targetUploadTimestamp);
@@ -348,9 +348,9 @@ public class MetaData {
         List<Integer> indicesOfUploaders = new ArrayList<Integer>();
         for (MetaDataUploader uploader : uploaders) {
             // found the uploader, timestamp, and path
-            if (uploader.getSignature().getUserName().equals(targetUploaderName) &&
-                    (uploader.getProperties().containsKey(PROP_TIMESTAMP_UPLOADED) && uploader.getProperties().get(PROP_TIMESTAMP_UPLOADED).equals(targetUploadTimestampString)) &&
-                    (fullPathInDataSet == null || (uploader.getProperties().containsKey(PROP_PATH_IN_DATA_SET) && uploader.getProperties().get(PROP_PATH_IN_DATA_SET).equals(fullPathInDataSet)))) {
+            if (uploader.getSignature().getUserName().equals(targetUploaderName)
+                    && (uploader.getProperties().containsKey(PROP_TIMESTAMP_UPLOADED) && uploader.getProperties().get(PROP_TIMESTAMP_UPLOADED).equals(targetUploadTimestampString))
+                    && (fullPathInDataSet == null || (uploader.getProperties().containsKey(PROP_PATH_IN_DATA_SET) && uploader.getProperties().get(PROP_PATH_IN_DATA_SET).equals(fullPathInDataSet)))) {
                 indicesOfUploaders.add(uploaders.indexOf(uploader));
             }
         }
@@ -485,12 +485,34 @@ public class MetaData {
     }
 
     /**
+     * 
+     * @return
+     */
+    public synchronized final BigHash getHash() {
+        List<FileEncoding> encodings = getEncodings();
+        if (encodings == null) {
+            return null;
+        }
+        for (FileEncoding encoding : encodings) {
+            if (encoding.getName().equals(FileEncoding.NONE)) {
+                return encoding.getHash();
+            }
+        }
+        return null;
+    }
+
+    /**
      * <p>Returns the parts associated with the final encoding for the selected uploader.</p>
      * @return
      */
     public synchronized final List<BigHash> getParts() {
         try {
-            return parts.get(getEncodings().get(getEncodings().size() - 1).getHash());
+            List<FileEncoding> encodings = getEncodings();
+            if (encodings == null) {
+                return null;
+            } else {
+                return parts.get(encodings.get(encodings.size() - 1).getHash());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return null;

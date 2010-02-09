@@ -31,6 +31,7 @@ import org.tranche.configuration.Configuration;
 import org.tranche.exceptions.NoHostProvidedException;
 import org.tranche.exceptions.TodoException;
 import org.tranche.hash.BigHash;
+import org.tranche.meta.MetaData;
 import org.tranche.security.SecurityUtil;
 import org.tranche.security.Signature;
 import org.tranche.server.PropagationReturnWrapper;
@@ -687,8 +688,7 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
         FlatFileTrancheServer ffts = null;
         try {
             ffts = new FlatFileTrancheServer(TempFileUtil.createTemporaryDirectory());
-            UserZipFile user = DevUtil.makeNewUser();
-            user.setFlags(User.CAN_GET_CONFIGURATION | User.CAN_SET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
+            UserZipFile user = DevUtil.makeNewUser(User.CAN_GET_CONFIGURATION | User.CAN_SET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
             ffts.getConfiguration().addUser(user);
             ffts.saveConfiguration();
 
@@ -871,7 +871,7 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
         // randomly make up the sizes
         final int maxDataSize = 1024;
         ArrayList<byte[]> dataChunks = new ArrayList();
-        ArrayList<byte[]> metaDataChunks = new ArrayList();
+        ArrayList<MetaData> metaDataChunks = new ArrayList();
         // make the data
         for (int i = 0; i < dataChunksToMake; i++) {
             byte[] randomData = new byte[(int) (1 + Math.random() * maxDataSize)];
@@ -881,7 +881,7 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
 
         // make the meta-data
         for (int i = 0; i < metaDataChunksToMake; i++) {
-            metaDataChunks.add(DevUtil.createRandomMetaDataChunk());
+            metaDataChunks.add(DevUtil.createRandomMetaData());
         }
 
         // keep a list of the hashes
@@ -905,8 +905,9 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
                 }
                 // add the meta-data chunks
                 for (int i = 0; i < metaDataChunks.size(); i++) {
-                    sortedMetaDataHashes[i] = new BigHash(metaDataChunks.get(i));
-                    IOUtil.setMetaData(ffts, DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), false, sortedMetaDataHashes[i], metaDataChunks.get(i));
+                    byte[] metaDataBytes = metaDataChunks.get(i).toByteArray();
+                    sortedMetaDataHashes[i] = new BigHash(metaDataBytes);
+                    IOUtil.setMetaData(ffts, DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), false, sortedMetaDataHashes[i], metaDataBytes);
                 }
 
                 // check that all exist

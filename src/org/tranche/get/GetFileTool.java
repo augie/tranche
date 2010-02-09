@@ -108,10 +108,10 @@ public class GetFileTool {
     /**
      * User parameters
      */
-    private boolean batch = DEFAULT_BATCH,  validate = DEFAULT_VALIDATE,  continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS;
+    private boolean batch = DEFAULT_BATCH, validate = DEFAULT_VALIDATE, continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS;
     private BigHash hash;
     private File saveTo;
-    private String uploaderName = DEFAULT_UPLOADER_NAME,  uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH,  passphrase,  regEx = DEFAULT_REG_EX;
+    private String uploaderName = DEFAULT_UPLOADER_NAME, uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH, passphrase, regEx = DEFAULT_REG_EX;
     private Long uploadTimestamp = DEFAULT_UPLOAD_TIMESTAMP;
     private final Set<String> serverHostUseSet = new HashSet<String>();
     private final Set<String> externalServerURLs = new HashSet();
@@ -119,7 +119,7 @@ public class GetFileTool {
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -746,7 +746,7 @@ public class GetFileTool {
     /**
      * <p>Gets a collection of server host names that should be used to download a chunk with the given hash.</p>
      * <p>If noted that the tool can use servers that are not specified, will include all matching connected servers.</p>
-     * <p>Servers ordered: (1) connected servers that are readable, writable, and have the hash in their hash span (2) the same as the previous, but not writable (3) other servers to use that may have sticky data.</p>
+     * <p>Servers ordered: (1) connected servers ordered ascending by outstanding requests that are readable, writable, and have the hash in their hash span (2) the same as the previous, but not writable (3) other servers to use that may have sticky data.</p>
      * <p>Each of the portions of the list are internally randomized.</p>
      * @param hash A hash.
      * @return An ordered collection of server host names that should be used to download a chunk with the given hash.
@@ -803,16 +803,82 @@ public class GetFileTool {
             }
         }
 
-        Collections.shuffle(writableHosts);
-        Collections.shuffle(nonWritableHosts);
-        Collections.shuffle(externalHosts);
-        // prefer writable hosts (to save on propagation)
-        List<String> hosts = new LinkedList<String>(writableHosts);
-        hosts.addAll(nonWritableHosts);
-        hosts.addAll(externalHosts);
+        // finished product
+        List<String> hosts = new LinkedList<String>();
+
+        // order writable hosts by # of requests
+        {
+            Map<Integer, List<String>> writableHostsMap = new HashMap<Integer, List<String>>();
+            for (String host : writableHosts) {
+                try {
+                    int outstandingRequests = ConnectionUtil.getConnection(host).getRemoteTrancheServer().countOutstandingRequests();
+                    if (!writableHostsMap.containsKey(outstandingRequests)) {
+                        writableHostsMap.put(outstandingRequests, new ArrayList<String>());
+                    }
+                    writableHostsMap.get(outstandingRequests).add(host);
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
+            // add each of the subsets in ascending order
+            List<Integer> keys = new ArrayList<Integer>(writableHostsMap.keySet());
+            Collections.sort(keys);
+            for (Integer key : keys) {
+                List<String> list = writableHostsMap.get(key);
+                Collections.shuffle(list);
+                hosts.addAll(list);
+            }
+        }
+
+        // order nonwritable hosts by # of requests
+        {
+            Map<Integer, List<String>> nonwritableHostsMap = new HashMap<Integer, List<String>>();
+            for (String host : nonWritableHosts) {
+                try {
+                    int outstandingRequests = ConnectionUtil.getConnection(host).getRemoteTrancheServer().countOutstandingRequests();
+                    if (!nonwritableHostsMap.containsKey(outstandingRequests)) {
+                        nonwritableHostsMap.put(outstandingRequests, new ArrayList<String>());
+                    }
+                    nonwritableHostsMap.get(outstandingRequests).add(host);
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
+            // add each of the subsets in ascending order
+            List<Integer> keys = new ArrayList<Integer>(nonwritableHostsMap.keySet());
+            Collections.sort(keys);
+            for (Integer key : keys) {
+                List<String> list = nonwritableHostsMap.get(key);
+                Collections.shuffle(list);
+                hosts.addAll(list);
+            }
+        }
+
+        // order external hosts by # of requests
+        {
+            Map<Integer, List<String>> externalHostsMap = new HashMap<Integer, List<String>>();
+            for (String host : externalHosts) {
+                try {
+                    int outstandingRequests = ConnectionUtil.getConnection(host).getRemoteTrancheServer().countOutstandingRequests();
+                    if (!externalHostsMap.containsKey(outstandingRequests)) {
+                        externalHostsMap.put(outstandingRequests, new ArrayList<String>());
+                    }
+                    externalHostsMap.get(outstandingRequests).add(host);
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
+            // add each of the subsets in ascending order
+            List<Integer> keys = new ArrayList<Integer>(externalHostsMap.keySet());
+            Collections.sort(keys);
+            for (Integer key : keys) {
+                List<String> list = externalHostsMap.get(key);
+                Collections.shuffle(list);
+                hosts.addAll(list);
+            }
+        }
 
         debugOut("Time spent getting connections: " + (System.currentTimeMillis() - start));
-
         return Collections.unmodifiableCollection(hosts);
     }
 
@@ -1010,7 +1076,11 @@ public class GetFileTool {
                 throw new NullPointerException("Save file is not set.");
             }
             if (!saveTo.isDirectory()) {
-                throw new Exception("Save location must be a directory.");
+                if (saveTo.getParentFile() == null) {
+                    throw new Exception("Save location must be a directory.");
+                } else {
+                    saveTo = saveTo.getParentFile();
+                }
             }
             GetFileToolUtil.testDirectoryForWritability(saveTo);
             // make the meta chunk list
@@ -2383,7 +2453,7 @@ public class GetFileTool {
     private class FileDataDownloadingThread extends Thread {
 
         private final LinkedList<DataChunk> dataList;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         private List<PropagationExceptionWrapper> exceptions = new LinkedList<PropagationExceptionWrapper>();
         private Set<FileDataDownloadingThread> dataThreads;
 
@@ -2514,7 +2584,7 @@ public class GetFileTool {
     private class DirectoryDataDownloadingThread extends Thread {
 
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         // batch data structures
         private final Map<String, DataChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -2700,6 +2770,10 @@ public class GetFileTool {
             // fire events and build up hash array
             ArrayList<BigHash> hashes = new ArrayList<BigHash>();
             for (DataChunk chunk : chunks) {
+                // break point
+                if (isStopped() || GetFileTool.this.isStopped()) {
+                    return;
+                }
                 hashes.add(chunk.hash);
                 fireTryingChunk(chunk.metaChunk.part.getHash(), chunk.hash, host);
                 chunk.addServerTried(host);
@@ -2723,6 +2797,10 @@ public class GetFileTool {
                     byte[][] dataBytesArray = IOUtil.get2DBytes(wrapper);
                     for (int i = 0; i < dataBytesArray.length; i++) {
                         try {
+                            // break point
+                            if (isStopped() || GetFileTool.this.isStopped()) {
+                                return;
+                            }
                             // did not exist on server/network
                             if (dataBytesArray[i] == null) {
                                 putBackChunk(chunks.get(i));
@@ -2746,6 +2824,10 @@ public class GetFileTool {
                 debugErr(e);
                 ConnectionUtil.reportExceptionHost(host, e);
                 for (DataChunk chunk : chunks) {
+                    // break point
+                    if (isStopped() || GetFileTool.this.isStopped()) {
+                        return;
+                    }
                     putBackChunk(chunk);
                 }
             }
@@ -2759,7 +2841,7 @@ public class GetFileTool {
             while (true) {
                 // break point
                 if (isStopped() || GetFileTool.this.isStopped()) {
-                    break;
+                    return;
                 }
                 String host = null;
                 ArrayList<DataChunk> list = null;
@@ -2776,6 +2858,10 @@ public class GetFileTool {
                     // are there chunks that could not be downloaded from this host?
                     debugOut("Data chunks left to download: " + dataChunkQueue.size());
                     for (int i = 0; i < dataChunkQueue.size(); i++) {
+                        // break point
+                        if (isStopped() || GetFileTool.this.isStopped()) {
+                            return;
+                        }
                         DataChunk dataChunk = dataChunkQueue.poll();
                         try {
                             String nextHost = getBatchHost(dataChunk);
@@ -2894,7 +2980,7 @@ public class GetFileTool {
 
         private final LinkedList<MetaChunk> metaChunks;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         // batch data structures
         private final Map<String, MetaChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -2977,10 +3063,14 @@ public class GetFileTool {
                 // wait until there is room
                 while (dataChunkQueue.size() >= DEFAULT_DATA_QUEUE_SIZE) {
                     ThreadUtil.safeSleep(50);
-
-                    if (isStopped()) {
+                    // break point
+                    if (isStopped() || GetFileTool.this.isStopped()) {
                         return;
                     }
+                }
+                // break point
+                if (isStopped() || GetFileTool.this.isStopped()) {
+                    return;
                 }
                 dataChunkQueue.put(new DataChunk(offset, dataChunkHash, metaChunk));
                 offset += dataChunkHash.getLength();
@@ -3029,6 +3119,10 @@ public class GetFileTool {
             // fire events and build up hash array
             ArrayList<BigHash> hashes = new ArrayList<BigHash>();
             for (MetaChunk chunk : chunks) {
+                // break point
+                if (isStopped() || GetFileTool.this.isStopped()) {
+                    return;
+                }
                 hashes.add(chunk.part.getHash());
                 fireTryingMetaData(chunk.part.getHash(), host);
                 chunk.addServerTried(host);
@@ -3052,6 +3146,10 @@ public class GetFileTool {
                     byte[][] metaDataBytesArray = IOUtil.get2DBytes(wrapper);
                     for (int i = 0; i < metaDataBytesArray.length; i++) {
                         try {
+                            // break point
+                            if (isStopped() || GetFileTool.this.isStopped()) {
+                                return;
+                            }
                             // did not exist on server/network
                             if (metaDataBytesArray[i] == null) {
                                 putBackChunk(chunks.get(i));
@@ -3073,6 +3171,10 @@ public class GetFileTool {
             } catch (Exception e) {
                 // put back all the chunks
                 for (MetaChunk chunk : chunks) {
+                    // break point
+                    if (isStopped() || GetFileTool.this.isStopped()) {
+                        return;
+                    }
                     putBackChunk(chunk);
                 }
                 debugErr(e);
@@ -3125,7 +3227,7 @@ public class GetFileTool {
             while (true) {
                 // break point
                 if (isStopped() || GetFileTool.this.isStopped()) {
-                    break;
+                    return;
                 }
                 String host = null;
                 ArrayList<MetaChunk> list = null;
@@ -3142,6 +3244,10 @@ public class GetFileTool {
                 synchronized (metaChunks) {
                     debugOut("Meta chunks left to download: " + metaChunks.size());
                     for (int i = 0; i < metaChunks.size(); i++) {
+                        // break point
+                        if (isStopped() || GetFileTool.this.isStopped()) {
+                            return;
+                        }
                         MetaChunk metaChunk = metaChunks.removeFirst();
                         try {
                             String nextHost = getBatchHost(metaChunk);

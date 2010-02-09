@@ -138,7 +138,7 @@ public class PropagationExceptionWrapper implements Serializable {
                 if (host != null) {
                     // read in updated status info and commit as update to current table
                     try {
-                        NetworkUtil.updateRow(new StatusTableRow(in));
+                        NetworkUtil.getStatus().setRow(new StatusTableRow(in));
                     } catch (Exception e) {
                     }
                 }
@@ -147,7 +147,7 @@ public class PropagationExceptionWrapper implements Serializable {
                 if (host != null) {
                     // read in updated status info and commit as update to current table
                     try {
-                        NetworkUtil.updateRow(new StatusTableRow(in));
+                        NetworkUtil.getStatus().setRow(new StatusTableRow(in));
                     } catch (Exception e) {
                     }
                 }
@@ -168,7 +168,7 @@ public class PropagationExceptionWrapper implements Serializable {
                 if (host != null) {
                     // read in updated status info and commit as update to current table
                     try {
-                        NetworkUtil.updateRow(new StatusTableRow(in));
+                        NetworkUtil.getStatus().setRow(new StatusTableRow(in));
                     } catch (Exception e) {
                     }
                 }
@@ -248,7 +248,7 @@ public class PropagationExceptionWrapper implements Serializable {
         RemoteUtil.writeLine(exception.getClass().getSimpleName(), out);
         RemoteUtil.writeLine(exception.getMessage(), out);
         if (host != null && (exception instanceof ServerIsNotReadableException || exception instanceof ServerIsNotWritableException || exception instanceof ServerIsOfflineException)) {
-            NetworkUtil.getStatus().getRow(host).serialize(out);
+            NetworkUtil.getStatus().getRow(host).serialize(StatusTableRow.VERSION_LATEST, out);
         }
     }
 }

@@ -41,10 +41,11 @@ public class ServersTableModel extends SortableTableModel {
 
     public static final String COLUMN_USE = "Use";
     public static final String COLUMN_NAME = "Name";
+    public static final String COLUMN_URL = "URL";
     public static final String COLUMN_GROUP = "Group";
     public static final String COLUMN_ONLINE = "";
     public static final String COLUMN_CONNECTED = "";
-    private static final String[] HEADERS = new String[]{COLUMN_USE, COLUMN_NAME, COLUMN_GROUP, COLUMN_ONLINE, COLUMN_CONNECTED};
+    private static final String[] HEADERS = new String[]{COLUMN_USE, COLUMN_NAME, COLUMN_URL, COLUMN_GROUP, COLUMN_ONLINE, COLUMN_CONNECTED};
     private Pattern filter = Pattern.compile("");
     private ServersTable table;
     private boolean showUse = true;
@@ -213,6 +214,10 @@ public class ServersTableModel extends SortableTableModel {
         return get(filteredIndex).getName();
     }
 
+    public String getURL(int filteredIndex) {
+        return get(filteredIndex).getURL();
+    }
+
     public String getHost(int filteredIndex) {
         synchronized (filteredHosts) {
             return filteredHosts.get(filteredIndex);
@@ -291,10 +296,12 @@ public class ServersTableModel extends SortableTableModel {
                 case 1:
                     return getName(row);
                 case 2:
-                    return getGroup(row);
+                    return getURL(row);
                 case 3:
-                    return isOnline(row);
+                    return getGroup(row);
                 case 4:
+                    return isOnline(row);
+                case 5:
                     return isConnected(row);
                 default:
                     return null;
@@ -382,9 +389,11 @@ public class ServersTableModel extends SortableTableModel {
                     }
                 } else if (column == table.getColumnModel().getColumnIndex(COLUMN_NAME)) {
                     return getName(row1Index).toLowerCase().compareTo(getName(row2Index).toLowerCase());
+                } else if (column == table.getColumnModel().getColumnIndex(COLUMN_URL)) {
+                    return getURL(row1Index).toLowerCase().compareTo(getURL(row2Index).toLowerCase());
                 } else if (column == table.getColumnModel().getColumnIndex(COLUMN_GROUP)) {
                     return getGroup(row1Index).toLowerCase().compareTo(getGroup(row2Index).toLowerCase());
-                } else if ((showUse && column == 3) || (!showUse && column == 2)) {
+                } else if ((showUse && column == 4) || (!showUse && column == 3)) {
                     if (isOnline(row1Index) == true && isOnline(row2Index) == false) {
                         return 1;
                     } else if (isOnline(row1Index) == false && isOnline(row2Index) == true) {
@@ -392,7 +401,7 @@ public class ServersTableModel extends SortableTableModel {
                     } else {
                         return 0;
                     }
-                } else if ((showUse && column == 4) || (!showUse && column == 3)) {
+                } else if ((showUse && column == 5) || (!showUse && column == 4)) {
                     if (isConnected(row1Index) == true && isConnected(row2Index) == false) {
                         return 1;
                     } else if (isConnected(row1Index) == false && isConnected(row2Index) == true) {

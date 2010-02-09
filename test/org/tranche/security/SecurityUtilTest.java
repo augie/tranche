@@ -287,7 +287,8 @@ public class SecurityUtilTest extends TrancheTestCase {
             MakeUserZipFileTool maker1 = new MakeUserZipFileTool();
             maker1.setName("Bryan");
             maker1.setPassphrase("Smith");
-            maker1.setUserFile(TempFileUtil.createTemporaryFile(".zip.encrypted"));
+            maker1.setSaveFile(TempFileUtil.createTemporaryFile(".zip.encrypted"));
+            maker1.setValidDays(1);
             user1 = maker1.makeCertificate();
             user1.setPassphrase("Smith");
 
@@ -298,7 +299,8 @@ public class SecurityUtilTest extends TrancheTestCase {
             MakeUserZipFileTool maker2 = new MakeUserZipFileTool();
             maker2.setName("Augie");
             maker2.setPassphrase("Hill");
-            maker2.setUserFile(TempFileUtil.createTemporaryFile(".zip.encrypted"));
+            maker2.setSaveFile(TempFileUtil.createTemporaryFile(".zip.encrypted"));
+            maker2.setValidDays(1);
             maker2.setSignerCertificate(user1.getCertificate());
             maker2.setSignerPrivateKey(user1.getPrivateKey());
             user2 = maker2.makeCertificate();

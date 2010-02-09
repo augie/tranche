@@ -58,7 +58,7 @@
     <property name="build.add.jar" location="${build.add}/tranche-add.jar"/>
     <property name="dist.add.zip" location="${dist}/tranche-add-b${buildNumber}.zip"/>
     
-	<!-- set the variables needed for the MakeDefaultCerts JAR build -->
+	<!-- set the variables needed for the MakeRepositoryCertsTool JAR build -->
     <property name="dir.certs" location="build/certs"/>
     <property name="build.certs" location="${build}/certs"/>
     <property name="build.certs.jar" location="${build.certs}/tranche-certs.jar"/>

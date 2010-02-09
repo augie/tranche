@@ -1,0 +1,507 @@
+/*
+ *    Copyright 2005 The Regents of the University of Michigan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.tranche.users;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import org.tranche.util.IOUtil;
+import org.tranche.security.SecurityUtil;
+import org.tranche.util.DebugUtil;
+
+/**
+ * <p>Creates a new default set of certificates that are to be used for a Tranche repository.</p>
+ * @author James "Augie" Hill - augman85@gmail.com
+ */
+public class MakeRepositoryCertsTool {
+
+    private static boolean debug = false,  verbose = false;
+
+    /**
+     * <p>Prints a message to System.out.</p>
+     * @param msg
+     */
+    private static void printVerbose(String msg) {
+        if (verbose) {
+            System.out.println(msg);
+        }
+    }
+
+    /**
+     * 
+     */
+    private static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [FLAGS] <DIRECTORY>");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Makes a set of user zip files to be used as the base users of a Tranche repository. This certificates will be valid for 1,000 years.");
+        System.out.println();
+        System.out.println("FLAGS");
+        System.out.println("    -d, --debug                 Value: none.            If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
+        System.out.println("    -h, --help                  Value: none.            Print usage and exit. All other arguments will be ignored.");
+        System.out.println("    -n, --buildnumber           Value: none.            Print version number and exit. All other arguments will be ignored.");
+        System.out.println("    -v, --verbose               Value: none.            Print additional progress information to standard out.");
+        System.out.println("    -V, --version               Value: none.            Print version number and exit. All other arguments will be ignored.");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    0:     Exited normally");
+        System.out.println("    1:     Unknown error");
+        System.out.println("    2:     Bad argument");
+        System.out.println("    3:     Known error");
+        System.out.println();
+    }
+
+    /**
+     * @param args
+     * @throws java.lang.Exception
+     */
+    public static void main(String[] args) throws Exception {
+        try {
+            // If no arguments, print and exit
+            if (args.length == 0) {
+                printUsage();
+                System.exit(0);
+            }
+
+            // Look for help request. If one, print and exit.
+            for (String arg : args) {
+                if (arg.equals("-n") || arg.equals("--buildnumber") || arg.equals("-V") || arg.equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    System.exit(0);
+                } else if (arg.equals("-h") || arg.equals("--help")) {
+                    printUsage();
+                    System.exit(0);
+                } else if (arg.equals("-d") || arg.equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                    MakeUserZipFileTool.setDebug(true);
+                    UserZipFile.setDebug(true);
+                } else if (arg.equals("-v") || arg.equals("--verbose")) {
+                    verbose = true;
+                }
+            }
+
+            // check the destination (last argument)
+            File directory = new File(args[args.length - 1]);
+            printVerbose("Directory to save certificates: " + directory.getAbsolutePath());
+            if (!directory.exists()) {
+                debugOut("ERROR: Directory does not exist: " + directory.getAbsolutePath());
+                System.exit(2);
+            }
+
+            // create the tool
+            MakeUserZipFileTool tool = new MakeUserZipFileTool();
+            tool.setValidDays(Long.valueOf("365000"));
+
+            FileOutputStream fos = null;
+            try {
+                // make the admin cert
+                {
+                    printVerbose("Creating Administrator Certificate");
+                    tool.setName("Admin");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("Administator Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "admin.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: Administrator zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    File adminCert = new File(directory, "admin.public.certificate");
+                    printVerbose("Creating administrator certificate file: " + adminCert.getAbsolutePath());
+                    if (adminCert.exists()) {
+                        System.err.println("ERROR: Administrator certificate file already exists: " + adminCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!adminCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create administator certificate file: " + adminCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    // write out the certificate
+                    printVerbose("Writing out the administrator certificate to " + adminCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(adminCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    // create a passphrase file
+                    File passphrasesFile = new File(directory, "passphrases.txt");
+                    printVerbose("Creating passphrases file: " + passphrasesFile.getAbsolutePath());
+                    if (!passphrasesFile.createNewFile()) {
+                        System.err.println("ERROR: Could not create passphrases file: " + passphrasesFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    // write out to the passphrases file
+                    fos = new FileOutputStream(passphrasesFile);
+                    fos.write(("Administator: " + passphrase + "\n").getBytes());
+                }
+
+                // make the write cert
+                {
+                    printVerbose("Creating Write-Only Certificate");
+                    tool.setName("Write-Only");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("Write-Only Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "write.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: Write-only zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    // create cert file
+                    File writeCert = new File(directory, "write.public.certificate");
+                    printVerbose("Creating write-only certificate file: " + writeCert.getAbsolutePath());
+                    if (writeCert.exists()) {
+                        System.err.println("ERROR: Write-only certificate file already exists: " + writeCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!writeCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create write-only certificate file: " + writeCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the certificate
+                    printVerbose("Writing out the write-only certificate to " + writeCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(writeCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    fos.write(("Write-Only: " + passphrase + "\n").getBytes());
+                }
+
+                // make the read cert
+                UserZipFile readUser = null;
+                {
+                    printVerbose("Creating Read-Only Certificate");
+                    tool.setName("Read-Only");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("Read-Only Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "read.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: Read-only zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+                    readUser = user;
+
+                    // create cert file
+                    File readCert = new File(directory, "read.public.certificate");
+                    printVerbose("Creating read-only certificate file: " + readCert.getAbsolutePath());
+                    if (readCert.exists()) {
+                        System.err.println("ERROR: Read-only certificate file already exists: " + readCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!readCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create read-only certificate file: " + readCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the certificate
+                    printVerbose("Writing out the read-only certificate to " + readCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(readCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    fos.write(("Read-Only: " + passphrase + "\n").getBytes());
+                }
+
+                // make the user cert
+                {
+                    printVerbose("Creating User Certificate");
+                    tool.setName("User");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("User Certificate Passphrase: " + passphrase);
+                    fos.write(("User: " + passphrase + "\n").getBytes());
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "user.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: User zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    // create cert file
+                    File userCert = new File(directory, "user.public.certificate");
+                    printVerbose("Creating user certificate file: " + userCert.getAbsolutePath());
+                    if (userCert.exists()) {
+                        System.err.println("ERROR: User certificate file already exists: " + userCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!userCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create user certificate file: " + userCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the certificate
+                    printVerbose("Writing out the user certificate to " + userCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(userCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+                }
+
+                // make the autocert cert
+                {
+                    printVerbose("Creating AutoCert Certificate");
+                    tool.setName("AutoCert");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("AutoCert Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "autocert.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: User zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    // create cert file
+                    File autocertCert = new File(directory, "autocert.public.certificate");
+                    printVerbose("Creating auto certificate file: " + autocertCert.getAbsolutePath());
+                    if (autocertCert.exists()) {
+                        System.err.println("ERROR: Auto certificate file already exists: " + autocertCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!autocertCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create auto certificate file: " + autocertCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the certificate
+                    printVerbose("Writing out the auto certificate to " + autocertCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(autocertCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    fos.write(("AutoCert: " + passphrase + "\n").getBytes());
+                }
+
+                // make the anonymous cert
+                {
+                    printVerbose("Creating Anonymous Certificate");
+                    tool.setName("Anonymous");
+
+                    // should the anonymous certificate have read-only abilities?
+                    tool.setSignerCertificate(readUser.getCertificate());
+                    tool.setSignerPrivateKey(readUser.getPrivateKey());
+                    printVerbose("Anonymous certificate signed by read-only certificate.");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("Anonymous Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "anonymous.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: Anonymous zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    // create the cert file
+                    File anonCert = new File(directory, "anonymous.public.certificate");
+                    printVerbose("Creating anonymous certificate file: " + anonCert.getAbsolutePath());
+                    if (anonCert.exists()) {
+                        System.err.println("ERROR: Anonymous certificate file already exists: " + anonCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!anonCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create anonymous certificate file: " + anonCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    // write out the certificate
+                    printVerbose("Writing out the anonymous certificate to " + anonCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(anonCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    // create the key file
+                    File anonKey = new File(directory, "anonymous.private.key");
+                    printVerbose("Creating anonymous private key file: " + anonKey.getAbsolutePath());
+                    if (anonKey.exists()) {
+                        System.err.println("ERROR: Anonymous private key file already exists: " + anonKey.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!anonKey.createNewFile()) {
+                        System.err.println("ERROR: Could not create anonymous private key file: " + anonKey.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the private key
+                    printVerbose("Writing out the anonymous private key to " + anonCert.getAbsolutePath());
+                    try {
+                        os = new FileOutputStream(anonKey);
+                        os.write(user.getPrivateKey().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    fos.write(("Anonymous: " + passphrase + "\n").getBytes());
+                }
+
+                // make the email cert
+                {
+                    printVerbose("Creating Email Certificate");
+                    tool.setName("Email");
+
+                    String passphrase = SecurityUtil.generateBase64Password(15);
+                    printVerbose("Email Certificate Passphrase: " + passphrase);
+                    tool.setPassphrase(passphrase);
+
+                    File saveFile = new File(directory, "email.zip.encrypted");
+                    if (saveFile.exists()) {
+                        System.err.println("ERROR: Email zip file file already exists: " + saveFile.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    tool.setSaveFile(saveFile);
+                    UserZipFile user = tool.makeCertificate();
+
+                    // create cert file
+                    File emailCert = new File(directory, "email.public.certificate");
+                    printVerbose("Creating email certificate file: " + emailCert.getAbsolutePath());
+                    if (emailCert.exists()) {
+                        System.err.println("ERROR: Email certificate file already exists: " + emailCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!emailCert.createNewFile()) {
+                        System.err.println("ERROR: Could not create email certificate file: " + emailCert.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the certificate
+                    printVerbose("Writing out the email certificate to " + emailCert.getAbsolutePath());
+                    OutputStream os = null;
+                    try {
+                        os = new FileOutputStream(emailCert);
+                        os.write(user.getCertificate().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    // create key file
+                    File emailKey = new File(directory, "email.private.key");
+                    printVerbose("Creating email private key file: " + emailKey.getAbsolutePath());
+                    if (emailKey.exists()) {
+                        System.err.println("ERROR: Email private key file already exists: " + emailKey.getAbsolutePath());
+                        System.exit(3);
+                    }
+                    if (!emailKey.createNewFile()) {
+                        System.err.println("ERROR: Could not create email private key file: " + emailKey.getAbsolutePath());
+                        System.exit(3);
+                    }
+
+                    // write out the private key
+                    printVerbose("Writing out the email private key to " + emailKey.getAbsolutePath());
+                    try {
+                        os = new FileOutputStream(emailKey);
+                        os.write(user.getPrivateKey().getEncoded());
+                    } finally {
+                        IOUtil.safeClose(os);
+                    }
+
+                    fos.write(("Email: " + passphrase + "\n").getBytes());
+                }
+            } finally {
+                IOUtil.safeClose(fos);
+            }
+
+            printVerbose("Certificates created in: " + directory.getAbsolutePath());
+            System.exit(0);
+        } catch (Exception e) {
+            debugErr(e);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * <p>Sets the flag for whether the output and error information should be written.</p>
+     * @param debug The flag for whether the output and error information should be written.</p>
+     */
+    public static final void setDebug(boolean debug) {
+        MakeRepositoryCertsTool.debug = debug;
+    }
+
+    /**
+     * <p>Returns whether the output and error information is being written.</p>
+     * @return Whether the output and error information is being written.
+     */
+    public static final boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     *
+     * @param line
+     */
+    private static final void debugOut(String line) {
+        if (debug) {
+            DebugUtil.printOut(MakeRepositoryCertsTool.class.getName() + "> " + line);
+        }
+    }
+
+    /**
+     *
+     * @param e
+     */
+    private static final void debugErr(Exception e) {
+        if (debug) {
+            DebugUtil.reportException(e);
+        }
+    }
+}

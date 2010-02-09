@@ -56,7 +56,7 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // recreate
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
-        str1.serialize(oos);
+        str1.serialize(StatusTableRow.VERSION_LATEST, oos);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         ObjectInputStream ois = new ObjectInputStream(bais);
         StatusTableRow str = new StatusTableRow(ois);
@@ -74,7 +74,7 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // recreate
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
-        str1.serialize(oos);
+        str1.serialize(StatusTableRow.VERSION_LATEST, oos);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         ObjectInputStream ois = new ObjectInputStream(bais);
         StatusTableRow str = new StatusTableRow(ois);

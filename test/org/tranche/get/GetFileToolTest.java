@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import org.tranche.ConfigureTranche;
 import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
 import org.tranche.add.AddFileTool;
@@ -71,6 +71,7 @@ public class GetFileToolTest extends TrancheTestCase {
         super.setUp();
         AddFileTool.setDebug(true);
         GetFileTool.setDebug(true);
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, "1");
     }
 
     @Override()
@@ -78,6 +79,7 @@ public class GetFileToolTest extends TrancheTestCase {
         super.tearDown();
         AddFileTool.setDebug(false);
         GetFileTool.setDebug(false);
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, ConfigureTranche.DEFAULT_REPLICATIONS);
     }
 
     /**
@@ -91,7 +93,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
         String HOST0 = "server1.com";
         String HOST1 = "server2.com";
-        
+
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1501, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
@@ -186,7 +188,6 @@ public class GetFileToolTest extends TrancheTestCase {
 //        }
 //
 //    }
-
     /**
      * Tests that two files with the same contents in a data set can be downloaded as expected.
      * @throws java.lang.Exception
@@ -329,7 +330,7 @@ public class GetFileToolTest extends TrancheTestCase {
         TestNetwork testNetwork = new TestNetwork();
 
         //add configurations for host
-        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForFailingDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET, .3));
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForFailingDataServer(443, HOST0, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET, .1));
 
         //create temp file
         File upload = TempFileUtil.createTempFileWithName("name.file");
@@ -379,7 +380,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
         //create temp file
         File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, 125);
+        DevUtil.createTestFile(upload, 100 * DataBlockUtil.ONE_MB);
 
         try {
             testNetwork.start();
@@ -1374,7 +1375,7 @@ public class GetFileToolTest extends TrancheTestCase {
             gft.addServerToUse(HOST1);
             gft.setUseUnspecifiedServers(false);
             gft.setHash(hash);
-            MetaData md = gft.getMetaData();
+            MetaData md = gft.getMetaData().clone();
             assertTrue("Expect project to be encrypted", md.isEncrypted());
             assertFalse("Expect public passphrase to not be set.", md.isPublicPassphraseSet());
 

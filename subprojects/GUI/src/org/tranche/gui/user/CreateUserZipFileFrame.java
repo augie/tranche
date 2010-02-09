@@ -47,11 +47,6 @@ public class CreateUserZipFileFrame extends GenericFrame {
 
     // text boxes for each field
     public JTextField name = new GenericTextField();
-    public JTextField organizationalUnit = new GenericTextField();
-    public JTextField organization = new GenericTextField();
-    public JTextField location = new GenericTextField();
-    public JTextField state = new GenericTextField();
-    public JTextField country = new GenericTextField();
     public JTextField validDays = new GenericTextField();
     public JPasswordField passphrase = new JPasswordField();
     public JPasswordField passphraseConfirm = new JPasswordField();    // the signer certificate
@@ -69,16 +64,7 @@ public class CreateUserZipFileFrame extends GenericFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         // set the appropriate size
-        setSize(400, 420);
-
-        // set the default tool values
-        name.setText(userTool.getName());
-        organizationalUnit.setText(userTool.getOrganizationalUnit());
-        organization.setText(userTool.getOrganization());
-        location.setText(userTool.getLocation());
-        state.setText(userTool.getState());
-        country.setText(userTool.getCountry());
-        validDays.setText(Long.toString(userTool.getValidDays()));
+        setSize(400, 300);
 
         // set the layout
         setLayout(new BorderLayout());
@@ -121,11 +107,6 @@ public class CreateUserZipFileFrame extends GenericFrame {
 
             // set the borders
             name.setBorder(Styles.BORDER_BLACK_1);
-            organizationalUnit.setBorder(Styles.BORDER_BLACK_1);
-            organization.setBorder(Styles.BORDER_BLACK_1);
-            location.setBorder(Styles.BORDER_BLACK_1);
-            state.setBorder(Styles.BORDER_BLACK_1);
-            country.setBorder(Styles.BORDER_BLACK_1);
             validDays.setBorder(Styles.BORDER_BLACK_1);
 
             // add a label
@@ -140,21 +121,6 @@ public class CreateUserZipFileFrame extends GenericFrame {
             namePanel.setToolTipText("This is the name that will appear as your Tranche user name.");
             panel.add(namePanel, gbc);
             gbc.insets = new Insets(2, 5, 2, 5);
-            JPanel unitPanel = new LabeledPanel("Organizational Unit: ", organizationalUnit);
-            unitPanel.setToolTipText("This is the name of the group within your company. If not applicable, leave as the default.");
-            panel.add(unitPanel, gbc);
-            JPanel organizationPanel = new LabeledPanel("Organization: ", organization);
-            organizationPanel.setToolTipText("This is the name of the organization. If not applicable, leave as the default.");
-            panel.add(organizationPanel, gbc);
-            JPanel locationPanel = new LabeledPanel("Location: ", location);
-            locationPanel.setToolTipText("Specific location of the group. e.g. the specific city in the USA. If not applicable, leave as the default.");
-            panel.add(locationPanel, gbc);
-            JPanel statePanel = new LabeledPanel("State: ", state);
-            statePanel.setToolTipText("The state of residence. If not applicable, leave as the default.");
-            panel.add(statePanel, gbc);
-            JPanel countryPanel = new LabeledPanel("Country: ", country);
-            countryPanel.setToolTipText("The country of residence. If not applicable, leave as the default.");
-            panel.add(countryPanel, gbc);
             JPanel validDaysPanel = new LabeledPanel("Valid Days: ", validDays);
             validDaysPanel.setToolTipText("The number of days until this user file expires. Time starts expiring the moment the user file is created.");
             panel.add(validDaysPanel, gbc);
@@ -216,15 +182,11 @@ public class CreateUserZipFileFrame extends GenericFrame {
             // make the thread
             Thread t = new Thread() {
 
+                @Override
                 public void run() {
                     try {
                         // set all of the values
                         CreateUserZipFileFrame.this.userTool.setName(CreateUserZipFileFrame.this.name.getText());
-                        CreateUserZipFileFrame.this.userTool.setOrganizationalUnit(CreateUserZipFileFrame.this.organizationalUnit.getText());
-                        CreateUserZipFileFrame.this.userTool.setOrganization(CreateUserZipFileFrame.this.organization.getText());
-                        CreateUserZipFileFrame.this.userTool.setLocation(CreateUserZipFileFrame.this.location.getText());
-                        CreateUserZipFileFrame.this.userTool.setState(CreateUserZipFileFrame.this.state.getText());
-                        CreateUserZipFileFrame.this.userTool.setCountry(CreateUserZipFileFrame.this.country.getText());
                         CreateUserZipFileFrame.this.userTool.setValidDays(Long.parseLong(CreateUserZipFileFrame.this.validDays.getText()));
 
                         // check the passphrase
@@ -247,7 +209,7 @@ public class CreateUserZipFileFrame extends GenericFrame {
                         // prompt the user for a file
                         jfc.setDialogTitle("Select a location for the user file");
                         jfc.setMultiSelectionEnabled(false);
-                        jfc.setFileSelectionMode(jfc.FILES_ONLY);
+                        jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
                         if (selectedFile != null) {
                             jfc.setSelectedFile(selectedFile);
                         } else {
@@ -264,7 +226,7 @@ public class CreateUserZipFileFrame extends GenericFrame {
                             selectedFile = new File(selectedFile.getParentFile(), selectedFile.getName() + ".zip.encrypted");
                         }
                         // set the file
-                        CreateUserZipFileFrame.this.userTool.setUserFile(selectedFile);
+                        CreateUserZipFileFrame.this.userTool.setSaveFile(selectedFile);
 
                         // make the user
                         UserZipFile uzf = CreateUserZipFileFrame.this.userTool.makeCertificate();
@@ -326,6 +288,7 @@ class LabeledPanel extends JPanel {
         this.text = text;
     }
 
+    @Override
     public void setToolTipText(String text) {
         // set on the super
         super.setToolTipText(text);

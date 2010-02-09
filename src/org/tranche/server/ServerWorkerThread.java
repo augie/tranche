@@ -42,6 +42,7 @@ import org.tranche.util.IOUtil;
 import org.tranche.logs.LogUnit;
 import org.tranche.logs.SimpleLog;
 import org.tranche.network.NetworkUtil;
+import org.tranche.network.StatusTableRow;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.Text;
@@ -112,7 +113,7 @@ public class ServerWorkerThread extends Thread {
         }
     }
 
-    private void sendError(ServerWorkerThreadQueueItem queueItem, Exception e) throws Exception {
+    private void sendError(long queueItemID, Exception e) throws Exception {
         // send back the error -- don't close the communication channel. Won't disrupt other actions
         ByteArrayOutputStream baos = null;
         try {
@@ -121,10 +122,10 @@ public class ServerWorkerThread extends Thread {
             RemoteUtil.writeError(e.getMessage(), baos);
             // optionally send the local server info
             if (e instanceof ServerIsNotReadableException || e instanceof ServerIsNotWritableException || e instanceof ChunkDoesNotBelongException) {
-                NetworkUtil.getLocalServerRow().serialize(baos);
+                NetworkUtil.getLocalServerRow().serialize(StatusTableRow.VERSION_LATEST, baos);
             }
             // send back the data
-            sendOutput(queueItem.id, baos.toByteArray());
+            sendOutput(queueItemID, baos.toByteArray());
         } finally {
             IOUtil.safeClose(baos);
         }
@@ -195,7 +196,13 @@ public class ServerWorkerThread extends Thread {
                         // Skip the bytes for request: rejected
                         dis.skipBytes(bytesToRead);
 
-                        queue.put(new ServerWorkerThreadQueueItem(id, Token.REJECTED_CONNECTION));
+                        try {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            server.getItem(Token.REJECTED_CONNECTION_STRING).doAction(new ByteArrayInputStream(new byte[0]), baos, s.getInetAddress().getHostAddress());
+                            sendOutput(id, baos.toByteArray());
+                        } catch (Exception e) {
+                            sendError(id, e);
+                        }
                     } else {
                         // queueItem the bytes
                         byte[] buffer = new byte[bytesToRead];
@@ -219,19 +226,17 @@ public class ServerWorkerThread extends Thread {
                             debugErr(e);
                         }
 
-                        ServerWorkerThreadQueueItem queueItem = new ServerWorkerThreadQueueItem(id, buffer);
-
                         if (itemName != null && itemName.equals(Token.PING_STRING)) {
                             try {
                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                 server.getItem(itemName).doAction(bais, baos, s.getInetAddress().getHostAddress());
                                 sendOutput(id, baos.toByteArray());
                             } catch (Exception e) {
-                                sendError(queueItem, e);
+                                sendError(id, e);
                             }
                         } else {
                             // add to the queue, blocking if full
-                            queue.put(queueItem);
+                            queue.put(new ServerWorkerThreadQueueItem(id, buffer));
                         }
                         logInput.log("Queuing: Stopped");
                     }
@@ -439,7 +444,7 @@ public class ServerWorkerThread extends Thread {
                             return;
                         }
                     } catch (Exception e) {
-                        sendError(queueItem, e);
+                        sendError(queueItem.id, e);
                     }
                 }
             } catch (Exception e) {

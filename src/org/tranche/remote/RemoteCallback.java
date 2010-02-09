@@ -16,6 +16,7 @@
 package org.tranche.remote;
 
 import java.util.concurrent.TimeoutException;
+import org.tranche.exceptions.UnresponsiveServerException;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.Text;
@@ -34,8 +35,8 @@ public abstract class RemoteCallback {
      */
     public static final long NOT_COMPLETED = -1;
     private RemoteTrancheServer rts;
-    private String name,  description,  purgeMsg;
-    private long id,  timeCompleted = NOT_COMPLETED,  timeStarted = TimeUtil.getTrancheTimestamp();
+    private String name, description, purgeMsg;
+    private long id, timeCompleted = NOT_COMPLETED, timeStarted = TimeUtil.getTrancheTimestamp();
     private Exception cachedException;
     private final long created;
     private boolean keepAlive = false;
@@ -67,7 +68,7 @@ public abstract class RemoteCallback {
      * 
      */
     public synchronized void keepAlive() {
-        debugOut("Keep alive signal received.");
+        debugOut("ID: " + id + "; Keep alive signal received.");
         keepAlive = true;
         notifyAll();
     }
@@ -109,6 +110,15 @@ public abstract class RemoteCallback {
         rts.fireFulfilledCallback(this);
         // notify listeners
         notifyAll();
+    }
+
+    /**
+     * 
+     */
+    public synchronized void notifyTimedOut() {
+        debugOut("ID: " + id + "; Keep-alive timed out");
+        cachedException = new UnresponsiveServerException();
+        notifyWaiting();
     }
 
     /**

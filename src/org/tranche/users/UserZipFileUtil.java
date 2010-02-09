@@ -22,10 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Date;
 import javax.net.ssl.SSLException;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
@@ -33,7 +30,6 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.tranche.ConfigureTranche;
-import org.tranche.time.TimeUtil;
 
 /**
  * <p>A utility for creating and using user zip files.</p>
@@ -43,7 +39,6 @@ import org.tranche.time.TimeUtil;
 public class UserZipFileUtil {
 
     private static File usersDirectory;
-
 
     static {
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
@@ -213,68 +208,5 @@ public class UserZipFileUtil {
         } finally {
             pm.releaseConnection();
         }
-    }
-
-    /**
-     * <p>Create a user zip file with the appropriate parameters</p>
-     * @param username The name of the user
-     * @param password
-     * @param file The file that will be used to store the user information, usually *.zip.encrypted
-     * @param isAdmin Set administrator flags
-     * @return The user zip file
-     */
-    public static UserZipFile createUser(String username, String password, File file, boolean isAdmin) throws Exception {
-        return createSignedUser(username, password, file, isAdmin, null, null);
-    }
-
-    /**
-     * <p>Creates a UserZipFile signed by another user.</p>
-     * @param username
-     * @param password
-     * @param file
-     * @param isAdmin
-     * @param signerCert
-     * @param signerKey
-     * @return
-     * @throws java.lang.Exception
-     */
-    public static UserZipFile createSignedUser(String username, String password, File file, boolean isAdmin, X509Certificate signerCert, PrivateKey signerKey) throws Exception {
-        MakeUserZipFileTool maker = new MakeUserZipFileTool();
-        maker.setName(username);
-        maker.setPassphrase(password);
-        maker.setUserFile(file);
-
-        // --------------------------------------------------------------------------------
-        // Be safe, and give permissions up to day early. Even with time util, had issues
-        // with stress tests and certs not yet valid. If fix, should demonstrate
-        // works with stress tests before removing this logic. Nov. 12 2009. 
-        // --------------------------------------------------------------------------------
-        Date startingDate = new Date(TimeUtil.getTrancheTimestamp() - 3600 * 24);
-        maker.setValidDays(startingDate, 15);
-
-        // For readability
-        boolean isSCert = signerCert != null;
-        boolean isSKey = signerKey != null;
-
-        // Don't let user get away with just a signer cert or a private key
-        if ((isSCert && !isSKey) || (!isSCert && isSKey)) {
-            throw new Exception("To sign a user, must provide a certificate and a key.");
-        }
-
-        // Set signer if available
-        if (isSCert && isSKey) {
-            maker.setSignerCertificate(signerCert);
-            maker.setSignerPrivateKey(signerKey);
-        }
-
-        UserZipFile zip = (UserZipFile) maker.makeCertificate();
-
-        // Set user permissions as admin (server needs user registered or it will
-        // throw a SecurityException on attempted file upload)
-        if (isAdmin) {
-            zip.setFlags(SecurityUtil.getAdmin().getFlags());
-        }
-
-        return zip;
     }
 }

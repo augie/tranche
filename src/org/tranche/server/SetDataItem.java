@@ -142,16 +142,7 @@ public class SetDataItem extends ServerItem {
 
                                         prw = new PropagationReturnWrapper(exceptionWrappers);
                                     } else {
-                                        // if only sending to single server and that is the target server, can save effort of uploading
-                                        //  full chunk by asking whether the server has the chunk first
-                                        String[] hosts = strategy.getPartitionsMap().get(hostToContact).toArray(new String[0]);
-                                        if (hosts.length == 1 && ts.getHost().equals(hosts[0])) {
-                                            if (!IOUtil.hasData(ts, hash)) {
-                                                prw = ts.setData(hash, data, sig, hosts);
-                                            }
-                                        } else {
-                                            prw = ts.setData(hash, data, sig, hosts);
-                                        }
+                                        prw = ts.setData(hash, data, sig, strategy.getPartitionsMap().get(hostToContact).toArray(new String[0]));
                                     }
 
                                     exceptions.addAll(prw.getErrors());

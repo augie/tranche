@@ -24,6 +24,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -39,7 +41,7 @@ import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.tasks.ExcelSavvyLineSplitter;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.util.TestUtil;
 
 /**
  * <p>This is here to load a Tranche network's configuration information, including servers and certificates.</p>
@@ -60,6 +62,10 @@ public class ConfigureTranche {
     /**
      * <p></p>
      */
+    public static final String CATEGORY_BANNED_SERVERS = "[BANNED SERVERS]";
+    /**
+     * <p></p>
+     */
     public static final String CATEGORY_CERTIFICATES = "[CERTIFICATES]";
     /**
      * <p></p>
@@ -69,6 +75,10 @@ public class ConfigureTranche {
      * <p></p>
      */
     public static final String CATEGORY_SERVER = "[SERVER]";
+    /**
+     * <p></p>
+     */
+    public static final String CATEGORY_NETWORK_TIME_SERVERS = "[NETWORK TIME SERVERS]";
     /**
      * <p>The name of this Tranche network.</p>
      */
@@ -85,6 +95,14 @@ public class ConfigureTranche {
      * <p>The email address for users to contact.</p>
      */
     public static final String PROP_CONTACT_EMAIL = "contact.email";
+    /**
+     * <p></p>
+     */
+    public static final String PROP_REPLICATIONS = "replications";
+    /**
+     * <p></p>
+     */
+    public static final String DEFAULT_REPLICATIONS = "3";
     /**
      * <p>The URL used to launch the Tranche Java Web Start application.</p>
      */
@@ -164,7 +182,7 @@ public class ConfigureTranche {
     /**
      * <p></p>
      */
-    public static final String DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT = "300000";
+    public static final String DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT = "120000";
     /**
      * <p></p>
      */
@@ -217,6 +235,14 @@ public class ConfigureTranche {
      * <p></p>
      */
     public static final String PROP_UPDATE_CONFIG_URL = "update.conf.url";
+    /**
+     * <p></p>
+     */
+    public static final String PROP_UPDATE_CONFIG_INTERVAL = "update.conf.interval";
+    /**
+     * <p></p>
+     */
+    public static final String DEFAULT_UPDATE_CONFIG_INTERVAL = "10000000";
     /**
      * <p></p>
      */
@@ -345,16 +371,135 @@ public class ConfigureTranche {
      * <p></p>
      */
     public static final String DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL = "86400000";
+    /**
+     * <p></p>
+     */
+    public static final String PROP_TIME_CHANGE_CHECK_INTERVAL = "time.change.check.interval";
+    /**
+     * <p></p>
+     */
+    public static final String DEFAULT_TIME_CHANGE_CHECK_INTERVAL = "10000";
+    /**
+     * <p></p>
+     */
+    public static final String PROP_TIME_CHANGE_CHECK_DEVIATION = "time.change.check.deviation";
+    /**
+     * <p></p>
+     */
+    public static final String DEFAULT_TIME_CHANGE_CHECK_DEVIATION = "1000";
+    /**
+     * <p></p>
+     */
+    public static final String PROP_TIME_UPDATE_INTERVAL = "time.update.interval";
+    /**
+     * <p></p>
+     */
+    public static final String DEFAULT_TIME_UPDATE_INTERVAL = "21600000";
+    /**
+     * <p>The timeout per NT server request.</p>
+     */
+    public static final String PROP_TIME_UPDATE_TIMEOUT = "time.update.timeout";
+    /**
+     * <p>The default timeout per NT server request.</p>
+     */
+    public static final String DEFAULT_TIME_UPDATE_TIMEOUT = "10000";
     private static final Properties properties = new Properties();
     private static Map<String, String> attributesCache = null;
+    private static final List<String> networkTimeServers = new LinkedList<String>();
     private static long lastAttributeCacheTimestampModulusValue = -1;
     private static final long attributesCacheTimestampModulus = 10000000;
-    private static boolean loaded = false, updated = false;
+    private static boolean loaded = false,  updated = false,  defaultNetworkTimeServersLoaded = false;
 
 
     static {
         // load the HTTPS protocol just once on startup
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
+        reset();
+    }
+
+    /**
+     * <p>Class cannot be instantiated.</p>
+     */
+    protected ConfigureTranche() {
+    }
+
+    /**
+     * <p>Returns a string array of administrator email addresses.</p>
+     * @return
+     */
+    public static final String[] getAdminEmailAccounts() {
+        String accounts = get(PROP_ADMIN_EMAIL_ACCOUNTS);
+        if (accounts != null && !accounts.equals("")) {
+            return accounts.split(",");
+        } else {
+            return new String[0];
+        }
+    }
+
+    /**
+     * 
+     * @param property
+     * @return
+     */
+    public static final boolean getBoolean(String property) {
+        try {
+            return Boolean.valueOf(get(property));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 
+     * @param property
+     * @return
+     */
+    public static final int getInt(String property) {
+        try {
+            return Integer.valueOf(get(property));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     *
+     * @param property
+     * @return
+     */
+    public static final long getLong(String property) {
+        try {
+            return Long.valueOf(get(property));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     *
+     * @param property
+     * @return
+     */
+    public synchronized static final String get(String property) {
+        return properties.getProperty(property, "");
+    }
+
+    /**
+     * 
+     * @param property
+     * @param value
+     */
+    public synchronized static final void set(String property, String value) {
+        properties.setProperty(property, value.toString());
+    }
+
+    /**
+     * 
+     */
+    private synchronized static final void reset() {
+        debugOut("Clearing all properties.");
+        properties.clear();
+        debugOut("Setting default properties.");
         set(PROP_EMAIL_URL, DEFAULT_EMAIL_URL);
         set(PROP_SERVER_DIRECTORY, DEFAULT_SERVER_DIRECTORY);
         set(PROP_SERVER_PORT, DEFAULT_SERVER_PORT);
@@ -372,89 +517,24 @@ public class ConfigureTranche {
         set(PROP_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_INTERVAL);
         set(PROP_DEFUNCT_SERVER_THRESHOLD, DEFAULT_DEFUNCT_SERVER_THRESHOLD);
         set(PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL, DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL);
-    }
-
-    /**
-     * <p>Class cannot be instantiated.</p>
-     */
-    protected ConfigureTranche() {
-    }
-
-    /**
-     * <p>Returns a string array of administrator email addresses.</p>
-     * @return
-     */
-    public static final String[] getAdminEmailAccounts() {
-        if (!get(PROP_ADMIN_EMAIL_ACCOUNTS).equals("")) {
-            return get(PROP_ADMIN_EMAIL_ACCOUNTS).split(",");
-        } else {
-            return new String[0];
-        }
-    }
-
-    /**
-     * 
-     * @param property
-     * @return
-     */
-    public synchronized static final String get(String property) {
-        return properties.getProperty(property, "");
-    }
-
-    /**
-     * 
-     * @param property
-     * @return
-     */
-    public synchronized static final boolean getBoolean(String property) {
-        try {
-            return Boolean.valueOf(get(property));
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
-     * 
-     * @param property
-     * @return
-     */
-    public synchronized static final int getInt(String property) {
-        try {
-            return Integer.valueOf(get(property));
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    /**
-     *
-     * @param property
-     * @return
-     */
-    public synchronized static final long getLong(String property) {
-        try {
-            return Long.valueOf(get(property));
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    /**
-     * 
-     * @param property
-     * @param value
-     */
-    public synchronized static final void set(String property, String value) {
-        properties.setProperty(property, value.toString());
+        set(PROP_REPLICATIONS, DEFAULT_REPLICATIONS);
+        set(PROP_UPDATE_CONFIG_INTERVAL, DEFAULT_UPDATE_CONFIG_INTERVAL);
+        set(PROP_TIME_CHANGE_CHECK_INTERVAL, DEFAULT_TIME_CHANGE_CHECK_INTERVAL);
+        set(PROP_TIME_CHANGE_CHECK_DEVIATION, DEFAULT_TIME_CHANGE_CHECK_DEVIATION);
+        set(PROP_TIME_UPDATE_INTERVAL, DEFAULT_TIME_UPDATE_INTERVAL);
+        set(PROP_TIME_UPDATE_TIMEOUT, DEFAULT_TIME_UPDATE_TIMEOUT);
     }
 
     /**
      * 
      */
-    public static void waitForStartup() {
+    public synchronized static void waitForStartup() {
         while (!loaded) {
-            ThreadUtil.safeSleep(500);
+            try {
+                ConfigureTranche.class.wait();
+            } catch (Exception e) {
+                debugErr(e);
+            }
         }
     }
 
@@ -492,11 +572,13 @@ public class ConfigureTranche {
      * Takes the input stream of this Tranche network's configuration information.
      * @param configFileStream
      */
-    public static void load(InputStream configFileStream) {
+    public synchronized static void load(InputStream configFileStream) {
         try {
+            reset();
+
             debugOut("Loading configuration");
             String readingCategory = CATEGORY_GENERAL;
-            Set<String> servers = new HashSet<String>();
+            Set<String> servers = new HashSet<String>(), bannedServers = new HashSet<String>(), timeServers = new HashSet<String>();
             String line = null;
             while ((line = readLineIgnoreComments(configFileStream)) != null) {
                 try {
@@ -506,12 +588,16 @@ public class ConfigureTranche {
                             readingCategory = CATEGORY_GENERAL;
                         } else if (line.equals(CATEGORY_CORE_SERVERS)) {
                             readingCategory = CATEGORY_CORE_SERVERS;
+                        } else if (line.equals(CATEGORY_BANNED_SERVERS)) {
+                            readingCategory = CATEGORY_BANNED_SERVERS;
                         } else if (line.equals(CATEGORY_CERTIFICATES)) {
                             readingCategory = CATEGORY_CERTIFICATES;
                         } else if (line.equals(CATEGORY_LOGGING)) {
                             readingCategory = CATEGORY_LOGGING;
                         } else if (line.equals(CATEGORY_SERVER)) {
                             readingCategory = CATEGORY_SERVER;
+                        } else if (line.equals(CATEGORY_NETWORK_TIME_SERVERS)) {
+                            readingCategory = CATEGORY_NETWORK_TIME_SERVERS;
                         } else {
                             readingCategory = null;
                         }
@@ -523,6 +609,10 @@ public class ConfigureTranche {
                         set(name, value);
                     } else if (readingCategory.equals(CATEGORY_CORE_SERVERS)) {
                         servers.add(line.trim());
+                    } else if (readingCategory.equals(CATEGORY_BANNED_SERVERS)) {
+                        bannedServers.add(line.trim());
+                    } else if (readingCategory.equals(CATEGORY_NETWORK_TIME_SERVERS)) {
+                        timeServers.add(line.trim());
                     } else if (readingCategory.equals(CATEGORY_CERTIFICATES)) {
                         String name = line.substring(0, line.indexOf('=')).trim().toLowerCase();
                         String value = line.substring(line.indexOf('=') + 1).trim();
@@ -552,19 +642,24 @@ public class ConfigureTranche {
                     debugErr(e);
                 }
             }
-            if (!servers.isEmpty()) {
-                NetworkUtil.setStartupServerURLs(servers);
+            NetworkUtil.setStartupServerURLs(servers);
+            NetworkUtil.setBannedServerHosts(bannedServers);
+            synchronized (networkTimeServers) {
+                networkTimeServers.clear();
+                networkTimeServers.addAll(timeServers);
+                defaultNetworkTimeServersLoaded = false;
             }
             debugOut("Done reading configuration.");
 
             if (!updated) {
                 updated = true;
-                update();
+                //update();
             }
         } catch (Exception e) {
             debugErr(e);
         }
         loaded = true;
+        ConfigureTranche.class.notifyAll();
     }
 
     /**
@@ -632,24 +727,10 @@ public class ConfigureTranche {
     }
 
     /**
-     * <p>Returns network-wide server attributes from URL.</p>
-     * @return
-     */
-    public static Map<String, String> getServerConfigurationAttributes() {
-        // all servers should update their configuration attributes at the same time
-        long remainder = TimeUtil.getTrancheTimestamp() % attributesCacheTimestampModulus;
-        if (lastAttributeCacheTimestampModulusValue == -1 || remainder < lastAttributeCacheTimestampModulusValue) {
-            attributesCache = updateServerConfigurationAttributes();
-        }
-        lastAttributeCacheTimestampModulusValue = remainder;
-        return attributesCache;
-    }
-
-    /**
      *
      */
     public static void update() {
-        String url = ConfigureTranche.get(ConfigureTranche.PROP_UPDATE_CONFIG_URL);
+        String url = get(PROP_UPDATE_CONFIG_URL);
         if (url != null && !url.equals("")) {
             debugOut("Updating configuration from " + url);
             try {
@@ -673,6 +754,76 @@ public class ConfigureTranche {
                 debugErr(e);
             }
         }
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public static List<String> getNetworkTimeServers() {
+        waitForStartup();
+        if (countNetworkTimeServers() == 0 && !defaultNetworkTimeServersLoaded) {
+            loadDefaultNetworkTimeServers();
+        }
+        List<String> servers = new LinkedList<String>();
+        synchronized (networkTimeServers) {
+            servers.addAll(networkTimeServers);
+        }
+        return servers;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public static int countNetworkTimeServers() {
+        synchronized (networkTimeServers) {
+            return networkTimeServers.size();
+        }
+    }
+
+    /**
+     * 
+     */
+    public static void loadDefaultNetworkTimeServers() {
+        synchronized (networkTimeServers) {
+            if (TestUtil.isTesting() || defaultNetworkTimeServersLoaded) {
+                return;
+            }
+            debugOut("Loading default network time servers.");
+            // load the network time server IP addresses
+            Set<String> servers = new HashSet<String>();
+            InputStream is = null;
+            try {
+                is = openStreamToFile("/org/tranche/time/default_nts.conf");
+                String line = null;
+                while ((line = readLineIgnoreComments(is)) != null) {
+                    servers.add(line.trim().toLowerCase());
+                }
+            } catch (Exception e) {
+                debugErr(e);
+            } finally {
+                IOUtil.safeClose(is);
+                networkTimeServers.clear();
+                networkTimeServers.addAll(servers);
+                defaultNetworkTimeServersLoaded = true;
+                debugOut("Done loading network time servers.");
+            }
+        }
+    }
+
+    /**
+     * <p>Returns network-wide server attributes from URL.</p>
+     * @return
+     */
+    public static Map<String, String> getServerConfigurationAttributes() {
+        // all servers should update their configuration attributes at the same time
+        long remainder = TimeUtil.getTrancheTimestamp() % attributesCacheTimestampModulus;
+        if (lastAttributeCacheTimestampModulusValue == -1 || remainder < lastAttributeCacheTimestampModulusValue) {
+            attributesCache = updateServerConfigurationAttributes();
+        }
+        lastAttributeCacheTimestampModulusValue = remainder;
+        return attributesCache;
     }
 
     /**

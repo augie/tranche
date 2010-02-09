@@ -44,6 +44,7 @@ import org.tranche.configuration.Configuration;
 import org.tranche.configuration.ConfigurationUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.NoHostProvidedException;
+import org.tranche.exceptions.UnresponsiveServerException;
 import org.tranche.util.IOUtil;
 import org.tranche.servers.ServerCallbackEvent;
 import org.tranche.servers.ServerEvent;
@@ -77,7 +78,6 @@ import org.tranche.time.TimeUtil;
 import org.tranche.util.AssertionUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
 
 /**
  * <p>Handles client socket connection to the server.</p>
@@ -299,6 +299,16 @@ public class RemoteTrancheServer extends TrancheServer {
 
     /**
      * 
+     * @return
+     */
+    public int countOutstandingRequests() {
+        synchronized (outgoingSent) {
+            return outgoingSent.size();
+        }
+    }
+
+    /**
+     * 
      * @param ogb
      * @throws java.lang.Exception
      */
@@ -418,7 +428,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -466,7 +476,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -544,7 +554,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -612,7 +622,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -652,7 +662,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -693,7 +703,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -731,7 +741,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -774,7 +784,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -814,7 +824,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -854,7 +864,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -902,7 +912,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -947,7 +957,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -991,7 +1001,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1038,7 +1048,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 break;
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1620,7 +1630,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 return PropagationReturnWrapper.createFromBytes(cfec.getBytes());
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1677,7 +1687,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 return PropagationReturnWrapper.createFromBytes(cfec.getBytes());
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1731,7 +1741,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 return PropagationReturnWrapper.createFromBytes(gbc.getBytes());
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1795,7 +1805,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 return PropagationReturnWrapper.createFromBytes(cfec.getBytes());
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }
@@ -1862,7 +1872,7 @@ public class RemoteTrancheServer extends TrancheServer {
                 return PropagationReturnWrapper.createFromBytes(cfec.getBytes());
             } catch (Exception e) {
                 ConnectionUtil.reportExceptionHost(host, e);
-                if (e instanceof TimeoutException || e instanceof IOException) {
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
                     if (k == getMaxTries() - 1) {
                         throw e;
                     }

@@ -78,7 +78,7 @@ public class StatusTableTest extends NetworkPackageTestCase {
         // recreate
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
-        st1.serialize(oos);
+        st1.serialize(StatusTable.VERSION_LATEST, StatusTableRow.VERSION_LATEST, oos);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         ObjectInputStream ois = new ObjectInputStream(bais);
         StatusTable st = new StatusTable(ois);

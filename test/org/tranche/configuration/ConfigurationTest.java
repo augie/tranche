@@ -33,13 +33,10 @@ import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.flatfile.ServerConfiguration;
-import org.tranche.remote.RemoteUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.security.Signature;
-import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.users.User;
 import org.tranche.users.UserZipFile;
-import org.tranche.users.UserZipFileUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
@@ -879,9 +876,9 @@ public class ConfigurationTest extends TrancheTestCase {
             ffserver = new FlatFileTrancheServer(TempFileUtil.createTemporaryDirectory());
 
             // Create the admin user, signed by self
-            UserZipFile uzfAdmin = UserZipFileUtil.createUser("admin", "letmepass", TempFileUtil.createTemporaryFile(".zip.encrypted"), true);
+            UserZipFile uzfAdmin = DevUtil.createUser("admin", "adminpass", TempFileUtil.createTempFileWithName(".zip.encrypted").getAbsolutePath(), true, false);
             // Create the write-only, signed by admin
-            UserZipFile uzfSigned = UserZipFileUtil.createSignedUser("writer", "secret", TempFileUtil.createTemporaryFile(".zip.encrypted"), false, uzfAdmin.getCertificate(), uzfAdmin.getPrivateKey());
+            UserZipFile uzfSigned = DevUtil.createSignedUser("writer", "secret", TempFileUtil.createTemporaryFile(".zip.encrypted").getAbsolutePath(), uzfAdmin.getCertificate(), uzfAdmin.getPrivateKey(), false, false);
             // Standard Write-Only flags
             uzfSigned.setFlags(User.CAN_SET_DATA | User.CAN_SET_META_DATA | User.CAN_GET_CONFIGURATION);
 

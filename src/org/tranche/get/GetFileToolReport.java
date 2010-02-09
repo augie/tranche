@@ -34,9 +34,8 @@ public class GetFileToolReport implements Serializable {
 
     public static final int VERSION_ONE = 1;
     public static final int VERSION_LATEST = VERSION_ONE;
-    public static final long UNSET_LONG = -1;
     private int version = VERSION_LATEST;
-    private long timestampStart = TimeUtil.getTrancheTimestamp(),  timestampEnd = UNSET_LONG,  bytesDownloaded = UNSET_LONG,  filesDownloaded = UNSET_LONG;
+    private long timestampStart = TimeUtil.getTrancheTimestamp(),  timestampEnd = -1,  bytesDownloaded = -1,  filesDownloaded = -1;
     private List<PropagationExceptionWrapper> failureExceptions = new LinkedList<PropagationExceptionWrapper>();
 
     /**
@@ -147,7 +146,7 @@ public class GetFileToolReport implements Serializable {
      * @return
      */
     public boolean isFinished() {
-        return timestampEnd != UNSET_LONG;
+        return timestampEnd != -1;
     }
 
     /**
@@ -180,7 +179,7 @@ public class GetFileToolReport implements Serializable {
      * @throws java.io.IOException
      */
     public void serialize(OutputStream out) throws IOException {
-        serialize(version, out);
+        serialize(VERSION_LATEST, out);
     }
 
     /**
@@ -189,6 +188,10 @@ public class GetFileToolReport implements Serializable {
      * @throws IOException
      */
     protected void serialize(int version, OutputStream out) throws IOException {
+        if (version > VERSION_LATEST) {
+            serialize(VERSION_LATEST, out);
+            return;
+        }
         RemoteUtil.writeInt(version, out);
         if (version == VERSION_ONE) {
             serializeVersionOne(out);
@@ -225,6 +228,7 @@ public class GetFileToolReport implements Serializable {
         } else {
             throw new IOException("Unrecognized version: " + getVersion());
         }
+        setVersion(VERSION_LATEST);
     }
 
     /**

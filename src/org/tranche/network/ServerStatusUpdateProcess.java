@@ -66,6 +66,8 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
         // keep going
         while (isRunning) {
             try {
+                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_FREQUENCY));
+                
                 if (NetworkUtil.getLocalServer() != null && NetworkUtil.getLocalServerRow() != null) {
                     // update the local server info -- do not let a problem here stop the updates
                     try {
@@ -135,7 +137,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                                     debugErr(e);
                                 }
                                 table.removeDefunctRows();
-                                NetworkUtil.updateRows(table.getRows());
+                                NetworkUtil.getStatus().setRows(table.getRows());
                             } catch (Exception e) {
                                 debugErr(e);
                                 ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
@@ -173,7 +175,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                             debugOut("Updating from non-core server " + range.getConnectionHost());
                             StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
                             table.removeDefunctRows();
-                            NetworkUtil.updateRows(table.getRows());
+                            NetworkUtil.getStatus().setRows(table.getRows());
                         } finally {
                             ConnectionUtil.unlockConnection(range.getConnectionHost());
                         }
@@ -219,8 +221,6 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
             } catch (Exception e) {
                 debugErr(e);
                 setException(e);
-            } finally {
-                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_FREQUENCY));
             }
         }
     }

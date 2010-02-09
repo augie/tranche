@@ -96,7 +96,7 @@ public class UserZipFileTest extends TrancheTestCase {
         final String name = "Text User";
         final String pw = "supersecret";
 
-        UserZipFile uzf = UserZipFileUtil.createUser(name, pw, tmpFile, isAdmin);
+        UserZipFile uzf = DevUtil.createUser(name, pw, tmpFile.getAbsolutePath(), isAdmin, false);
 
         assertEquals("Names should match", pw, uzf.getPassphrase());
         assertEquals("Should be same file", tmpFile, uzf.getFile());
@@ -113,9 +113,9 @@ public class UserZipFileTest extends TrancheTestCase {
 
             MakeUserZipFileTool maker = new MakeUserZipFileTool();
             maker.setName("test");
-            maker.setOrganization("Tranche");
+            maker.setValidDays(1);
             maker.setPassphrase(password);
-            maker.setUserFile(file);
+            maker.setSaveFile(file);
 
             UserZipFile uzf1 = maker.makeCertificate();
 
@@ -153,9 +153,8 @@ public class UserZipFileTest extends TrancheTestCase {
 
             MakeUserZipFileTool maker1 = new MakeUserZipFileTool();
             maker1.setName(name);
-            maker1.setOrganization(organization);
             maker1.setPassphrase(password);
-            maker1.setUserFile(file1);
+            maker1.setSaveFile(file1);
             maker1.setValidDays(d1, 3);
 
             UserZipFile uzf1 = maker1.makeCertificate();
@@ -163,9 +162,8 @@ public class UserZipFileTest extends TrancheTestCase {
 
             MakeUserZipFileTool maker2 = new MakeUserZipFileTool();
             maker2.setName(name);
-            maker2.setOrganization(organization);
             maker2.setPassphrase(password);
-            maker2.setUserFile(file2);
+            maker2.setSaveFile(file2);
             maker2.setValidDays(d2, 3);
 
             UserZipFile uzf2 = maker2.makeCertificate();
@@ -187,9 +185,8 @@ public class UserZipFileTest extends TrancheTestCase {
 
             MakeUserZipFileTool maker1 = new MakeUserZipFileTool();
             maker1.setName(name);
-            maker1.setOrganization(organization);
             maker1.setPassphrase(password);
-            maker1.setUserFile(file1);
+            maker1.setSaveFile(file1);
             // Date for four days ago. Shouldn't be valid if 3-day pass.
             maker1.setValidDays(new Date(TimeUtil.getTrancheTimestamp() - 4 * 1000 * 60 * 60 * 24), 3);
 
@@ -199,9 +196,8 @@ public class UserZipFileTest extends TrancheTestCase {
 
             MakeUserZipFileTool maker2 = new MakeUserZipFileTool();
             maker2.setName(name);
-            maker2.setOrganization(organization);
             maker2.setPassphrase(password);
-            maker2.setUserFile(file2);
+            maker2.setSaveFile(file2);
             // Date for now. Better be valid.
             maker2.setValidDays(new Date(TimeUtil.getTrancheTimestamp()), 3);
 
@@ -221,22 +217,21 @@ public class UserZipFileTest extends TrancheTestCase {
             file2 = TempFileUtil.createTemporaryFile(".zip.encrypted");
 
             String password = "test_pw";
-            String organization = "Tranche";
 
             MakeUserZipFileTool maker1 = new MakeUserZipFileTool();
             maker1.setName("Bryan Smith");
-            maker1.setOrganization(organization);
             maker1.setPassphrase(password);
-            maker1.setUserFile(file1);
+            maker1.setValidDays(1);
+            maker1.setSaveFile(file1);
 
             UserZipFile uzf1 = maker1.makeCertificate();
             assertEquals("Expecting certain name.", "Bryan Smith", uzf1.getUserNameFromCert());
 
             MakeUserZipFileTool maker2 = new MakeUserZipFileTool();
             maker2.setName("Augie Hill");
-            maker2.setOrganization(organization);
             maker2.setPassphrase(password);
-            maker2.setUserFile(file2);
+            maker2.setValidDays(1);
+            maker2.setSaveFile(file2);
 
             UserZipFile uzf2 = maker2.makeCertificate();
             assertEquals("Expecting certain name.", "Augie Hill", uzf2.getUserNameFromCert());
@@ -247,28 +242,23 @@ public class UserZipFileTest extends TrancheTestCase {
         }
     }
 
-    public void testUserAllPriveledgesFlag() throws Exception {
+    public void testUserAllPrivilegesFlag() throws Exception {
+        UserZipFile user = DevUtil.makeNewUser(User.ALL_PRIVILEGES);
+        
+        user.setFlags(User.NO_PRIVILEGES);
+        assertFalse("User shouldn't be able to do anything.", user.canDeleteData());
+        assertFalse("User shouldn't be able to do anything.", user.canDeleteMetaData());
+        assertFalse("User shouldn't be able to do anything.", user.canGetConfiguration());
+        assertFalse("User shouldn't be able to do anything.", user.canSetConfiguration());
+        assertFalse("User shouldn't be able to do anything.", user.canSetData());
+        assertFalse("User shouldn't be able to do anything.", user.canSetMetaData());
 
-        final int originalPriveledges = DevUtil.getDevUser().getFlags();
-
-        DevUtil.getDevUser().setFlags(User.NO_PRIVILEGES);
-
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canDeleteData());
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canDeleteMetaData());
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canGetConfiguration());
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canSetConfiguration());
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canSetData());
-        assertFalse("User shouldn't be able to do anything.", DevUtil.getDevUser().canSetMetaData());
-
-        DevUtil.getDevUser().setFlags(User.ALL_PRIVILEGES);
-
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canDeleteData());
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canDeleteMetaData());
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canGetConfiguration());
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canSetConfiguration());
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canSetData());
-        assertTrue("User should be able to do anything.", DevUtil.getDevUser().canSetMetaData());
-
-        DevUtil.getDevUser().setFlags(originalPriveledges);
+        user.setFlags(User.ALL_PRIVILEGES);
+        assertTrue("User should be able to do anything.", user.canDeleteData());
+        assertTrue("User should be able to do anything.", user.canDeleteMetaData());
+        assertTrue("User should be able to do anything.", user.canGetConfiguration());
+        assertTrue("User should be able to do anything.", user.canSetConfiguration());
+        assertTrue("User should be able to do anything.", user.canSetData());
+        assertTrue("User should be able to do anything.", user.canSetMetaData());
     }
 }

@@ -1,8 +1,6 @@
 package org.tranche.network;
 
 import org.tranche.ConfigureTranche;
-import org.tranche.remote.RemoteTrancheServer;
-import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.ThreadUtil;
 
@@ -21,18 +19,13 @@ public class ConnectionsKeepAliveThread extends Thread {
 
     @Override()
     public void run() {
-        // always on while the system is running
         while (true) {
             try {
-                int conditionalPingInterval = ConfigureTranche.getInt(ConfigureTranche.PROP_KEEP_ALIVE_INTERVAL);
-                ThreadUtil.safeSleep(conditionalPingInterval);
+                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_KEEP_ALIVE_INTERVAL));
                 for (String host : ConnectionUtil.getConnectedHosts()) {
                     try {
-                        RemoteTrancheServer ts = ConnectionUtil.getConnection(host).getRemoteTrancheServer();
-                        //if (TimeUtil.getTrancheTimestamp() - ts.getTimeLastUsed() > conditionalPingInterval) {
-                            // Application-level activity so socket timeout not triggered.
-                            ts.ping();
-                        //}
+                        // Application-level activity so socket timeout not triggered.
+                        ConnectionUtil.getConnection(host).getRemoteTrancheServer().ping();
                     } catch (Exception e) {
                         debugErr(e);
                         ConnectionUtil.reportExceptionHost(host, e);

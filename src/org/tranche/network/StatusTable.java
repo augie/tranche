@@ -98,14 +98,14 @@ public class StatusTable extends Object implements Serializable {
      * <p>Sets the version.</p>
      * @param version The new version
      */
-    protected void setVersion(int version) {
+    private void setVersion(int version) {
         this.version = version;
     }
 
     /**
      * <p>Removes all the rows from the table.</p>
      */
-    protected void clear() {
+    public void clear() {
         synchronized (modLock) {
             synchronized (map) {
                 map.clear();
@@ -123,33 +123,24 @@ public class StatusTable extends Object implements Serializable {
     }
 
     /**
-     * <p>Removes rows that are offline, not connected, and haven't been updated in <i>x</i> number of milliseconds.</p>
-     */
-    protected void removeDefunctRows() {
-        long threshold = ConfigureTranche.getLong(ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
-        if (threshold > 0) {
-            Set<String> toRemove = new HashSet<String>();
-            for (StatusTableRow row : getRows()) {
-                if (!row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
-                    toRemove.add(row.getHost());
-                }
-            }
-            removeRows(toRemove);
-        }
-    }
-
-    /**
      * <p>Sets the rows of the table. The rows are sorted alphabetically by host name.</p>
      * <p>Will overwrite rows of the same host names.</p>
      * <p>Does not clear the previous rows.</p>
      * @param rows A collection of rows
      */
-    protected void setRows(Collection<StatusTableRow> rows) {
+    public void setRows(Collection<StatusTableRow> rows) {
         Set<String> addedHosts = new HashSet<String>();
         Map<String, Boolean> updatedHosts = new HashMap<String, Boolean>();
         Map<String, Boolean> updatedHashSpans = new HashMap<String, Boolean>();
         for (StatusTableRow row : rows) {
             boolean isNew = !contains(row.getHost());
+            // always defer to online
+            if (!isNew && getRow(row.getHost()).isOnline() != row.isOnline()) {
+                row.setIsOnline(true);
+            }
+            if (NetworkUtil.isBannedServer(row.getHost())) {
+                row.setIsOnline(false);
+            }
             // the stored row is more recent than the one being given
             if (!isNew && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
                 continue;
@@ -212,10 +203,17 @@ public class StatusTable extends Object implements Serializable {
      * <p>If setting many rows, use setRows(Collection<StatusTableRow>) instead.</p>
      * @param row A row
      */
-    protected void setRow(StatusTableRow row) {
+    public void setRow(StatusTableRow row) {
         boolean isNew = !contains(row.getHost());
+        // always defer to online
+        if (!isNew && getRow(row.getHost()).isOnline() != row.isOnline()) {
+            row.setIsOnline(true);
+        }
+        if (NetworkUtil.isBannedServer(row.getHost())) {
+            row.setIsOnline(false);
+        }
         // the stored row is more recent than the one being given
-        if (!isNew && getRow(row.getHost()).isOnline() == row.isOnline() && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
+        if (!isNew && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
             return;
         }
         boolean isUpdated = !isNew && !getRow(row.getHost()).equals(row);
@@ -265,10 +263,25 @@ public class StatusTable extends Object implements Serializable {
     }
 
     /**
+     * <p>Removes rows that are offline, not connected, and haven't been updated in <i>x</i> number of milliseconds.</p>
+     * <p>Also removes banned servers.</p>
+     */
+    public void removeDefunctRows() {
+        long threshold = ConfigureTranche.getLong(ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
+        Set<String> toRemove = new HashSet<String>();
+        for (StatusTableRow row : getRows()) {
+            if (threshold > 0 && !row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
+                toRemove.add(row.getHost());
+            }
+        }
+        removeRows(toRemove);
+    }
+
+    /**
      * <p>Removes the rows with host names within the given collection</p>
      * @param hosts A collection of host names
      */
-    protected void removeRows(Collection<String> hosts) {
+    public void removeRows(Collection<String> hosts) {
         Set<String> removedHosts = new HashSet<String>();
         for (String host : hosts) {
             if (!contains(host)) {
@@ -303,7 +316,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Removing many rows, use removeRows(Collection<String>) instead.</p>
      * @param host
      */
-    protected void removeRow(String host) {
+    public void removeRow(String host) {
         if (!contains(host)) {
             return;
         }
@@ -466,15 +479,6 @@ public class StatusTable extends Object implements Serializable {
      * @return
      * @throws java.io.IOException
      */
-    public byte[] toByteArray() throws IOException {
-        return toByteArray(StatusTable.VERSION_LATEST, StatusTableRow.VERSION_LATEST);
-    }
-
-    /**
-     * 
-     * @return
-     * @throws java.io.IOException
-     */
     public byte[] toByteArray(int tableVersion, int rowVersion) throws IOException {
         ByteArrayOutputStream baos = null;
         try {
@@ -487,25 +491,20 @@ public class StatusTable extends Object implements Serializable {
     }
 
     /**
-     * <p>Outputs the values of this row to the output stream.</p>
-     * @param out The output stream.
-     * @throws java.io.IOException
-     */
-    public void serialize(OutputStream out) throws IOException {
-        serialize(version, StatusTableRow.VERSION_LATEST, out);
-    }
-
-    /**
      * <p>Write to the output stream in the given table and row versions.</p>
      * @param out The output stream
      * @throws java.io.IOException
      */
     public void serialize(int tableVersion, int rowVersion, OutputStream out) throws IOException {
+        if (tableVersion > VERSION_LATEST) {
+            serialize(VERSION_LATEST, rowVersion, out);
+            return;
+        }
         RemoteUtil.writeInt(version, out);
-        if (version == VERSION_ONE) {
+        if (tableVersion == VERSION_ONE) {
             serializeVersionOne(rowVersion, out);
         } else {
-            throw new IOException("Unrecognized version");
+            throw new IOException("Unrecognized version: " + getVersion());
         }
     }
 
@@ -533,6 +532,7 @@ public class StatusTable extends Object implements Serializable {
         } else {
             throw new IOException("Unrecognized version: " + getVersion());
         }
+        setVersion(VERSION_LATEST);
     }
 
     /**
@@ -555,7 +555,11 @@ public class StatusTable extends Object implements Serializable {
      */
     @Override
     public StatusTable clone() {
-        return new StatusTable(getRows());
+        Collection<StatusTableRow> clonedRows = new HashSet<StatusTableRow>();
+        for (StatusTableRow row : getRows()) {
+            clonedRows.add(row.clone());
+        }
+        return new StatusTable(clonedRows);
     }
 
     /**
@@ -565,9 +569,21 @@ public class StatusTable extends Object implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
-        StatusTable st = (StatusTable) o;
-        return version == st.getVersion() &&
-                StatusTableRow.areEqual(getRows(), st.getRows());
+        if (o instanceof StatusTable) {
+            StatusTable st = (StatusTable) o;
+            return version == st.getVersion()
+                    && StatusTableRow.areEqual(getRows(), st.getRows());
+        }
+        return false;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    @Override
+    public int hashCode() {
+        return modLock.hashCode();
     }
 
     /**

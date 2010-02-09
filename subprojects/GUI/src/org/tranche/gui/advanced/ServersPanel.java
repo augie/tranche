@@ -75,6 +75,8 @@ public class ServersPanel extends JPanel {
         private JButton connectMenuItem = LeftMenu.createLeftMenuButton("Connect");
         private JButton pingMenuItem = LeftMenu.createLeftMenuButton("Ping");
         private JButton monitorMenuItem = LeftMenu.createLeftMenuButton("Monitor");
+        private JButton registerServerMenuItem = LeftMenu.createLeftMenuButton("Register Server");
+        private JButton shutDownMenuItem = LeftMenu.createLeftMenuButton("Shut Down");
         private JButton configureMenuItem = LeftMenu.createLeftMenuButton("Load Configuration");
 
         public ServersMenu() {
@@ -154,11 +156,45 @@ public class ServersPanel extends JPanel {
                 }
             });
             addButton(configureMenuItem);
+            
+            registerServerMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            table.registerServerOnSelected(GUIUtil.getAdvancedGUI());
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
+            addButton(registerServerMenuItem);
+            
+            shutDownMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            table.shutDownSelected(GUIUtil.getAdvancedGUI());
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
+            addButton(shutDownMenuItem);
 
             connectMenuItem.setEnabled(false);
             pingMenuItem.setEnabled(false);
             monitorMenuItem.setEnabled(false);
             configureMenuItem.setEnabled(false);
+            registerServerMenuItem.setEnabled(false);
+            shutDownMenuItem.setEnabled(false);
         }
 
         @Override
@@ -168,6 +204,8 @@ public class ServersPanel extends JPanel {
             pingMenuItem.setEnabled(rows.length > 0);
             monitorMenuItem.setEnabled(rows.length > 0);
             configureMenuItem.setEnabled(rows.length == 1);
+            registerServerMenuItem.setEnabled(rows.length > 0);
+            shutDownMenuItem.setEnabled(rows.length > 0 && GUIUtil.getUser() != null);
         }
     }
 }

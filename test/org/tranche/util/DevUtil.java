@@ -69,7 +69,7 @@ public class DevUtil {
     private static final String trancheLoopbackAddr = "tranche://127.0.0.1";
     private static final int defaultTestPort = 1500; // Mac-friendly port
     public static final HashSet<User> DEV_USER_SET = new HashSet<User>();
-    
+
 
     static {
         try {
@@ -153,22 +153,16 @@ public class DevUtil {
         return routingTrancheServerUser;
     }
 
-    /**
-     * Makes a user with admin privledges.
-     * @return
-     * @throws java.lang.Exception
-     */
-    public static UserZipFile makeNewUser() throws Exception {
-        return makeNewUser(User.ALL_PRIVILEGES);
-    }
-
     public static UserZipFile makeNewUser(int flags) throws Exception {
         // make up a random user
         MakeUserZipFileTool make = new MakeUserZipFileTool();
         // create an appropriate temp file
         File temp = TempFileUtil.createTemporaryFile();
         try {
-            make.setUserFile(temp);
+            make.setName("new user");
+            make.setPassphrase("");
+            make.setValidDays(2);
+            make.setSaveFile(temp);
             // create the user
             UserZipFile user = make.makeCertificate();
             user.setFlags(flags);
@@ -180,7 +174,7 @@ public class DevUtil {
     }
 
     public static UserZipFile makeNewUserWithRandomFlags() throws Exception {
-        UserZipFile user = makeNewUser();
+        UserZipFile user = makeNewUser(User.ALL_PRIVILEGES);
         int userFlags = User.VERSION_ONE;
         if (RandomUtil.getBoolean()) {
             userFlags = userFlags | User.CAN_DELETE_DATA;
@@ -425,9 +419,11 @@ public class DevUtil {
         MakeUserZipFileTool maker = new MakeUserZipFileTool();
         maker.setName(username);
         maker.setPassphrase(password);
-        maker.setUserFile(new File(filename));
+        maker.setSaveFile(new File(filename));
         if (isExpired) {
             maker.setValidDays(-1);
+        } else {
+            maker.setValidDays(1);
         }
         UserZipFile zip = (UserZipFile) maker.makeCertificate();
 
@@ -454,11 +450,13 @@ public class DevUtil {
         MakeUserZipFileTool maker = new MakeUserZipFileTool();
         maker.setName(username);
         maker.setPassphrase(password);
-        maker.setUserFile(new File(filename));
+        maker.setSaveFile(new File(filename));
         maker.setSignerCertificate(signerCertificate);
         maker.setSignerPrivateKey(signerPrivateKey);
         if (isExpired) {
             maker.setValidDays(-1);
+        } else {
+            maker.setValidDays(1);
         }
         UserZipFile zip = (UserZipFile) maker.makeCertificate();
 

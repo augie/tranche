@@ -46,9 +46,10 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
     @Override
     public void run() {
         debugOut("Started the process");
-        // keep going
         while (isRunning) {
             try {
+                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
+                
                 // If testing manual network status table, then don't do anything!
                 if (TestUtil.isTestingManualNetworkStatusTable()) {
                     continue;
@@ -123,14 +124,13 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
                 }
                 // remove defunct rows
                 table.removeDefunctRows();
-                NetworkUtil.updateRows(table.getRows());
+                // update the master table with the returned table
+                NetworkUtil.getStatus().setRows(table.getRows());
                 // check the status table for servers to clear
                 NetworkUtil.getStatus().removeDefunctRows();
             } catch (Exception e) {
                 debugErr(e);
                 setException(e);
-            } finally {
-                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
             }
         }
     }

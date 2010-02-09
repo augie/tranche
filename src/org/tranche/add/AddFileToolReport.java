@@ -34,11 +34,10 @@ public class AddFileToolReport {
 
     public static final int VERSION_ONE = 1;
     public static final int VERSION_LATEST = VERSION_ONE;
-    public static final long UNSET_LONG = -1;
     private int version = VERSION_LATEST;
     private String title,  description;
     private boolean isEncrypted,  showMetaDataIfEncrypted;
-    private long timestampStart = TimeUtil.getTrancheTimestamp(),  timestampEnd = UNSET_LONG,  bytesUploaded = UNSET_LONG,  filesUploaded = UNSET_LONG, originalFileCount = 0,  originalBytesUploaded = 0;
+    private long timestampStart = TimeUtil.getTrancheTimestamp(),  timestampEnd = -1,  bytesUploaded = -1,  filesUploaded = -1, originalFileCount = 0,  originalBytesUploaded = 0;
     private BigHash hash;
     private List<PropagationExceptionWrapper> failureExceptions = new LinkedList<PropagationExceptionWrapper>();
 
@@ -241,7 +240,7 @@ public class AddFileToolReport {
      * @return
      */
     public synchronized boolean isFinished() {
-        return timestampEnd != UNSET_LONG;
+        return timestampEnd != -1;
     }
 
     /**
@@ -278,7 +277,7 @@ public class AddFileToolReport {
      * @throws java.io.IOException
      */
     public synchronized void serialize(OutputStream out) throws IOException {
-        serialize(version, out);
+        serialize(VERSION_LATEST, out);
     }
 
     /**
@@ -287,6 +286,10 @@ public class AddFileToolReport {
      * @throws IOException
      */
     protected synchronized void serialize(int version, OutputStream out) throws IOException {
+        if (version > VERSION_LATEST) {
+            serialize(VERSION_LATEST, out);
+            return;
+        }
         RemoteUtil.writeInt(version, out);
         if (version == VERSION_ONE) {
             serializeVersionOne(out);
@@ -333,6 +336,7 @@ public class AddFileToolReport {
         } else {
             throw new IOException("Unrecognized version: " + getVersion());
         }
+        setVersion(VERSION_LATEST);
     }
 
     /**

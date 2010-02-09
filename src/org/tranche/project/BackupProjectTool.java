@@ -360,11 +360,12 @@ public class BackupProjectTool {
         MakeUserZipFileTool maker = new MakeUserZipFileTool();
         maker.setName(username);
         maker.setPassphrase(password);
+        maker.setValidDays(1);
 
         File file = TempFileUtil.createTemporaryFile(filename);
         file.createNewFile();
 
-        maker.setUserFile(file);
+        maker.setSaveFile(file);
         UserZipFile zip = (UserZipFile) maker.makeCertificate();
 
         // Set user permissions as admin (server needs user registered or it will

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.tranche.ConfigureTranche;
 import org.tranche.configuration.Configuration;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -48,18 +49,6 @@ import org.tranche.security.SecurityUtil;
 public class StatusTableRow extends Object implements Serializable {
 
     private static boolean debug = false;
-    /**
-     * <p>The default value for the flags. Default is "false" for all flags.</p>
-     */
-    public static final long DEFAULT_FLAGS = 0;
-    /**
-     * <p>The default name.</p>
-     */
-    public static final String DEFAULT_NAME = "";
-    /**
-     * <p>The default group name.</p>
-     */
-    public static final String DEFAULT_GROUP = "";
     /**
      * <p>The value for the first version of the object.</p>
      */
@@ -89,6 +78,26 @@ public class StatusTableRow extends Object implements Serializable {
      */
     public static final int DATA_STORE_BIT = (int) Math.pow(2, 4);
     /**
+     * <p>The default value for the flags.</p>
+     */
+    public static final long DEFAULT_FLAGS = CAN_READ_BIT | CAN_WRITE_BIT | DATA_STORE_BIT;
+    /**
+     * <p>The default name.</p>
+     */
+    public static final String DEFAULT_NAME = "";
+    /**
+     * <p>The default group name.</p>
+     */
+    public static final String DEFAULT_GROUP = "";
+    /**
+     * <p>The default set of hash spans.</p>
+     */
+    public static final Collection<HashSpan> DEFAULT_HASH_SPANS = HashSpan.FULL_SET;
+    /**
+     * <p>The default set of target hash spans.</p>
+     */
+    public static final Collection<HashSpan> DEFAULT_TARGET_HASH_SPANS = HashSpan.FULL_SET;
+    /**
      * <p>The maximum length of the host name.</p>
      */
     public static final int LENGTH_MAX_HOST = 100;
@@ -100,9 +109,9 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>The maximum length of the group name.</p>
      */
     public static final int LENGTH_MAX_GROUP = 100;
-    private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(),  targetHashSpans = new HashSet<HashSpan>();
+    private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS),  targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
     private String host,  name = DEFAULT_NAME,  group = DEFAULT_GROUP;
-    private int version = VERSION_LATEST,  port;
+    private int version = VERSION_LATEST,  port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
     private long flags = DEFAULT_FLAGS,  updateTimestamp = TimeUtil.getTrancheTimestamp();
 
     /**
@@ -170,6 +179,7 @@ public class StatusTableRow extends Object implements Serializable {
         setIsDataStore(true);
         setHashSpans(config.getHashSpans());
         setTargetHashSpans(config.getTargetHashSpans());
+        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -181,7 +191,7 @@ public class StatusTableRow extends Object implements Serializable {
         setPort(server.getPort());
         setIsSSL(server.isSSL());
         setIsOnline(server.isAlive());
-        // TODO after creating a gateway server, change this
+        // TODO after creating a routing server, change this
         setIsDataStore(true);
         // some info from the configuration
         try {
@@ -193,6 +203,7 @@ public class StatusTableRow extends Object implements Serializable {
         } catch (Exception e) {
             debugErr(e);
         }
+        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -250,7 +261,7 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>Sets the timestamp when the row's information was last updated.</p>
      * @param updateTimestamp The timestamp when the row's information was last updated.
      */
-    protected void setUpdateTimestamp(long updateTimestamp) {
+    private void setUpdateTimestamp(long updateTimestamp) {
         this.updateTimestamp = updateTimestamp;
         if (this.updateTimestamp < 0) {
             this.updateTimestamp = 0;
@@ -271,7 +282,6 @@ public class StatusTableRow extends Object implements Serializable {
      */
     private void setFlags(long flags) {
         this.flags = flags;
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -291,7 +301,6 @@ public class StatusTableRow extends Object implements Serializable {
         if (this.host.length() > LENGTH_MAX_HOST) {
             this.host = this.host.substring(0, LENGTH_MAX_HOST);
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -311,7 +320,6 @@ public class StatusTableRow extends Object implements Serializable {
         if (this.port < 0) {
             this.port = 0;
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -348,14 +356,13 @@ public class StatusTableRow extends Object implements Serializable {
      */
     protected void setName(String name) {
         if (name == null) {
-            this.name = "";
+            this.name = DEFAULT_NAME;
         } else {
             this.name = name;
             if (this.name.length() > LENGTH_MAX_NAME) {
                 this.name = this.name.substring(0, LENGTH_MAX_NAME);
             }
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -372,14 +379,13 @@ public class StatusTableRow extends Object implements Serializable {
      */
     protected void setGroup(String group) {
         if (group == null) {
-            this.group = "";
+            this.group = DEFAULT_GROUP;
         } else {
             this.group = group;
             if (this.group.length() > LENGTH_MAX_GROUP) {
                 this.group = this.group.substring(0, LENGTH_MAX_GROUP);
             }
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -397,7 +403,7 @@ public class StatusTableRow extends Object implements Serializable {
     protected void setIsOnline(boolean online) {
         if (online) {
             setFlags(getFlags() | ONLINE_BIT);
-        } else {
+        } else if (!ConnectionUtil.isConnected(host)) {
             setFlags(getFlags() & (SSL_BIT | DATA_STORE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
         }
     }
@@ -460,7 +466,6 @@ public class StatusTableRow extends Object implements Serializable {
         } else {
             setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -482,7 +487,6 @@ public class StatusTableRow extends Object implements Serializable {
             this.hashSpans.clear();
             this.hashSpans.addAll(hashSpans);
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
@@ -504,16 +508,22 @@ public class StatusTableRow extends Object implements Serializable {
             this.targetHashSpans.clear();
             this.targetHashSpans.addAll(hashSpans);
         }
-        setUpdateTimestamp(TimeUtil.getTrancheTimestamp());
     }
 
     /**
-     * <p>Outputs the values of this row to the output stream.</p>
-     * @param out The output stream.
+     *
+     * @return
      * @throws java.io.IOException
      */
-    public void serialize(OutputStream out) throws IOException {
-        serialize(version, out);
+    public byte[] toByteArray(int version) throws IOException {
+        ByteArrayOutputStream baos = null;
+        try {
+            baos = new ByteArrayOutputStream();
+            serialize(version, baos);
+            return baos.toByteArray();
+        } finally {
+            IOUtil.safeClose(baos);
+        }
     }
 
     /**
@@ -521,12 +531,16 @@ public class StatusTableRow extends Object implements Serializable {
      * @param out The output stream
      * @throws IOException
      */
-    protected void serialize(int version, OutputStream out) throws IOException {
+    public void serialize(int version, OutputStream out) throws IOException {
+        if (version > VERSION_LATEST) {
+            serialize(VERSION_LATEST, out);
+            return;
+        }
         RemoteUtil.writeInt(version, out);
         if (version == VERSION_ONE) {
             serializeVersionOne(out);
         } else {
-            throw new IOException("Unrecognized version");
+            throw new IOException("Unrecognized version: " + version);
         }
     }
 
@@ -558,7 +572,6 @@ public class StatusTableRow extends Object implements Serializable {
         } else {
             RemoteUtil.writeInt(0, out);
         }
-
         RemoteUtil.writeLong(updateTimestamp, out);
     }
 
@@ -574,6 +587,7 @@ public class StatusTableRow extends Object implements Serializable {
         } else {
             throw new IOException("Unrecognized version: " + getVersion());
         }
+        setVersion(VERSION_LATEST);
     }
 
     /**
@@ -642,7 +656,7 @@ public class StatusTableRow extends Object implements Serializable {
             ByteArrayInputStream bais = null;
             try {
                 baos = new ByteArrayOutputStream();
-                serialize(baos);
+                serialize(version, baos);
                 bais = new ByteArrayInputStream(baos.toByteArray());
                 return new StatusTableRow(bais);
             } finally {
@@ -655,12 +669,12 @@ public class StatusTableRow extends Object implements Serializable {
     }
 
     /**
-     * <p>Hashes the host name only. Host names should be unique and not null.</p>
+     * <p>Hashes the host name only.</p>
      * @return The hash code
      */
      @Override
     public int hashCode() {
-        return new String(host).hashCode();
+        return host.hashCode();
     }
 
     /**
