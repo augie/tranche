@@ -150,7 +150,7 @@ public class LocalDataServer {
         System.out.println();
         System.out.println("STANDARD PARAMETERS");
         System.out.println("    -H, --host                  Value: string.                  The host name / IP address by which the server will be known.");
-        System.out.println("    -d, --directory             Value: string.                  The file system location where all server configuration files will be located.");
+        System.out.println("    -D, --directory             Value: string.                  The file system location where all server configuration files will be located.");
         System.out.println("    -p, --port                  Value: positive integer.        The port number to which the server will be bound.");
         System.out.println("    -s, --ssl                   Value: true/false.              Whether the server should operate over SSL connections.");
         System.out.println("    -z, --userzipfile           Values: two strings.            The file system location of the user zip file for the server and the passphrase to unlock it.");
@@ -165,8 +165,10 @@ public class LocalDataServer {
 
     public static void main(String[] args) {
         try {
-            ConfigureTranche.load(args);
-
+            if (args.length == 0) {
+                printUsage();
+                System.exit(0);
+            }
             // read the arguments
             for (int i = 1; i < args.length; i++) {
                 if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-u") || args[i].equals("--usage")) {
@@ -183,6 +185,9 @@ public class LocalDataServer {
                     TrancheServerCommandLineClient.setDebug(true);
                 }
             }
+
+            ConfigureTranche.load(args);
+
             for (int i = 1; i < args.length; i += 2) {
                 if (args[i].equals("-H") || args[i].equals("--host")) {
                     try {
@@ -191,7 +196,7 @@ public class LocalDataServer {
                         System.err.println("ERROR: Invalid host name: " + args[i + 1]);
                         System.exit(2);
                     }
-                } else if (args[i].equals("-d") || args[i].equals("--directory")) {
+                } else if (args[i].equals("-D") || args[i].equals("--directory")) {
                     rootDir = new File(args[i + 1]);
                 } else if (args[i].equals("-p") || args[i].equals("--port")) {
                     try {

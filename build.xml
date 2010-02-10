@@ -1,6 +1,6 @@
 <project name="Tranche Distributed Repository" default="dist.quick" basedir="./">
     <description>This is the Ant build script for the Tranche Distributed Repository.</description>
-    
+
     <!-- Print out current date/time for log -->
     <tstamp><format property="BUILD_TIME" pattern="MM/dd/yyyy hh:mm aa" /></tstamp>
     <echo message="Build on ${BUILD_TIME}" />
@@ -19,7 +19,7 @@
     <property name="lib.gui" location="${subprojects.gui}/lib"/>
     <property name="build" location="b"/>
     <property name="build.rt" location="${build}/rt"/>
-	<property name="build.gui" location="b-gui"/>
+    <property name="build.gui" location="b-gui"/>
     <property name="build.rt.gui" location="${build.gui}/rt"/>
     <property name="name.lib" value="lib"/>
     <property name="dist.lib" location="${dist}/${name.lib}"/>
@@ -39,74 +39,74 @@
     <property name="dist.jar.gui" location="${dist}/${name.jar.gui}"/>
     <property name="dist.zip" location="${dist}/tranche-b${buildNumber}.zip"/>
     <property name="dist.gui.zip" location="${dist}/tranche-gui-b${buildNumber}.zip"/>
-    
+
     <!-- set the variables needed for the server build -->
     <property name="dir.server" location="build/server"/>
     <property name="build.server" location="${build}/server"/>
     <property name="build.server.jar" location="${build.server}/tranche-server.jar"/>
     <property name="dist.server.zip" location="${dist}/tranche-server-b${buildNumber}.zip"/>
-    
+
     <!-- set the variables needed for the GetFileTool JAR build -->
     <property name="dir.get" location="build/get"/>
     <property name="build.get" location="${build}/get"/>
     <property name="build.get.jar" location="${build.get}/tranche-get.jar"/>
     <property name="dist.get.zip" location="${dist}/tranche-get-b${buildNumber}.zip"/>
-    
+
     <!-- set the variables needed for the AddFileTool JAR build -->
     <property name="dir.add" location="build/add"/>
     <property name="build.add" location="${build}/add"/>
     <property name="build.add.jar" location="${build.add}/tranche-add.jar"/>
     <property name="dist.add.zip" location="${dist}/tranche-add-b${buildNumber}.zip"/>
-    
-	<!-- set the variables needed for the MakeRepositoryCertsTool JAR build -->
+
+    <!-- set the variables needed for the MakeRepositoryCertsTool JAR build -->
     <property name="dir.certs" location="build/certs"/>
     <property name="build.certs" location="${build}/certs"/>
     <property name="build.certs.jar" location="${build.certs}/tranche-certs.jar"/>
     <property name="dist.certs.zip" location="${dist}/tranche-certs-b${buildNumber}.zip"/>
-    
+
     <!-- path required for runtime compiling-->
     <path id="path.rt.compile">
         <fileset dir="${lib}" includes="*.jar"/>
     </path>
-    
+
     <!-- path required for runtime compiling w/GUI-->
     <path id="path.rt.compile.gui">
-		<fileset dir="${lib}" includes="*.jar"/>
+        <fileset dir="${lib}" includes="*.jar"/>
         <fileset dir="${lib.gui}" includes="*.jar"/>
         <pathelement path="${dist.jar}"/>
     </path>
-    
+
     <!-- JUnit parameters -->
     <property name="build.test" location="b-test"/>
     <property name="build.test.results" location="${build.test}/junit"/>
-	<property name="test.includes" value="**/*Test.java"/>
+    <property name="test.includes" value="**/*Test.java"/>
     <property name="dist.test" location="${dist}/junit"/>
     <property name="dist.clover" location="${dist}/clover"/>
 
     <!-- path required for building the test code-->
     <path id="path.test.compile">
-		<path refid="path.rt.compile"/>
+    <path refid="path.rt.compile"/>
         <fileset dir="${lib.gui}" includes="*.jar"/>
-	</path>
-    
+    </path>
+
     <!-- path required for testing the runtime code -->
     <path id="path.test.rt">
-		<!-- keep everything from the test compile -->
-		<path refid="path.test.compile"/>
-		<pathelement path="${build.test}"/>
-		<pathelement path="${ant.home}/lib/clover.jar"/>
-		<pathelement path="./clover.license"/>
-	</path>
+    <!-- keep everything from the test compile -->
+    <path refid="path.test.compile"/>
+        <pathelement path="${build.test}"/>
+        <pathelement path="${ant.home}/lib/clover.jar"/>
+        <pathelement path="./clover.license"/>
+    </path>
 
     <target name="dist.quick" description="Builds the code, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui"/>
         <antcall target="dist.server"/>
         <antcall target="dist.get"/>
         <antcall target="dist.add"/>
-		<antcall target="dist.certs"/>
+        <antcall target="dist.certs"/>
         <antcall target="sign-jars"/>
         <antcall target="javadoc"/>
-		<antcall target="javadoc.gui"/>
+        <antcall target="javadoc.gui"/>
         <zip destfile="${dist.lib.zip}" basedir="${dist.lib}"/>
         <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}"/>
         <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}"/>
@@ -129,9 +129,9 @@
         <antcall target="dist.server" />
         <antcall target="dist.get" />
         <antcall target="dist.add" />
-		<antcall target="dist.certs" />
+        <antcall target="dist.certs" />
         <antcall target="javadoc" />
-		<antcall target="javadoc.gui" />
+        <antcall target="javadoc.gui" />
         <antcall target="clover" />
         <antcall target="sign-jars" />
         <zip destfile="${dist.lib.zip}" basedir="${dist.lib}" />
@@ -152,7 +152,7 @@
 
     <target name="clean" description="Delete all files from the previous build.">
         <delete dir="${build}"/>
-		<delete dir="${build.gui}"/>
+        <delete dir="${build.gui}"/>
         <delete dir="${build.test}"/>
         <delete dir="${dist}"/>
         <!-- tomcat makes this directory -->
@@ -172,9 +172,9 @@
         <mkdir dir="${dist.lib}"/>
         <mkdir dir="${dist.lib.gui}"/>
     </target>
-    
+
     <!-- Compiles all the code required for runtime -->
-    <target name="rt.compile" depends="init" description="Compiles the core source code.">        
+    <target name="rt.compile" depends="init" description="Compiles the core source code.">
         <!-- create the temporary directory for the source code -->
         <mkdir dir="${build}/java"/>
         <copy todir="${build}/java">
@@ -193,23 +193,23 @@
             <src path="${build}/java"/>
             <classpath refid="path.rt.compile"/>
         </javac>
-        
+
         <!-- copy all non-java files from src to dest dir -->
         <copy todir="${build.rt}">
             <fileset dir="${src}">
-                <exclude name="**/*.java"/>	
+                <exclude name="**/*.java"/>
             </fileset>
         </copy>
-		
+
         <jar jarfile="${dist.jar}">
-			<fileset dir="${build.rt}" includes="**/*.*"/>
-			<manifest>
-				<attribute name="Main-Class" value="org.tranche.LocalDataServer"/>
-			</manifest>
-		</jar>
+            <fileset dir="${build.rt}" includes="**/*.*"/>
+            <manifest>
+                <attribute name="Main-Class" value="org.tranche.LocalDataServer"/>
+            </manifest>
+        </jar>
     </target>
-	
-	<!-- Compiles all the code required for runtime -->
+
+    <!-- Compiles all the code required for runtime -->
     <target name="rt.compile.gui" depends="rt.compile" description="Compiles the GUI subproject source code.">
         <!-- create the temporary directory for the source code -->
         <mkdir dir="${build.gui}/java"/>
@@ -230,20 +230,20 @@
             <src path="${build.gui}/java"/>
             <classpath refid="path.rt.compile.gui"/>
         </javac>
-        
+
         <!-- copy all non-java files from src to dest dir -->
         <copy todir="${build.rt.gui}">
             <fileset dir="${src.gui}">
-                <exclude name="**/*.java"/>	
+                <exclude name="**/*.java"/>
             </fileset>
         </copy>
 
         <jar jarfile="${dist.jar.gui}">
-			<fileset dir="${build.rt.gui}" includes="**/*.*" />
-			<manifest>
-				<attribute name="Main-Class" value="org.tranche.gui.advanced.AdvancedGUI" />
-			</manifest>
-		</jar>
+            <fileset dir="${build.rt.gui}" includes="**/*.*" />
+            <manifest>
+                <attribute name="Main-Class" value="org.tranche.gui.advanced.AdvancedGUI" />
+            </manifest>
+        </jar>
     </target>
 
     <target name="javadoc" description="Creates the JavaDocs for the core source code.">
@@ -258,71 +258,83 @@
             <bottom><![CDATA[<i>This code is free for use both commercially and non-commercially as stated in the <a href="https://trancheproject.org/license.jsp" target="_blank">project's license</a></i>]]></bottom>
         </javadoc>
     </target>
-	
+
     <target name="javadoc.gui" description="Creates the JavaDocs for the GUI subproject source code.">
         <mkdir dir="${dist.javadoc.gui}"/>
         <javadoc destdir="${dist.javadoc.gui}" author="true" version="true" use="true" windowtitle="Tranche Distributed Repository GUI (Build #${buildNumber}) Java API Documentation">
-			<classpath refid="path.rt.compile.gui"/>
+            <classpath refid="path.rt.compile.gui"/>
             <fileset dir="${src.gui}">
-				<include name="org/tranche/*.java"/>
+                <include name="org/tranche/*.java"/>
                 <include name="org/tranche/**/*.java"/>
             </fileset>
             <doctitle><![CDATA[<h1>Tranche Distributed Repository GUI</h1>]]></doctitle>
             <bottom><![CDATA[<i>This code is free for use both commercially and non-commercially as stated in the <a href="https://trancheproject.org/license.jsp" target="_blank">project's license</a></i>]]></bottom>
         </javadoc>
     </target>
-    
+
     <target name="dist.server" description="Make a server code release.">
         <mkdir dir="${build.server}"/>
-		<mkdir dir="${build.server}/lib"/>
-		<copy todir="${build.server}/lib">
-			<fileset dir="${lib}" includes="*.jar"/>
-		</copy>
-		<jar jarfile="${build.server.jar}"
-			manifest="${dir.server}/MANIFEST.MF"
-			basedir="${build.rt}" />
+        <mkdir dir="${build.server}/lib"/>
+        <copy todir="${build.server}/lib">
+            <fileset dir="${lib}" includes="*.jar"/>
+        </copy>
+        <copy todir="${build.server}">
+            <fileset dir="${dir.server}" excludesFile="MANIFEST.MF"/>
+        </copy>
+        <jar jarfile="${build.server.jar}"
+             manifest="${dir.server}/MANIFEST.MF"
+             basedir="${build.rt}" />
         <zip destfile="${dist.server.zip}" basedir="${build.server}" />
     </target>
 
     <target name="dist.certs" description="Makes a JAR for the make default certificates tool.">
         <mkdir dir="${build.certs}"/>
-		<mkdir dir="${build.certs}/lib"/>
-		<copy todir="${build.certs}/lib">
-			<fileset dir="${lib}" includes="*.jar"/>
-		</copy>
-		<jar jarfile="${build.certs.jar}"
-			manifest="${dir.certs}/MANIFEST.MF"
-			basedir="${build.rt}" />
+        <mkdir dir="${build.certs}/lib"/>
+        <copy todir="${build.certs}/lib">
+            <fileset dir="${lib}" includes="*.jar"/>
+        </copy>
+        <copy todir="${build.certs}">
+            <fileset dir="${dir.certs}" excludesFile="MANIFEST.MF"/>
+        </copy>
+        <jar jarfile="${build.certs.jar}"
+             manifest="${dir.certs}/MANIFEST.MF"
+             basedir="${build.rt}" />
         <zip destfile="${dist.certs.zip}" basedir="${build.certs}" />
     </target>
-	
+
     <target name="dist.get" description="Makes a JAR for the get file tool.">
         <mkdir dir="${build.get}"/>
-		<mkdir dir="${build.get}/lib"/>
-		<copy todir="${build.get}/lib">
-			<fileset dir="${lib}" includes="*.jar"/>
-		</copy>
-		<jar jarfile="${build.get.jar}"
-			manifest="${dir.get}/MANIFEST.MF"
-			basedir="${build.rt}" />
+        <mkdir dir="${build.get}/lib"/>
+        <copy todir="${build.get}/lib">
+            <fileset dir="${lib}" includes="*.jar"/>
+        </copy>
+        <copy todir="${build.get}">
+            <fileset dir="${dir.get}" excludesFile="MANIFEST.MF"/>
+        </copy>
+        <jar jarfile="${build.get.jar}"
+             manifest="${dir.get}/MANIFEST.MF"
+             basedir="${build.rt}" />
         <zip destfile="${dist.get.zip}" basedir="${build.get}" />
     </target>
-    
+
     <target name="dist.add" description="Makes a JAR for the add file tool.">
         <mkdir dir="${build.add}"/>
-		<mkdir dir="${build.add}/lib"/>
-		<copy todir="${build.add}/lib">
-			<fileset dir="${lib}" includes="*.jar"/>
-		</copy>
-		<jar jarfile="${build.add.jar}"
-			manifest="${dir.add}/MANIFEST.MF"
-			basedir="${build.rt}" />
+        <mkdir dir="${build.add}/lib"/>
+        <copy todir="${build.add}/lib">
+            <fileset dir="${lib}" includes="*.jar"/>
+        </copy>
+        <copy todir="${build.add}">
+            <fileset dir="${dir.add}" excludesFile="MANIFEST.MF"/>
+        </copy>
+        <jar jarfile="${build.add.jar}"
+             manifest="${dir.add}/MANIFEST.MF"
+             basedir="${build.rt}" />
         <zip destfile="${dist.add.zip}" basedir="${build.add}" />
     </target>
-    
+
     <!-- Executes the JUnit tests on the code -->
     <target name="test" depends="test.run, test.report" description="Build and run tests, run regression tests, generate reports" />
-	
+
     <!-- Compiles all the code required for a test -->
     <target name="test.compile" description="Compile the test source code.">
         <mkdir dir="${build.test}"/>
@@ -333,18 +345,18 @@
             <src path="${test.gui}"/>
             <classpath refid="path.test.compile"/>
         </javac>
-        
+
         <!-- copy all non-java files from test to dest dir -->
         <copy todir="${build.test}">
             <fileset dir="${test}">
-                <exclude name="**/*.java"/>	
+                <exclude name="**/*.java"/>
             </fileset>
             <fileset dir="${test.gui}">
-                <exclude name="**/*.java"/>	
+                <exclude name="**/*.java"/>
             </fileset>
         </copy>
     </target>
-    
+
     <target name="test.run" depends="test.compile" description="Runs the tests.">
         <mkdir dir="${build.test.results}"/>
         <junit showoutput="true" fork="true" dir="${build.test}" maxmemory="750m">
@@ -357,7 +369,7 @@
             <formatter type="xml"/>
         </junit>
     </target>
-    
+
     <target name="test.report">
         <mkdir dir="${dist.test}"/>
         <junitreport todir="${dist.test}">
@@ -367,7 +379,7 @@
             <report format="frames" todir="${dist.test}"/>
         </junitreport>
     </target>
-    
+
     <!-- sign all the JARs so that they work with WebStart -->
     <target name="sign-jars">
         <property name="Tranche.jar" value="${dist.jar}" />
@@ -399,7 +411,7 @@
         <zip destfile="${TrancheGUI.jar}" basedir="${TrancheGUI}"/>
         <delete dir="${TrancheGUI}"/>
         <signjar jar="${TrancheGUI.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-        
+
         <property name="bcprov-jdk15-130.jar" value="${dist.lib}/bcprov-jdk15-130.jar" />
         <property name="bcprov-jdk15-130" value="${dist.lib}/bcprov-jdk15-130" />
         <unzip src="${bcprov-jdk15-130.jar}" dest="${bcprov-jdk15-130}">
@@ -409,12 +421,12 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${bcprov-jdk15-130.jar}"/>    
+        </unzip>
+        <delete file="${bcprov-jdk15-130.jar}"/>
         <zip destfile="${bcprov-jdk15-130.jar}" basedir="${bcprov-jdk15-130}"/>
         <delete dir="${bcprov-jdk15-130}"/>
         <signjar jar="${bcprov-jdk15-130.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-		
+
         <property name="commons-logging.jar" value="${dist.lib}/commons-logging.jar" />
         <property name="commons-logging" value="${dist.lib}/commons-logging" />
         <unzip src="${commons-logging.jar}" dest="${commons-logging}">
@@ -424,8 +436,8 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${commons-logging.jar}"/>    
+        </unzip>
+        <delete file="${commons-logging.jar}"/>
         <zip destfile="${commons-logging.jar}" basedir="${commons-logging}"/>
         <delete dir="${commons-logging}"/>
         <signjar jar="${commons-logging.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
@@ -454,8 +466,8 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${commons-httpclient-3.0-rc4.jar}"/>    
+        </unzip>
+        <delete file="${commons-httpclient-3.0-rc4.jar}"/>
         <zip destfile="${commons-httpclient-3.0-rc4.jar}" basedir="${commons-httpclient-3.0-rc4}"/>
         <delete dir="${commons-httpclient-3.0-rc4}"/>
         <signjar jar="${commons-httpclient-3.0-rc4.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
@@ -484,13 +496,13 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${ProteomeCommons.org-IO.jar}"/>    
+        </unzip>
+        <delete file="${ProteomeCommons.org-IO.jar}"/>
         <zip destfile="${ProteomeCommons.org-IO.jar}" basedir="${ProteomeCommons.org-IO}"/>
         <delete dir="${ProteomeCommons.org-IO}"/>
-		<signjar jar="${ProteomeCommons.org-IO.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
+        <signjar jar="${ProteomeCommons.org-IO.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
 
-		<property name="swt-carbon-macosx.jar" value="${dist.lib.gui}/swt-carbon-macosx.jar" />
+        <property name="swt-carbon-macosx.jar" value="${dist.lib.gui}/swt-carbon-macosx.jar" />
         <property name="swt-carbon-macosx" value="${dist.lib.gui}/swt-carbon-macosx" />
         <unzip src="${swt-carbon-macosx.jar}" dest="${swt-carbon-macosx}">
             <patternset>
@@ -499,12 +511,12 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${swt-carbon-macosx.jar}"/>    
+        </unzip>
+        <delete file="${swt-carbon-macosx.jar}"/>
         <zip destfile="${swt-carbon-macosx.jar}" basedir="${swt-carbon-macosx}"/>
         <delete dir="${swt-carbon-macosx}"/>
         <signjar jar="${swt-carbon-macosx.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-		
+
         <property name="swt-gtk-linux-ppc.jar" value="${dist.lib.gui}/swt-gtk-linux-ppc.jar" />
         <property name="swt-gtk-linux-ppc" value="${dist.lib.gui}/swt-gtk-linux-ppc" />
         <unzip src="${swt-gtk-linux-ppc.jar}" dest="${swt-gtk-linux-ppc}">
@@ -514,8 +526,8 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${swt-gtk-linux-ppc.jar}"/>    
+        </unzip>
+        <delete file="${swt-gtk-linux-ppc.jar}"/>
         <zip destfile="${swt-gtk-linux-ppc.jar}" basedir="${swt-gtk-linux-ppc}"/>
         <delete dir="${swt-gtk-linux-ppc}"/>
         <signjar jar="${swt-gtk-linux-ppc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
@@ -544,7 +556,7 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
+        </unzip>
         <delete file="${swt-gtk-linux-x86.jar}"/>
         <zip destfile="${swt-gtk-linux-x86.jar}" basedir="${swt-gtk-linux-x86}"/>
         <delete dir="${swt-gtk-linux-x86}"/>
@@ -559,12 +571,12 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${swt-gtk-linux-x86_64.jar}"/>    
+        </unzip>
+        <delete file="${swt-gtk-linux-x86_64.jar}"/>
         <zip destfile="${swt-gtk-linux-x86_64.jar}" basedir="${swt-gtk-linux-x86_64}"/>
         <delete dir="${swt-gtk-linux-x86_64}"/>
         <signjar jar="${swt-gtk-linux-x86_64.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-        
+
         <property name="swt-gtk-solaris-sparc.jar" value="${dist.lib.gui}/swt-gtk-solaris-sparc.jar" />
         <property name="swt-gtk-solaris-sparc" value="${dist.lib.gui}/swt-gtk-solaris-sparc" />
         <unzip src="${swt-gtk-solaris-sparc.jar}" dest="${swt-gtk-solaris-sparc}">
@@ -574,8 +586,8 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${swt-gtk-solaris-sparc.jar}"/>    
+        </unzip>
+        <delete file="${swt-gtk-solaris-sparc.jar}"/>
         <zip destfile="${swt-gtk-solaris-sparc.jar}" basedir="${swt-gtk-solaris-sparc}"/>
         <delete dir="${swt-gtk-solaris-sparc}"/>
         <signjar jar="${swt-gtk-solaris-sparc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
@@ -664,7 +676,7 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
+        </unzip>
         <delete file="${swt-win32-wce_ppc-arm-j2se.jar}"/>
         <zip destfile="${swt-win32-wce_ppc-arm-j2se.jar}" basedir="${swt-win32-wce_ppc-arm-j2se}"/>
         <delete dir="${swt-win32-wce_ppc-arm-j2se}"/>
@@ -679,8 +691,8 @@
                 <exclude name="**/*.sf"/>
                 <exclude name="**/*.SF"/>
             </patternset>
-        </unzip>    
-        <delete file="${swt-win32-win32-x86.jar}"/>    
+        </unzip>
+        <delete file="${swt-win32-win32-x86.jar}"/>
         <zip destfile="${swt-win32-win32-x86.jar}" basedir="${swt-win32-win32-x86}"/>
         <delete dir="${swt-win32-win32-x86}"/>
         <signjar jar="${swt-win32-win32-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
@@ -713,9 +725,9 @@
                 <!-- ignore the gui -->
                 <exclude name="org/tranche/gui/*.java"/>
                 <exclude name="org/tranche/gui/**/*.java"/>
-                
-				<!-- ignore non-testable coode -->
-				<exclude name="org/tranche/tags/*.java"/>
+
+                <!-- ignore non-testable coode -->
+                <exclude name="org/tranche/tags/*.java"/>
                 <exclude name="org/tranche/network/NetworkPackageTestCase.java"/>
                 <exclude name="org/tranche/network/NetworkRandomUtil.java"/>
                 <exclude name="org/tranche/util/DevUtil.java"/>
@@ -724,13 +736,13 @@
                 <exclude name="org/tranche/util/TestServerConfiguration.java"/>
                 <exclude name="org/tranche/util/TrancheTestCase.java"/>
                 <exclude name="org/tranche/util/Utils.java"/>
-                
+
                 <!-- ignore a few helper classes -->
                 <exclude name="org/tranche/hash/Base64.java"/>
             </files>
         </clover-setup>
     </target>
-    
+
     <!-- makes an HTML report of the clover data -->
     <target name="clover" depends="clover.configure, test">
         <mkdir dir="${dist.clover}"/>
@@ -740,5 +752,5 @@
             </current>
         </clover-report>
     </target>
-    
+
 </project>

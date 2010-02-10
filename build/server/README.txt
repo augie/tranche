@@ -1,5 +1,5 @@
 ***********************************************************
-        INSTRUCTIONS ON RUNNING A TRANCHE SERVER
+        INSTRUCTIONS FOR RUNNING A TRANCHE SERVER
 ***********************************************************
 
 PREREQUISITES: 
@@ -12,5 +12,6 @@ PREREQUISITES:
 
 3. Navigate to the top-most directory in the unzipped file.
 
-4. Run the following command to learn usage: java -jar ./tranche-server.jar
+4. Run the following command to print usage: java -jar ./tranche-server.jar
 
+5. When executing, the first argument must be the location of the configuration file for the Tranche repository. This can be a in the JVM classpath, on the local file system, or on the Internet.
