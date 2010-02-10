@@ -131,10 +131,10 @@ public class LocalDataServer {
     public static void printUsage() {
         System.out.println();
         System.out.println("USAGE");
-        System.out.println("    [FLAGS / PARAMETERS]");
+        System.out.println("    [FLAGS / PARAMETERS] <DIRECTORY>");
         System.out.println();
         System.out.println("DESCRIPTION");
-        System.out.println("    Runs a Tranche data sserver.");
+        System.out.println("    Runs a Tranche data server with the configuration files in <DIRECTORY>.");
         System.out.println();
         System.out.println("MEMORY ALLOCATION");
         System.out.println("    You should use the JVM option: -Xmx512m");
@@ -148,9 +148,8 @@ public class LocalDataServer {
         System.out.println("    -u, --usage                 Value: none.                    Print usage and exit. All other arguments will be ignored.");
         System.out.println("    -v, --version               Value: none.                    Print version number and exit. All other arguments will be ignored.");
         System.out.println();
-        System.out.println("STANDARD PARAMETERS");
+        System.out.println("PARAMETERS");
         System.out.println("    -H, --host                  Value: string.                  The host name / IP address by which the server will be known.");
-        System.out.println("    -D, --directory             Value: string.                  The file system location where all server configuration files will be located.");
         System.out.println("    -p, --port                  Value: positive integer.        The port number to which the server will be bound.");
         System.out.println("    -s, --ssl                   Value: true/false.              Whether the server should operate over SSL connections.");
         System.out.println("    -z, --userzipfile           Values: two strings.            The file system location of the user zip file for the server and the passphrase to unlock it.");
@@ -165,10 +164,11 @@ public class LocalDataServer {
 
     public static void main(String[] args) {
         try {
-            if (args.length == 0) {
+            if (args.length < 2) {
                 printUsage();
                 System.exit(0);
             }
+
             // read the arguments
             for (int i = 1; i < args.length; i++) {
                 if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-u") || args[i].equals("--usage")) {
@@ -188,19 +188,19 @@ public class LocalDataServer {
 
             ConfigureTranche.load(args);
 
-            for (int i = 1; i < args.length; i += 2) {
+            for (int i = 1; i < args.length - 1; i++) {
                 if (args[i].equals("-H") || args[i].equals("--host")) {
                     try {
                         ServerUtil.setHostName(args[i + 1]);
+                        i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid host name: " + args[i + 1]);
                         System.exit(2);
                     }
-                } else if (args[i].equals("-D") || args[i].equals("--directory")) {
-                    rootDir = new File(args[i + 1]);
                 } else if (args[i].equals("-p") || args[i].equals("--port")) {
                     try {
                         port = Integer.valueOf(args[i + 1]);
+                        i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid port value: " + args[i + 1]);
                         System.exit(2);
@@ -208,6 +208,7 @@ public class LocalDataServer {
                 } else if (args[i].equals("-s") || args[i].equals("--ssl")) {
                     try {
                         ssl = Boolean.valueOf(args[i + 1]);
+                        i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid SSL value: " + args[i + 1]);
                         System.exit(2);
@@ -216,13 +217,20 @@ public class LocalDataServer {
                     try {
                         UserZipFile user = new UserZipFile(new File(args[i + 1]));
                         user.setPassphrase(args[i + 2]);
-                        i++;
+                        i += 2;
                         userZipFile = user;
                     } catch (Exception e) {
                         System.err.println("ERROR: Could not load user zip file. " + e.getClass().getSimpleName() + ": " + e.getMessage());
                         System.exit(2);
                     }
                 }
+            }
+
+            try {
+                rootDir = new File(args[args.length - 1]);
+            } catch (Exception e) {
+                System.err.println("ERROR: Invalid directory value: " + args[args.length - 1]);
+                System.exit(2);
             }
 
             // set up the local server
