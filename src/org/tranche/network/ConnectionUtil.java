@@ -449,6 +449,7 @@ public class ConnectionUtil {
             newRow = new StatusTableRow(host);
         }
         newRow.setIsOnline(false);
+        newRow.setIsFlaggedOfflineLocally(true);
         NetworkUtil.getStatus().setRow(newRow);
     }
 

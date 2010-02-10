@@ -53,42 +53,43 @@ public class RegisterServerItem extends ServerItem {
             throw new TrancheProtocolException();
         }
 
+        // parse info
+        boolean ssl = IOUtil.parseSecure(url);
+        String host = IOUtil.parseHost(url);
+        int port = IOUtil.parsePort(url);
+
+        // is this different than what we know already?
+        boolean goOn = false;
+        // new host
+        if (!NetworkUtil.getStatus().contains(host)) {
+            goOn = true;
+        } // check the row
+        else {
+            StatusTableRow row = NetworkUtil.getStatus().getRow(host);
+            // ssl, port, or online status
+            if (row.isSSL() != ssl || row.getPort() != port || !row.isOnline()) {
+                goOn = true;
+            }
+        }
+
+        // different -- verify the modification
+        if (goOn) {
+            // need to verify the suggestion -- the registration may be malicious
+            try {
+                // make sure the flagging offline locally is unset
+                // TODO: remove when the status table row is revamped
+                if (NetworkUtil.getStatus().contains(host)) {
+                    NetworkUtil.getStatus().getRow(host).setIsFlaggedOfflineLocally(false);
+                }
+                // this will also set the server in the status table
+                ConnectionUtil.connectURL(url, false);
+            } catch (Exception e) {
+                ConnectionUtil.reportExceptionURL(url, e);
+            }
+        }
+
         // write response here to so registering server does not have to wait
         RemoteUtil.writeLine(Token.OK_STRING, out);
-
-        try {
-            // parse info
-            boolean ssl = IOUtil.parseSecure(url);
-            String host = IOUtil.parseHost(url);
-            int port = IOUtil.parsePort(url);
-
-            // is this different than what we know already?
-            boolean goOn = false;
-            // new host
-            if (!NetworkUtil.getStatus().contains(host)) {
-                goOn = true;
-            } // check the row
-            else {
-                StatusTableRow row = NetworkUtil.getStatus().getRow(host);
-                // ssl, port, or online status
-                if (row.isSSL() != ssl || row.getPort() != port || !row.isOnline()) {
-                    goOn = true;
-                }
-            }
-
-            // different -- verify the modification
-            if (goOn) {
-                // need to verify the suggestion -- the registration may be malicious
-                try {
-                    // this will also set the server in the status table
-                    ConnectionUtil.connectURL(url, false);
-                } catch (Exception e) {
-                    ConnectionUtil.reportExceptionURL(url, e);
-                }
-            }
-        } catch (Exception e) {
-            // throw away
-        }
     }
 
     /**

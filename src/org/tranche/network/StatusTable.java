@@ -134,20 +134,21 @@ public class StatusTable extends Object implements Serializable {
         Map<String, Boolean> updatedHashSpans = new HashMap<String, Boolean>();
         for (StatusTableRow row : rows) {
             boolean isNew = !contains(row.getHost());
+            StatusTableRow existingRow = getRow(row.getHost());
             // always defer to online
-            if (!isNew && getRow(row.getHost()).isOnline() != row.isOnline()) {
+            if (!isNew && existingRow.isOnline() != row.isOnline()) {
                 row.setIsOnline(true);
             }
-            if (NetworkUtil.isBannedServer(row.getHost())) {
+            if (NetworkUtil.isBannedServer(row.getHost()) || (!isNew && existingRow.isFlaggedOfflineLocally())) {
                 row.setIsOnline(false);
             }
             // the stored row is more recent than the one being given
-            if (!isNew && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
+            if (!isNew && existingRow.getUpdateTimestamp() > row.getUpdateTimestamp()) {
                 continue;
             }
-            boolean isUpdated = !isNew && !getRow(row.getHost()).equals(row);
-            boolean affectsConnectivity = isUpdated && (!getRow(row.getHost()).getURL().equals(row.getURL()) || getRow(row.getHost()).isOnline() != row.isOnline());
-            boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(getRow(row.getHost()).getHashSpans(), row.getHashSpans());
+            boolean isUpdated = !isNew && !existingRow.equals(row);
+            boolean affectsConnectivity = isUpdated && (!existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline());
+            boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans());
             synchronized (modLock) {
                 synchronized (map) {
                     map.put(row.getHost(), row);
@@ -205,20 +206,21 @@ public class StatusTable extends Object implements Serializable {
      */
     public void setRow(StatusTableRow row) {
         boolean isNew = !contains(row.getHost());
+        StatusTableRow existingRow = getRow(row.getHost());
         // always defer to online
-        if (!isNew && getRow(row.getHost()).isOnline() != row.isOnline()) {
+        if (!isNew && existingRow.isOnline() != row.isOnline()) {
             row.setIsOnline(true);
         }
-        if (NetworkUtil.isBannedServer(row.getHost())) {
+        if (NetworkUtil.isBannedServer(row.getHost()) || (!isNew && existingRow.isFlaggedOfflineLocally())) {
             row.setIsOnline(false);
         }
         // the stored row is more recent than the one being given
-        if (!isNew && getRow(row.getHost()).getUpdateTimestamp() > row.getUpdateTimestamp()) {
+        if (!isNew && existingRow.getUpdateTimestamp() > row.getUpdateTimestamp()) {
             return;
         }
-        boolean isUpdated = !isNew && !getRow(row.getHost()).equals(row);
-        boolean affectsConnectivity = isUpdated && (!getRow(row.getHost()).getURL().equals(row.getURL()) || getRow(row.getHost()).isOnline() != row.isOnline());
-        boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(getRow(row.getHost()).getHashSpans(), row.getHashSpans());
+        boolean isUpdated = !isNew && !existingRow.equals(row);
+        boolean affectsConnectivity = isUpdated && (!existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline());
+        boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans());
         synchronized (modLock) {
             synchronized (map) {
                 map.put(row.getHost(), row);

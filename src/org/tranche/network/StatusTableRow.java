@@ -109,10 +109,11 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>The maximum length of the group name.</p>
      */
     public static final int LENGTH_MAX_GROUP = 100;
-    private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS),  targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
-    private String host,  name = DEFAULT_NAME,  group = DEFAULT_GROUP;
-    private int version = VERSION_LATEST,  port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
-    private long flags = DEFAULT_FLAGS,  updateTimestamp = TimeUtil.getTrancheTimestamp();
+    private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS), targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
+    private String host, name = DEFAULT_NAME, group = DEFAULT_GROUP;
+    private int version = VERSION_LATEST, port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
+    private long flags = DEFAULT_FLAGS, updateTimestamp = TimeUtil.getTrancheTimestamp();
+    private boolean isFlaggedOfflineLocally = false;
 
     /**
      * <p>Starts the row with a host name. All other values are the defaults.</p>
@@ -266,6 +267,23 @@ public class StatusTableRow extends Object implements Serializable {
         if (this.updateTimestamp < 0) {
             this.updateTimestamp = 0;
         }
+    }
+
+    /**
+     * TEMPORARY SOLUTION
+     * Need to push all servers to b166 before adding last response timestamp.
+     * @return
+     */
+    public boolean isFlaggedOfflineLocally() {
+        return isFlaggedOfflineLocally;
+    }
+
+    /**
+     * 
+     * @param isFlaggedOfflineLocally
+     */
+    public void setIsFlaggedOfflineLocally(boolean isFlaggedOfflineLocally) {
+        this.isFlaggedOfflineLocally = isFlaggedOfflineLocally;
     }
 
     /**
@@ -634,13 +652,13 @@ public class StatusTableRow extends Object implements Serializable {
     public boolean equals(Object o) {
         if (o instanceof StatusTableRow) {
             StatusTableRow str = (StatusTableRow) o;
-            return host.equals(str.getHost()) &&
-                    name.equals(str.getName()) &&
-                    group.equals(str.getGroup()) &&
-                    port == str.getPort() &&
-                    flags == str.getFlags() &&
-                    HashSpanCollection.areEqual(getHashSpans(), str.getHashSpans()) &&
-                    HashSpanCollection.areEqual(getTargetHashSpans(), str.getTargetHashSpans());
+            return host.equals(str.getHost())
+                    && name.equals(str.getName())
+                    && group.equals(str.getGroup())
+                    && port == str.getPort()
+                    && flags == str.getFlags()
+                    && HashSpanCollection.areEqual(getHashSpans(), str.getHashSpans())
+                    && HashSpanCollection.areEqual(getTargetHashSpans(), str.getTargetHashSpans());
         }
         return false;
     }
@@ -672,7 +690,7 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>Hashes the host name only.</p>
      * @return The hash code
      */
-     @Override
+    @Override
     public int hashCode() {
         return host.hashCode();
     }
