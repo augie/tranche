@@ -279,7 +279,7 @@
             <fileset dir="${lib}" includes="*.jar"/>
         </copy>
         <copy todir="${build.server}">
-            <fileset dir="${dir.server}" excludesFile="MANIFEST.MF"/>
+            <fileset dir="${dir.server}" excludesFile="${dir.server}/MANIFEST.MF"/>
         </copy>
         <jar jarfile="${build.server.jar}"
              manifest="${dir.server}/MANIFEST.MF"
@@ -294,7 +294,7 @@
             <fileset dir="${lib}" includes="*.jar"/>
         </copy>
         <copy todir="${build.certs}">
-            <fileset dir="${dir.certs}" excludesFile="MANIFEST.MF"/>
+            <fileset dir="${dir.certs}" excludesFile="${dir.certs}/MANIFEST.MF"/>
         </copy>
         <jar jarfile="${build.certs.jar}"
              manifest="${dir.certs}/MANIFEST.MF"
@@ -309,7 +309,7 @@
             <fileset dir="${lib}" includes="*.jar"/>
         </copy>
         <copy todir="${build.get}">
-            <fileset dir="${dir.get}" excludesFile="MANIFEST.MF"/>
+            <fileset dir="${dir.get}" excludesFile="${dir.get}/MANIFEST.MF"/>
         </copy>
         <jar jarfile="${build.get.jar}"
              manifest="${dir.get}/MANIFEST.MF"
@@ -324,7 +324,7 @@
             <fileset dir="${lib}" includes="*.jar"/>
         </copy>
         <copy todir="${build.add}">
-            <fileset dir="${dir.add}" excludesFile="MANIFEST.MF"/>
+            <fileset dir="${dir.add}" excludesFile="${dir.add}/MANIFEST.MF"/>
         </copy>
         <jar jarfile="${build.add.jar}"
              manifest="${dir.add}/MANIFEST.MF"
