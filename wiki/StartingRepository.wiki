@@ -1,15 +1,15 @@
 ==Create Certificates==
 
-  # Download the appropriate tool from the list of downloads.
+  # Download the command line tools from the Downloads.
   # Extract the contents of the ZIP file to some directory, which we will refer to as _DIR_.
   # Open a command-line client and navigate to _DIR_.
   # Perform the following operation to print out the usage instructions: `java -jar tranche-certs.jar -h`
-  # Once you have created your Tranche certificates, you are ready for the next step.
+  # Once you have created your certificates, you are ready for the next step.
 
 
 ==Create Repository Configuration File==
 
-In order to run the Tranche software, the first argument that must be passed to any main method is the location of the file that describes the Tranche repository you will be using. If you do not load a configuration file, Tranche will be run without any certificates, and no communication can occur.
+In order to run Tranche, the first argument that must be passed to any main method is the location of the file that describes the Tranche repository you will be using.
 
 Configuration files and certificates can be located in any of a number of places. In general, Tranche attempts to load files and certificates in a nearest to furthest order. Here is how Tranche tries to load them:
   # *Java package*: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/pc-tranche.conf`.
@@ -72,34 +72,31 @@ Name, value pairs:
 || description || The description of the repository (what is it storing?). || ||
 || admin.emails || A comma-separated list of email addresses to which email notifications will be sent. || ||
 || contact.email || The email address to which users of the repository can contact the administrators. || ||
+|| replications || The number of replications required for each chunk of data. || 3 ||
+|| home.url || The URL for the repository web site. || ||
+|| signup.url || The URL for users to sign up for the repository. || ||
 || contact.url || The URL where users can contact the administrators. || ||
 || launch.advanced.url || The URL that launches the GUI. || ||
 || launch.download.url || The URL that launches the download wizard. || ||
 || launch.upload.url || The URL that launches the upload wizard. || ||
-|| home.url || The URL for the repository web site. || ||
-|| signup.url || The URL for users to sign up for the repository. || ||
 || project.cache.url || || ||
 || project.cache.hash || || ||
 || project.url || || ||
 || project.publish.url || || ||
 || email.url || || https://trancheproject.org/email/send.jsp ||
 || user.login.url || || ||
-|| servers.url || || ||
-|| update.conf.url || The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location. || ||
-|| update.software.zip.url || || ||
-|| update.software.signature.url || || ||
+|| time.change.check.interval || || 10000 ||
+|| time.change.check.deviation || || 1000 ||
+|| time.update.interval || || 21600000 ||
+|| time.update.timeout || The timeout per NT server request. || 10000 ||
 || status.update.client.frequency || || 60000 ||
 || status.update.server.frequency || || 30000 ||
 || status.update.server.grouping || || 5 ||
-|| connection.full.hashspan.threshold || || 25 ||
+|| connection.full.hashspan.threshold || The point at which only a single full hash span of servers are connected to. || 25 ||
 || connection.keep.alive.interval || || 8000 ||
-|| status.defunct.threshold || || 604800000 ||
-|| server.offline.notification.interval || || 86400000 ||
-
-
-===CORE SERVERS Category===
-
-A list of Tranche URLs. One URL per line.
+|| status.defunct.threshold || Servers that are offline and do not update within this time get removed from the table. || 604800000 ||
+|| update.conf.url || The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location. || ||
+|| update.conf.interval || || 10000000 ||
 
 
 
@@ -115,7 +112,24 @@ Name, value pairs:
 || security.key.anon || || ||
 || security.certificate.email || || ||
 || security.key.email || || ||
-|| security.certs.url || || ||
+
+
+
+===SERVER Category===
+Name, value pairs:
+|| *Name* || *Description* || *Default* ||
+|| server.directory || || ||
+|| server.port || || 443 ||
+|| server.ssl || || false ||
+|| server.queue.size || || 10 ||
+|| server.timeout || || 60000 ||
+|| server.keepalive.timeout || || 120000 ||
+|| server.config.attributes.url || || ||
+|| server.server.registration.time || The amount of time that may pass before reregistering the local server with connected servers in the server status update process. || 3600000 ||
+|| server.user.simultaneous.requests || The number of requests a single user can have executed simultaneously on a server. || 3 ||
+|| server.server.simultaneous.requests || The number of requests a single server can have executed simultaneously on a server. Must be at >= 2. || 10 ||
+|| server.offline.notification.interval || || 86400000 ||
+
 
 
 ===LOGGING Category===
@@ -127,6 +141,21 @@ Name, value pairs:
 || log.upload.failure.url || || ||
 || log.download.url || || ||
 || log.download.failure.url || || ||
+
+
+
+===CORE SERVERS Category===
+A list of Tranche URLs. One URL per line.
+
+
+
+===NETWORK TIME SERVERS Category===
+A list of domain names or IP addresses that correspond to network time servers.
+
+
+
+===BANNED SERVERS CATEGORY===
+A list of domain names or IP addresses of Tranche servers that are banned.
 
 
 
