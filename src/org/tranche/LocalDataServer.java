@@ -24,6 +24,7 @@ import org.tranche.servers.ServerUtil;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.PreferencesUtil;
+import org.tranche.util.TestUtil;
 
 /**
  * <p>There can be only one local data server.</p>
@@ -137,57 +138,93 @@ public class LocalDataServer {
         System.out.println("    Runs a Tranche data server with the configuration files in <DIRECTORY>.");
         System.out.println();
         System.out.println("MEMORY ALLOCATION");
-        System.out.println("    You should use the JVM option: -Xmx512m");
+        System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
         System.out.println();
-        System.out.println("    The allocates 512m of memory for the tool.");
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -h, --help              Print usage and exit.");
+        System.out.println("    -V, --version           Print version number and exit.");
         System.out.println();
         System.out.println("OUTPUT FLAGS");
-        System.out.println("    -d, --debug                 Value: none.                    If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
-        System.out.println("    -h, --help                  Value: none.                    Print usage and exit. All other arguments will be ignored.");
-        System.out.println("    -n, --buildnumber           Value: none.                    Print version number and exit. All other arguments will be ignored.");
-        System.out.println("    -u, --usage                 Value: none.                    Print usage and exit. All other arguments will be ignored.");
-        System.out.println("    -v, --version               Value: none.                    Print version number and exit. All other arguments will be ignored.");
+        System.out.println("    -d, --debug             If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
         System.out.println();
         System.out.println("PARAMETERS");
-        System.out.println("    -H, --host                  Value: string.                  The host name / IP address by which the server will be known.");
-        System.out.println("    -p, --port                  Value: positive integer.        The port number to which the server will be bound.");
-        System.out.println("    -s, --ssl                   Value: true/false.              Whether the server should operate over SSL connections.");
-        System.out.println("    -z, --userzipfile           Values: two strings.            The file system location of the user zip file for the server and the passphrase to unlock it.");
+        System.out.println("    -H, --host              Value: string.                  The host name / IP address by which the server will be known.");
+        System.out.println("    -p, --port              Value: positive integer.        The port number to which the server will be bound.");
+        System.out.println("    -s, --ssl               Value: true/false.              Whether the server should operate over SSL connections.");
+        System.out.println("    -z, --userzipfile       Values: two strings.            The file system location of the user zip file for the server and the passphrase to unlock it.");
         System.out.println();
         System.out.println("RETURN CODES");
-        System.out.println("    0:     Exited normally");
-        System.out.println("    1:     Unknown error");
-        System.out.println("    2:     Bad argument");
-        System.out.println("    3:     Known error");
+        System.out.println("    0: Exited normally");
+        System.out.println("    1: Unknown error");
+        System.out.println("    2: Problem with argument(s)");
+        System.out.println("    3: Known error");
         System.out.println();
     }
 
+    /**
+     * 
+     * @param args
+     */
     public static void main(String[] args) {
         try {
-            if (args.length < 2) {
+            if (args.length == 0) {
                 printUsage();
-                System.exit(0);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
             }
 
-            // read the arguments
-            for (int i = 1; i < args.length; i++) {
-                if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-u") || args[i].equals("--usage")) {
-                    printUsage();
-                    System.exit(0);
-                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-v") || args[i].equals("--version")) {
-                    System.out.println("Tranche, build #@buildNumber");
-                    System.exit(0);
-                } else if (args[i].equals("-d") || args[i].equals("--debug")) {
+            // flags first
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-d") || args[i].equals("--debug")) {
                     DebugUtil.setDebug(true);
                     setDebug(true);
                     FlatFileTrancheServer.setDebug(true);
                     Server.setDebug(true);
                     TrancheServerCommandLineClient.setDebug(true);
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-H") || args[i].equals("--host")) {
+                    i++;
+                } else if (args[i].equals("-p") || args[i].equals("--port")) {
+                    i++;
+                } else if (args[i].equals("-s") || args[i].equals("--ssl")) {
+                    i++;
+                } else if (args[i].equals("-z") || args[i].equals("--userzipfile")) {
+                    i += 2;
                 }
             }
 
-            ConfigureTranche.load(args);
+            // configure
+            try {
+                ConfigureTranche.load(args);
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
 
+            // parameters next
             for (int i = 1; i < args.length - 1; i++) {
                 if (args[i].equals("-H") || args[i].equals("--host")) {
                     try {
@@ -195,7 +232,12 @@ public class LocalDataServer {
                         i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid host name: " + args[i + 1]);
-                        System.exit(2);
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
                     }
                 } else if (args[i].equals("-p") || args[i].equals("--port")) {
                     try {
@@ -203,7 +245,12 @@ public class LocalDataServer {
                         i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid port value: " + args[i + 1]);
-                        System.exit(2);
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
                     }
                 } else if (args[i].equals("-s") || args[i].equals("--ssl")) {
                     try {
@@ -211,7 +258,12 @@ public class LocalDataServer {
                         i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid SSL value: " + args[i + 1]);
-                        System.exit(2);
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
                     }
                 } else if (args[i].equals("-z") || args[i].equals("--userzipfile")) {
                     try {
@@ -221,7 +273,12 @@ public class LocalDataServer {
                         userZipFile = user;
                     } catch (Exception e) {
                         System.err.println("ERROR: Could not load user zip file. " + e.getClass().getSimpleName() + ": " + e.getMessage());
-                        System.exit(2);
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
                     }
                 }
             }
@@ -230,19 +287,45 @@ public class LocalDataServer {
                 rootDir = new File(args[args.length - 1]);
             } catch (Exception e) {
                 System.err.println("ERROR: Invalid directory value: " + args[args.length - 1]);
-                System.exit(2);
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
             }
 
             // set up the local server
-            setUpFFTS();
+            try {
+                setUpFFTS();
 
-            // interact using a client -- will also start a server around the FFTS
-            client = new TrancheServerCommandLineClient(ffts, System.in, System.out);
-            server = client.startServer(port, ssl);
-            client.run();
+                // interact using a client -- will also start a server around the FFTS
+                client = new TrancheServerCommandLineClient(ffts, System.in, System.out);
+                server = client.startServer(port, ssl);
+                client.run();
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(3);
+                } else {
+                    return;
+                }
+            }
+
+            debugOut("Main method exiting.");
+            if (!TestUtil.isTesting()) {
+                System.exit(0);
+            } else {
+                return;
+            }
         } catch (Exception e) {
             debugErr(e);
-            System.exit(1);
+            if (!TestUtil.isTesting()) {
+                System.exit(1);
+            } else {
+                return;
+            }
         }
     }
 

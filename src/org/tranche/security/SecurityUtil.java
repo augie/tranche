@@ -52,7 +52,6 @@ import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.jce.X509Principal;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 import org.tranche.ConfigureTranche;
@@ -207,9 +206,8 @@ public class SecurityUtil {
      * @throws java.security.GeneralSecurityException
      */
     public static Certificate createCertificate(String name, PublicKey pub, PrivateKey priv) throws GeneralSecurityException {
-        // register bouncy castle
-        Security.addProvider(new BouncyCastleProvider());
-
+        lazyLoad();
+        
         // make a new certificate
         X509V1CertificateGenerator gen = new X509V1CertificateGenerator();
 
@@ -239,7 +237,6 @@ public class SecurityUtil {
         X509Principal principal = new X509Principal(attrs);
 
         //generate cert
-        X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
         gen.setSerialNumber(sn);
         gen.setIssuerDN(principal);
         gen.setNotBefore(firstDate);
@@ -438,11 +435,10 @@ public class SecurityUtil {
     /**
      * <p>Lazy load resources used by utility methods.</p>
      */
-    private static void lazyLoad() {
-        // lazy register bouncy castle
+    public static void lazyLoad() {
         if (uninitialized) {
+            Security.addProvider(new BouncyCastleProvider());
             uninitialized = false;
-            Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         }
     }
 
@@ -864,8 +860,7 @@ public class SecurityUtil {
      * @throws java.security.GeneralSecurityException
      */
     public static final X509Certificate getCertificate(InputStream in) throws IOException, GeneralSecurityException {
-        // register the bouncy castle provider
-        Security.addProvider(new BouncyCastleProvider());
+        lazyLoad();
 
         // make an X509 facroty
         CertificateFactory cf = CertificateFactory.getInstance("X.509", "BC");
@@ -889,15 +884,10 @@ public class SecurityUtil {
      * @throws java.security.GeneralSecurityException
      */
     public static X509Certificate getCertificate(File file) throws IOException, GeneralSecurityException {
-        // load the certificate from the file
-        FileInputStream fis = new FileInputStream(file);
-        IOException ioe = null;
-        GeneralSecurityException gse = null;
+        FileInputStream fis = null;
         try {
-            X509Certificate cert = getCertificate(fis);
-            fis.close();
-            // return the cert
-            return cert;
+            fis = new FileInputStream(file);
+            return getCertificate(fis);
         } finally {
             IOUtil.safeClose(fis);
         }

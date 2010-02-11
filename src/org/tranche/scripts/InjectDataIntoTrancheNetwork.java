@@ -102,7 +102,7 @@ public class InjectDataIntoTrancheNetwork {
      *  <li>ddc:/path/to/additional/data/dir To add additional data directories. ddc is a reference to DataDirectoryConfiguration</li>
      * </ul>
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         if (isRunning) {
             System.err.println("An instance is already running in this JVM. Bailing.");

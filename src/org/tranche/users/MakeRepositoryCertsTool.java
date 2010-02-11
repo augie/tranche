@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.util.DebugUtil;
+import org.tranche.util.TestUtil;
 
 /**
  * <p>Creates a new default set of certificates that are to be used for a Tranche repository.</p>
@@ -28,7 +29,7 @@ import org.tranche.util.DebugUtil;
  */
 public class MakeRepositoryCertsTool {
 
-    private static boolean debug = false,  verbose = false;
+    private static boolean debug = false, verbose = false;
 
     /**
      * <p>Prints a message to System.out.</p>
@@ -49,20 +50,23 @@ public class MakeRepositoryCertsTool {
         System.out.println("    [FLAGS] <DIRECTORY>");
         System.out.println();
         System.out.println("DESCRIPTION");
-        System.out.println("    Makes a set of user zip files to be used as the base users of a Tranche repository. This certificates will be valid for 1,000 years.");
+        System.out.println("    Makes a set of user zip files to be used as the base users of a Tranche repository. These files will be saved in <DIRECTORY>.");
         System.out.println();
-        System.out.println("FLAGS");
-        System.out.println("    -d, --debug                 Value: none.            If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
-        System.out.println("    -h, --help                  Value: none.            Print usage and exit. All other arguments will be ignored.");
-        System.out.println("    -n, --buildnumber           Value: none.            Print version number and exit. All other arguments will be ignored.");
-        System.out.println("    -v, --verbose               Value: none.            Print additional progress information to standard out.");
-        System.out.println("    -V, --version               Value: none.            Print version number and exit. All other arguments will be ignored.");
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -h, --help         Print usage and exit.");
+        System.out.println("    -V, --version      Print version number and exit.");
+        System.out.println();
+        System.out.println("OUTPUT FLAGS");
+        System.out.println("    -d, --debug        If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
+        System.out.println("    -v, --verbose      Print additional progress information.");
         System.out.println();
         System.out.println("RETURN CODES");
-        System.out.println("    0:     Exited normally");
-        System.out.println("    1:     Unknown error");
-        System.out.println("    2:     Bad argument");
-        System.out.println("    3:     Known error");
+        System.out.println("    0: Exited normally");
+        System.out.println("    1: Unknown error");
+        System.out.println("    2: Problem with argument(s)");
+        System.out.println("    3: Known error");
         System.out.println();
     }
 
@@ -75,33 +79,60 @@ public class MakeRepositoryCertsTool {
             // If no arguments, print and exit
             if (args.length == 0) {
                 printUsage();
-                System.exit(0);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
             }
 
-            // Look for help request. If one, print and exit.
-            for (String arg : args) {
-                if (arg.equals("-n") || arg.equals("--buildnumber") || arg.equals("-V") || arg.equals("--version")) {
-                    System.out.println("Tranche, build #@buildNumber");
-                    System.exit(0);
-                } else if (arg.equals("-h") || arg.equals("--help")) {
-                    printUsage();
-                    System.exit(0);
-                } else if (arg.equals("-d") || arg.equals("--debug")) {
+            // flags
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-d") || args[i].equals("--debug")) {
                     DebugUtil.setDebug(true);
                     setDebug(true);
                     MakeUserZipFileTool.setDebug(true);
                     UserZipFile.setDebug(true);
-                } else if (arg.equals("-v") || arg.equals("--verbose")) {
+                } else if (args[0].equals("-n") || args[0].equals("--buildnumber") || args[0].equals("-V") || args[0].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[0].equals("-h") || args[0].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-v") || args[i].equals("--verbose")) {
                     verbose = true;
                 }
             }
 
             // check the destination (last argument)
-            File directory = new File(args[args.length - 1]);
+            File directory = null;
+            try {
+                directory = new File(args[args.length - 1]);
+            } catch (Exception e) {
+                System.err.println("ERROR: Invalid value for output directory.");
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
             printVerbose("Directory to save certificates: " + directory.getAbsolutePath());
             if (!directory.exists()) {
-                debugOut("ERROR: Directory does not exist: " + directory.getAbsolutePath());
-                System.exit(2);
+                System.err.println("ERROR: Directory does not exist: " + directory.getAbsolutePath());
+                if (!TestUtil.isTesting()) {
+                    System.exit(3);
+                } else {
+                    return;
+                }
             }
 
             // create the tool
@@ -122,7 +153,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "admin.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: Administrator zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -131,11 +166,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating administrator certificate file: " + adminCert.getAbsolutePath());
                     if (adminCert.exists()) {
                         System.err.println("ERROR: Administrator certificate file already exists: " + adminCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!adminCert.createNewFile()) {
                         System.err.println("ERROR: Could not create administator certificate file: " + adminCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     // write out the certificate
                     printVerbose("Writing out the administrator certificate to " + adminCert.getAbsolutePath());
@@ -152,7 +195,11 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating passphrases file: " + passphrasesFile.getAbsolutePath());
                     if (!passphrasesFile.createNewFile()) {
                         System.err.println("ERROR: Could not create passphrases file: " + passphrasesFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     // write out to the passphrases file
                     fos = new FileOutputStream(passphrasesFile);
@@ -171,7 +218,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "write.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: Write-only zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -181,11 +232,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating write-only certificate file: " + writeCert.getAbsolutePath());
                     if (writeCert.exists()) {
                         System.err.println("ERROR: Write-only certificate file already exists: " + writeCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!writeCert.createNewFile()) {
                         System.err.println("ERROR: Could not create write-only certificate file: " + writeCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the certificate
@@ -214,7 +273,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "read.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: Read-only zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -225,11 +288,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating read-only certificate file: " + readCert.getAbsolutePath());
                     if (readCert.exists()) {
                         System.err.println("ERROR: Read-only certificate file already exists: " + readCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!readCert.createNewFile()) {
                         System.err.println("ERROR: Could not create read-only certificate file: " + readCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the certificate
@@ -258,7 +329,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "user.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: User zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -268,11 +343,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating user certificate file: " + userCert.getAbsolutePath());
                     if (userCert.exists()) {
                         System.err.println("ERROR: User certificate file already exists: " + userCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!userCert.createNewFile()) {
                         System.err.println("ERROR: Could not create user certificate file: " + userCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the certificate
@@ -298,7 +381,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "autocert.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: User zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -308,11 +395,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating auto certificate file: " + autocertCert.getAbsolutePath());
                     if (autocertCert.exists()) {
                         System.err.println("ERROR: Auto certificate file already exists: " + autocertCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!autocertCert.createNewFile()) {
                         System.err.println("ERROR: Could not create auto certificate file: " + autocertCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the certificate
@@ -345,7 +440,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "anonymous.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: Anonymous zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -355,11 +454,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating anonymous certificate file: " + anonCert.getAbsolutePath());
                     if (anonCert.exists()) {
                         System.err.println("ERROR: Anonymous certificate file already exists: " + anonCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!anonCert.createNewFile()) {
                         System.err.println("ERROR: Could not create anonymous certificate file: " + anonCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     // write out the certificate
                     printVerbose("Writing out the anonymous certificate to " + anonCert.getAbsolutePath());
@@ -376,11 +483,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating anonymous private key file: " + anonKey.getAbsolutePath());
                     if (anonKey.exists()) {
                         System.err.println("ERROR: Anonymous private key file already exists: " + anonKey.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!anonKey.createNewFile()) {
                         System.err.println("ERROR: Could not create anonymous private key file: " + anonKey.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the private key
@@ -407,7 +522,11 @@ public class MakeRepositoryCertsTool {
                     File saveFile = new File(directory, "email.zip.encrypted");
                     if (saveFile.exists()) {
                         System.err.println("ERROR: Email zip file file already exists: " + saveFile.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     tool.setSaveFile(saveFile);
                     UserZipFile user = tool.makeCertificate();
@@ -417,11 +536,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating email certificate file: " + emailCert.getAbsolutePath());
                     if (emailCert.exists()) {
                         System.err.println("ERROR: Email certificate file already exists: " + emailCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!emailCert.createNewFile()) {
                         System.err.println("ERROR: Could not create email certificate file: " + emailCert.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the certificate
@@ -439,11 +566,19 @@ public class MakeRepositoryCertsTool {
                     printVerbose("Creating email private key file: " + emailKey.getAbsolutePath());
                     if (emailKey.exists()) {
                         System.err.println("ERROR: Email private key file already exists: " + emailKey.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
                     if (!emailKey.createNewFile()) {
                         System.err.println("ERROR: Could not create email private key file: " + emailKey.getAbsolutePath());
-                        System.exit(3);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(3);
+                        } else {
+                            return;
+                        }
                     }
 
                     // write out the private key
@@ -462,10 +597,18 @@ public class MakeRepositoryCertsTool {
             }
 
             printVerbose("Certificates created in: " + directory.getAbsolutePath());
-            System.exit(0);
+            if (!TestUtil.isTesting()) {
+                System.exit(0);
+            } else {
+                return;
+            }
         } catch (Exception e) {
             debugErr(e);
-            System.exit(1);
+            if (!TestUtil.isTesting()) {
+                System.exit(1);
+            } else {
+                return;
+            }
         }
     }
 

@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.tranche;
+package org.tranche.get;
 
-import org.tranche.exceptions.TodoException;
+import java.io.IOException;
 
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class LocalRoutingServer {
+public class NotEnoughDiskSpaceException extends IOException {
 
-    private LocalRoutingServer() {
+    public static final String MESSAGE = "There is not enough space on the disk.";
+
+    public NotEnoughDiskSpaceException() {
+        super(MESSAGE);
     }
-
-    public static void main(String[] args) {
-        throw new TodoException();
-    }
-
 }

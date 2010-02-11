@@ -294,7 +294,7 @@ public class ConnectionUtil {
             if (!TestUtil.isTesting()) {
                 // ping to be sure there is a connection
                 final TrancheServer verifyTS = ts;
-                final Exception[] exception = {new TimeoutException()};
+                final Exception[] exception = {new TimeoutException("Could not verify connection with " + host)};
                 Thread t = new Thread("Verify connection with " + host) {
 
                     @Override

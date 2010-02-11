@@ -16,6 +16,7 @@
 package org.tranche.gui;
 
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import org.tranche.ConfigureTranche;
 import org.tranche.util.DebugUtil;
@@ -79,10 +80,10 @@ public class ConfigureTrancheGUI extends ConfigureTranche {
     public static final String DEFAULT_SWT = "false";
 
     static {
-        set(PROP_UPLOAD_POOL_SIZE, DEFAULT_UPLOAD_POOL_SIZE);
-        set(PROP_DOWNLOAD_POOL_SIZE, DEFAULT_DOWNLOAD_POOL_SIZE);
-        set(PROP_AUTO_COMPLETE_HASH, DEFAULT_AUTO_COMPLETE_HASH);
-        set(PROP_SWT, DEFAULT_SWT);
+        setDefault(PROP_UPLOAD_POOL_SIZE, DEFAULT_UPLOAD_POOL_SIZE);
+        setDefault(PROP_DOWNLOAD_POOL_SIZE, DEFAULT_DOWNLOAD_POOL_SIZE);
+        setDefault(PROP_AUTO_COMPLETE_HASH, DEFAULT_AUTO_COMPLETE_HASH);
+        setDefault(PROP_SWT, DEFAULT_SWT);
     }
 
     /**
@@ -93,24 +94,21 @@ public class ConfigureTrancheGUI extends ConfigureTranche {
 
     /**
      * <p>Safely loads the network configuration from the passed in arguments.</p>
-     * <p>Takes only the first argument from the array and passes it to the ConfigureTrancheGUI.load(String)
-     * method to load the network configuration and the graphical user interface configuation.</p>
+     * <p>Takes only the first argument from the array and passes it to the ConfigureTrancheGUI.load(String) method to load the network configuration and the graphical user interface configuation.</p>
      * @param args
+     * @throws IOException
      */
-    public static void load(String[] args) {
-        try {
-            load(args[0]);
-        } catch (Exception e) {
-            // likely no arguments given
-        }
+    public static void load(String[] args) throws IOException {
+        load(args[0]);
     }
 
     /**
      * <p>Takes the location to the configuration file that contains this Tranche network's configuration information and the graphical user interface information.</p>
      * <p>The file can be in the JAR package, on the local file system, or on the Internet. The program will try to find the file in that same order and will use the first one it finds.</p>
      * @param configFile
+     * @throws IOException
      */
-    public static void load(String configFile) {
+    public static void load(String configFile) throws IOException {
         // load the network configuration
         ConfigureTranche.load(configFile);
 

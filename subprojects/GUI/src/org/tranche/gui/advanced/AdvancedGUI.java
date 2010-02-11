@@ -41,6 +41,8 @@ import org.tranche.gui.project.ProjectPool;
 import org.tranche.users.InvalidSignInException;
 import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
+import org.tranche.util.DebugUtil;
+import org.tranche.util.TestUtil;
 
 /**
  * The entry point for the primary GUI.
@@ -50,6 +52,7 @@ import org.tranche.users.UserZipFileUtil;
  */
 public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
 
+    private static boolean debug = false;
     public TopPanel topPanel;
     private LogoPanel logoPanel;
     public LeftPanel leftPanel;
@@ -155,19 +158,106 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
     public void lostOwnership(Clipboard clipboard, Transferable contents) {
     }
 
+    /**
+     *
+     */
+    private static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [FLAGS / PARAMETERS]");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Launches the main GUI.");
+        System.out.println();
+        System.out.println("MEMORY ALLOCATION");
+        System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
+        System.out.println();
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -h, --help          Print usage and exit.");
+        System.out.println("    -V, --version       Print version number and exit.");
+        System.out.println();
+        System.out.println("FLAGS");
+        System.out.println("    -d, --debug         If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
+        System.out.println();
+        System.out.println("PARAMETERS");
+        System.out.println("    -L,  --login        Values: two strings.        The username and password for your sign in (e.g., \"-L Augie notmypassword\").");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    0: Exited normally");
+        System.out.println("    1: Unknown error");
+        System.out.println("    2: Problem with argument(s)");
+        System.out.println("    3: Known error");
+        System.out.println();
+    }
+
     public static void main(String[] args) throws Exception {
-        // load the network
-        ConfigureTrancheGUI.load(args);
-        openNewInstance(args);
+        try {
+            // must have a config
+            if (args.length == 0) {
+                printUsage();
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
+
+            // first debug
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-d") || args[i].equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-L") || args[i].equals("--login")) {
+                    i += 2;
+                }
+            }
+
+            // configure
+            try {
+                ConfigureTrancheGUI.load(args);
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
+
+            openNewInstance(args);
+        } catch (Exception e) {
+            debugErr(e);
+            if (!TestUtil.isTesting()) {
+                System.exit(1);
+            } else {
+                return;
+            }
+        }
     }
 
     public static void openNewInstance(final String[] args) throws Exception {
         // set the process name
         try {
             System.setProperty("dock:name", "Tranche");
-        } catch (Exception ex) {
-            System.err.println("Cannot set dock name: " + ex.getMessage());
-            ex.printStackTrace(System.err);
+        } catch (Exception e) {
+            debugErr(e);
         }
 
         // Create the GUI
@@ -185,27 +275,27 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
 
                     @Override
                     public void run() {
-                        GenericOptionPane.showMessageDialog(sf, "WARNING: Please read before continuing and click OK if you accept.\n\n" +
-                                "The purpose of Tranche is to enable legitimate scientific data sharing.\n" +
-                                "By continuing to use this software, you accept and declare that you will not\n" +
-                                "be using it to engage in copyright infringement or any other illegal activity.", "Legal", JOptionPane.QUESTION_MESSAGE);
+                        GenericOptionPane.showMessageDialog(sf, "WARNING: Please read before continuing and click OK if you accept.\n\n"
+                                + "The purpose of Tranche is to enable legitimate scientific data sharing.\n"
+                                + "By continuing to use this software, you accept and declare that you will not\n"
+                                + "be using it to engage in copyright infringement or any other illegal activity.", "Legal", JOptionPane.QUESTION_MESSAGE);
                     }
                 };
                 t.setDaemon(true);
-                t.setPriority(Thread.MIN_PRIORITY);
                 t.start();
 
                 // read in arguments
-                for (int i = 1; i < args.length; i += 2) {
+                for (int i = 1; i < args.length; i++) {
                     if (args[i].equals("-L") || args[i].equals("--login")) {
                         try {
                             sf.setUser(UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]));
                         } catch (InvalidSignInException e) {
                             GenericOptionPane.showMessageDialog(sf, e.getMessage(), "Could Not Sign In", JOptionPane.ERROR_MESSAGE);
+                            debugErr(e);
                         } catch (Exception e) {
-                            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                            debugErr(e);
                         } finally {
-                            i++;
+                            i += 2;
                         }
                     }
                 }
@@ -226,5 +316,41 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
         };
         workerThread.setDaemon(true);
         workerThread.start();
+    }
+
+    /**
+     * <p>Sets the flag for whether the output and error information should be written.</p>
+     * @param debug The flag for whether the output and error information should be written.</p>
+     */
+    public static final void setDebug(boolean debug) {
+        AdvancedGUI.debug = debug;
+    }
+
+    /**
+     * <p>Returns whether the output and error information is being written.</p>
+     * @return Whether the output and error information is being written.
+     */
+    public static final boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     *
+     * @param line
+     */
+    private static final void debugOut(String line) {
+        if (debug) {
+            DebugUtil.printOut(AdvancedGUI.class.getName() + "> " + line);
+        }
+    }
+
+    /**
+     *
+     * @param e
+     */
+    private static final void debugErr(Exception e) {
+        if (debug) {
+            DebugUtil.reportException(e);
+        }
     }
 }

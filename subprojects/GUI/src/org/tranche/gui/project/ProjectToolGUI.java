@@ -973,7 +973,7 @@ public class ProjectToolGUI extends GenericFrame implements ClipboardOwner {
         }
     }
 
-    public static void main(final String[] args) {
+    public static void main(final String[] args) throws Exception {
         // configure Tranche network
         ConfigureTrancheGUI.load(args);
 

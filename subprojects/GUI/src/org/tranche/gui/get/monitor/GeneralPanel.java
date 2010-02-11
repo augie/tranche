@@ -98,7 +98,10 @@ public class GeneralPanel extends JPanel {
             } catch (Exception e) {
             }
         }
-        left.put("Encrypted", String.valueOf(ps.isEncrypted));
+        try {
+            left.put("Encrypted", String.valueOf(ds.getGetFileTool().getMetaData().isEncrypted()));
+        } catch (Exception e) {
+        }
         left.put("", " ");
         left.put("Filter", ds.getGetFileTool().getRegEx());
         left.put("Files", GUIUtil.integerFormat.format(ds.filesToDownload));

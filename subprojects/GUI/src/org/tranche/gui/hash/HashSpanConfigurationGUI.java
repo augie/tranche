@@ -270,7 +270,7 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
     /**
      * Entry point for the GUI
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         // configure Tranche network
         ConfigureTrancheGUI.load(args);
 

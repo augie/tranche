@@ -137,7 +137,12 @@ public class GetFileToolUtil {
      * @param report
      */
     public static void registerFailedDownload(final GetFileTool gft, final GetFileToolReport report) {
-        if (TestUtil.isTesting()) {
+        // no tests
+        if (TestUtil.isTesting() || !report.isFailed()) {
+            return;
+        }
+        // we don't care about some errors
+        if (report.getFailureExceptions().size() == 1 && report.getFailureExceptions().get(0).exception instanceof NotEnoughDiskSpaceException) {
             return;
         }
 

@@ -839,7 +839,7 @@ public class MetaDataEditFrame extends GenericFrame {
         this.servers.addAll(servers);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         // configure Tranche network
         ConfigureTrancheGUI.load(args);
 

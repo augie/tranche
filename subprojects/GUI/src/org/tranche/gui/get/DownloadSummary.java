@@ -25,11 +25,14 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JOptionPane;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolEvent;
 import org.tranche.get.GetFileToolListener;
 import org.tranche.get.GetFileToolReport;
+import org.tranche.get.NotEnoughDiskSpaceException;
 import org.tranche.gui.ErrorFrame;
+import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.get.monitor.DownloadMonitor;
 import org.tranche.gui.project.ProjectPool;
 import org.tranche.gui.util.GUIUtil;
@@ -58,7 +61,7 @@ public class DownloadSummary implements ClipboardOwner {
     private GetFileToolProgressBar progressBar;
     private GetFileToolReport report;
     private String status = STATUS_STARTING;
-    public long filesToDownload = -1,  bytesToDownload = -1;
+    public long filesToDownload = -1, bytesToDownload = -1;
     private final Map<String, Map<String, Integer>> actionMap = new HashMap<String, Map<String, Integer>>();
     private boolean isStarted = false;
     private ErrorFrame errorFrame = null;
@@ -201,7 +204,18 @@ public class DownloadSummary implements ClipboardOwner {
             if (report != null) {
                 if (report.isFailed()) {
                     setStatus(STATUS_FAILED);
-                    showErrorFrame(null);
+                    if (report.getFailureExceptions().size() == 1 && report.getFailureExceptions().get(0).exception instanceof NotEnoughDiskSpaceException) {
+                        String title = null;
+                        ProjectSummary ps = getProjectSummary();
+                        if (ps != null) {
+                            title = ps.title;
+                        } else {
+                            title = getFileTool.getHash().toString().substring(0, 5);
+                        }
+                        GenericOptionPane.showMessageDialog(null, "Download of " + title  + " failed. " + NotEnoughDiskSpaceException.MESSAGE, "Not Enough Space", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        showErrorFrame(null);
+                    }
                 } else {
                     setStatus(STATUS_FINISHED);
                 }

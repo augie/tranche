@@ -24,9 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.security.PrivateKey;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -126,17 +124,17 @@ public class AddFileTool {
      * User parameters
      */
     private File file = START_VALUE_FILE;
-    private boolean compress = DEFAULT_COMPRESS,  dataOnly = DEFAULT_DATA_ONLY,  explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD,  showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS,  emailOnFailure = DEFAULT_EMAIL_ON_FAILURE;
+    private boolean compress = DEFAULT_COMPRESS, dataOnly = DEFAULT_DATA_ONLY, explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD, showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, emailOnFailure = DEFAULT_EMAIL_ON_FAILURE;
     private License license;
     private X509Certificate userCertificate;
     private PrivateKey userPrivateKey;
-    private String title = START_VALUE_TITLE,  description = START_VALUE_DESCRIPTION,  passphrase;
+    private String title = START_VALUE_TITLE, description = START_VALUE_DESCRIPTION, passphrase;
     private final List<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
-    private final Set<String> emailConfirmationSet = new HashSet<String>(),  serverHostUseSet = new HashSet<String>(),  serverHostStickySet = new HashSet<String>();
+    private final Set<String> emailConfirmationSet = new HashSet<String>(), serverHostUseSet = new HashSet<String>(), serverHostStickySet = new HashSet<String>();
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -148,7 +146,7 @@ public class AddFileTool {
      */
     private boolean projectFileAddedToStack = false;
     private ProjectFile projectFile = START_VALUE_PROJECT_FILE;
-    private int threadCount = DEFAULT_THREADS,  fileCount = START_VALUE_FILE_COUNT;
+    private int threadCount = DEFAULT_THREADS, fileCount = START_VALUE_FILE_COUNT;
     private long size = START_VALUE_SIZE;
     byte[] padding = START_VALUE_PADDING;
     private boolean locked = false;
@@ -1475,372 +1473,381 @@ public class AddFileTool {
     }
 
     /**
-     * <p>Command-line interface to tool. Use -h or --help to see usage.</p>
-     * @param args The set of arguments to be used when parsing the program.
+     * <p>Print out command-line usage.</p>
      */
-    public static void main(String[] args) throws Exception {
-        // register the bouncy castle code
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        // load the Tranche network configuration
-        ConfigureTranche.load(args);
-
-        // If no arguments, print and exit
-        if (args.length <= 1) {
-            printUsage(System.out);
-            if (!TestUtil.isTesting()) {
-                System.exit(2);
-            } else {
-                return;
-            }
-        }
-
-        // print and exit args
-        if (args.length == 2) {
-            String arg = args[1];
-            if (arg.equals("-h") || arg.equals("--help")) {
-                printUsage(System.out);
-                if (!TestUtil.isTesting()) {
-                    System.exit(0);
-                } else {
-                    return;
-                }
-            } else if (arg.equals("-C") || arg.equals("--describecczero")) {
-                System.out.println("=========================== Create Commons Zero (CC0) Waiver ===========================");
-                System.out.println();
-                System.out.println(License.CC0.getDescription());
-                System.out.println();
-                if (!TestUtil.isTesting()) {
-                    System.exit(0);
-                } else {
-                    return;
-                }
-            } else if (arg.equals("-n") || arg.equals("--buildnumber") || arg.equals("--build")) {
-                System.out.println("Tranche uploader, build #@buildNumber");
-                if (!TestUtil.isTesting()) {
-                    System.exit(0);
-                } else {
-                    return;
-                }
-            }
-        }
-
-        // read arguments
-        AddFileTool aft = new AddFileTool();
-
-        // options for output
-        boolean showSummary = DEFAULT_SHOW_SUMMARY;
-        try {
-            for (int i = 1; i < args.length - 1; i += 2) {
-                String arg = args[i];
-                if (arg.equals("-g") || arg.equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    AddFileTool.setDebug(true);
-                    i--;
-                } else if (arg.equals("-S") || arg.equals("--showsummary")) {
-                    showSummary = true;
-                    i--;
-                } else if (arg.equals("-a") || arg.equals("--allhashes")) {
-                    aft.addListener(new AddFileToolAdapter() {
-
-                        @Override
-                        public void finishedFile(AddFileToolEvent event) {
-                            System.out.println(event.getFileName() + "\t" + event.getFileHash());
-                        }
-
-                        @Override
-                        public void finishedDirectory(AddFileToolEvent event) {
-                            System.out.println("--- Upload Completed ---");
-                        }
-                    });
-                    i--;
-                } else if (arg.equals("-v") || arg.equals("--verbose")) {
-                    aft.addListener(new CommandLineAddFileToolListener(aft, System.out));
-                    i--;
-                } else if (arg.equals("-u") || arg.equals("--user")) {
-                    System.err.println("WARNING: The use of -u, --user has been deprecated. Use -z, --userzipfile instead.");
-                } else if (arg.equals("-p") || arg.equals("--userpassword")) {
-                    System.err.println("WARNING: The use of -p, --userpassword has been deprecated. Use -z, --userzipfile instead.");
-                } else if (arg.equals("-z") || arg.equals("--userzipfile")) {
-                    try {
-                        UserZipFile user = new UserZipFile(new File(args[i + 1]));
-                        user.setPassphrase(args[i + 2]);
-                        i++;
-                        aft.setUserCertificate(user.getCertificate());
-                        aft.setUserPrivateKey(user.getPrivateKey());
-                    } catch (Exception e) {
-                        System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                        LogUtil.logError(e);
-                        if (!TestUtil.isTesting()) {
-                            System.exit(6);
-                        } else {
-                            throw e;
-                        }
-                    }
-                } else if (arg.equals("-U") || arg.equals("--username")) {
-                    System.err.println("WARNING: The use of -U, --username has been deprecated. Use -L, --login instead.");
-                } else if (arg.equals("-P") || arg.equals("--password")) {
-                    System.err.println("WARNING: The use of -P, --password has been deprecated. Use -L, --login instead.");
-                } else if (arg.equals("-L") || arg.equals("--login")) {
-                    try {
-                        UserZipFile user = UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]);
-                        i++;
-                        aft.setUserCertificate(user.getCertificate());
-                        aft.setUserPrivateKey(user.getPrivateKey());
-                    } catch (Exception e) {
-                        System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                        LogUtil.logError(e);
-                        if (!TestUtil.isTesting()) {
-                            System.exit(8);
-                        } else {
-                            throw e;
-                        }
-                    }
-                } else if (arg.equals("-E") || arg.equals("--email")) {
-                    aft.addConfirmationEmail(args[i + 1]);
-                } else if (arg.equals("-V") || arg.equals("--server")) {
-                    aft.addServerToUse(args[i + 1]);
-                } else if (arg.equals("-I") || arg.equals("--sticky")) {
-                    aft.addStickyServer(args[i + 1]);
-                } else if (arg.equals("-d") || arg.equals("--description")) {
-                    aft.setDescription(args[i + 1]);
-                } else if (arg.equals("-D") || arg.equals("--descriptionfile")) {
-                    FileInputStream fis = null;
-                    ByteArrayOutputStream baos = null;
-                    try {
-                        fis = new FileInputStream(args[i + 1]);
-                        baos = new ByteArrayOutputStream();
-                        IOUtil.getBytes(fis, baos);
-                        aft.setDescription(new String(baos.toByteArray()));
-                    } finally {
-                        IOUtil.safeClose(baos);
-                        IOUtil.safeClose(fis);
-                    }
-                } else if (arg.equals("-t") || arg.equals("--title")) {
-                    aft.setTitle(args[i + 1]);
-                } else if (arg.equals("-T") || arg.equals("--titlefile")) {
-                    FileInputStream fis = null;
-                    ByteArrayOutputStream baos = null;
-                    try {
-                        fis = new FileInputStream(args[i + 1]);
-                        baos = new ByteArrayOutputStream();
-                        IOUtil.getBytes(fis, baos);
-                        aft.setTitle(new String(baos.toByteArray()));
-                    } finally {
-                        IOUtil.safeClose(baos);
-                        IOUtil.safeClose(fis);
-                    }
-                } else if (arg.equals("-c") || arg.equals("--agreecczero")) {
-                    aft.setLicense(License.CC0);
-                    i--;
-                } else if (arg.equals("-l") || arg.equals("--customlicense")) {
-                    aft.setLicense(new License("Custom License", "", args[i + 1], false));
-                } else if (arg.equals("-M") || arg.equals("--customlicensefile")) {
-                    FileInputStream fis = null;
-                    ByteArrayOutputStream baos = null;
-                    try {
-                        fis = new FileInputStream(args[i + 1]);
-                        baos = new ByteArrayOutputStream();
-                        IOUtil.getBytes(fis, baos);
-                        aft.setLicense(new License("Custom License", "", new String(baos.toByteArray()), false));
-                    } finally {
-                        IOUtil.safeClose(baos);
-                        IOUtil.safeClose(fis);
-                    }
-                } else if (arg.equals("-e") || arg.equals("--encryptionpassword") || arg.equals("--passphrase")) {
-                    aft.setPassphrase(args[i + 1]);
-                } else if (arg.equals("-b") || arg.equals("--usebatch") || arg.equals("--batch")) {
-                    System.err.println("WARNING: The use of -b, --usebatch, --batch has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
-                } else if (arg.equals("-N") || arg.equals("--threads")) {
-                    aft.setThreadCount(Integer.parseInt(args[i + 1]));
-                } else if (arg.equals("-r") || arg.equals("--remotereplication")) {
-                    System.err.println("WARNING: The use of -r, --remotereplication has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
-                } else if (arg.equals("-H") || arg.equals("--enforcehashspans")) {
-                    System.err.println("WARNING: The use of -H, --enforcehashspans has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
-                } else if (arg.equals("-q") || arg.equals("--requiredreps")) {
-                    System.err.println("WARNING: The use of -q, --requiredreps has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
-                } else if (arg.equals("-R") || arg.equals("--register")) {
-                    System.err.println("WARNING: The use of -R, --register has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
-                } else if (arg.equals("-x") || arg.equals("--explode")) {
-                    aft.setExplodeBeforeUpload(Boolean.parseBoolean(args[i + 1]));
-                } else if (arg.equals("-O") || arg.equals("--compress")) {
-                    aft.setCompress(Boolean.parseBoolean(args[i + 1]));
-                } else if (arg.equals("-y") || arg.equals("--dataonly")) {
-                    aft.setDataOnly(Boolean.parseBoolean(args[i + 1]));
-                } else if (arg.equals("-w") || arg.equals("--showencinfo")) {
-                    aft.setShowMetaDataIfEncrypted(Boolean.parseBoolean(args[i + 1]));
-                } else if (arg.equals("-f") || arg.equals("--useunspecified")) {
-                    aft.setUseUnspecifiedServers(Boolean.parseBoolean(args[i + 1]));
-                } else if (arg.equals("-m") || arg.equals("--tempdir")) {
-                    TempFileUtil.setTemporaryDirectory(new File(args[i + 1]));
-                } else if (arg.equals("-A") || arg.equals("--annotation")) {
-                    aft.addMetaDataAnnotation(new MetaDataAnnotation(args[i + 1], args[i + 2]));
-                    i++;
-                } else if (arg.equals("-H") || arg.equals("--proxyhost")) {
-                    System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
-                } else if (arg.equals("-X") || arg.equals("--proxyport")) {
-                    System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
-                } else {
-                    throw new RuntimeException("Unrecognized argument \"" + arg + "\".");
-                }
-            }
-        } catch (Exception e) {
-            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-            if (!TestUtil.isTesting()) {
-                System.exit(3);
-            } else {
-                throw e;
-            }
-        }
-
-        // perform upload
-        try {
-            aft.setFile(new File(args[args.length - 1]));
-            AddFileToolReport report = aft.execute(TimeUtil.getTrancheTimestamp());
-            if (report.isFailed()) {
-                Set<Exception> exceptions = new HashSet<Exception>();
-                for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
-                    System.err.println("  " + pew.toString());
-                    exceptions.add(pew.exception);
-                }
-                LogUtil.logError(exceptions);
-            } else {
-                System.out.println(report.getHash());
-                if (showSummary) {
-                    System.err.println("Total upload time: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
-                    System.err.println("Total bytes uploaded: " + Text.getFormattedBytes(report.getBytesUploaded()));
-                }
-            }
-        } catch (Exception e) {
-            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-            LogUtil.logError(e);
-            if (!TestUtil.isTesting()) {
-                if (e instanceof FileNotFoundException) {
-                    System.exit(4);
-                } else {
-                    System.exit(1);
-                }
-            } else {
-                throw e;
-            }
-        }
-
-        // exit
-        if (!TestUtil.isTesting()) {
-            System.exit(0);
-        } else {
-            return;
-        }
+    private static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [FLAGS / PARAMETERS] <FILE/DIRECTORY TO UPLOAD>");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Upload the file or directory at <FILE/DIRECTORY TO UPLOAD>.");
+        System.out.println();
+        System.out.println("MEMORY ALLOCATION");
+        System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
+        System.out.println();
+        System.out.println("USER FILE AND SECURITY");
+        System.out.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
+        System.out.println();
+        System.out.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
+        System.out.println();
+        System.out.println("LICENSE AGGREEMENT");
+        System.out.println("    A license agreement can be uploaded with your files. Uploading without a license puts the files into the public domain. Right now, the only built-in license is the Creative Commons Zero waiver (CC0). For more information, use the --describecczero parameter.");
+        System.out.println();
+        System.out.println("    You can provide a custom license. This can be as simple as providing contact information, or as complete as a legal license provided by a lawyer, institution or third party.");
+        System.out.println();
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -C, --describecczero        Print the Creative Commons Zero (CC0) waiver and exit.");
+        System.out.println("    -h, --help                  Print usage and exit.");
+        System.out.println("    -V, --version               Print version number and exit.");
+        System.out.println();
+        System.out.println("REQUIRED PARAMETERS");
+        System.out.println("  LOGIN: PLEASE SELECT ONE OF THE FOLLOWING OPTIONS:");
+        System.out.println();
+        System.out.println("   OPTION 1: USER ZIP FILE");
+        System.out.println("    -z,  --userzipfile          Values: any two strings.  The location of your user zip file and the password (e.g., \"-z /path/to/Augie.zip.encrypted notmypassword\").");
+        System.out.println("   OPTION 2: HTTP LOGIN");
+        System.out.println("    -L,  --login                Values: any two strings.  The username and password for your log in (e.g., \"-L Augie notmypassword\").");
+        System.out.println();
+        System.out.println("RECOMMENDED PARAMETERS");
+        System.out.println("    These parameters make your files more useful by providing information for users who are browsing.");
+        System.out.println();
+        System.out.println("    -d, --description           Values: any string.       Brief description of upload.");
+        System.out.println("    -D, --descriptionfile       Values: any string.       Brief description of upload (in a plain-text file, specify path to file).");
+        System.out.println("    -t, --title                 Values: any string.       Brief title.");
+        System.out.println("    -T, --titlefile             Values: any string.       Brief title (in a plain-text file, specify path to file).");
+        System.out.println();
+        System.out.println("OPTIONAL OUTOUT & RUNTIME PARAMETERS");
+        System.out.println("    By default, only the hash for the upload is printed to standard output, and errors printed to standard err. These options modify this behavior.");
+        System.out.println();
+        System.out.println("    -a, --allhashes             Values: none.             Print out hashes for each file to standard out. Will be printed as /path/to/file\tfile_hash, with each file output on a separate line. Easily parsed: for each line, split on whitespace and verify two columns and that second is a hash. More on this feature in section HASHES OUTPUT.");
+        System.out.println("    -E, --email                 Values: email address.    Send a confirmation email when upload is finished. For more than one email, use multiple separate flags, e.g., -E jane@domain.org -E john@domain.org");
+        System.out.println("    -g, --debug                 Values: none.             Prints out useful debugging information.");
+        System.out.println("    -S, --showsummary           Values: none.             Prints out a summary of time and speed to standard error upon completion of a project upload.");
+        System.out.println("    -v, --verbose               Values: none.             Print out progress information for all files. Intended for human agents, and not automated tool. Will produce a lot of standard output, not easily parsed.");
+        System.out.println();
+        System.out.println("OPTIONAL PARAMETERS");
+        System.out.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
+        System.out.println();
+        System.out.println("    -A, --annotation            Values: any two strings.  Adds an annotation to the meta data. (e.g., '-A \"My Name\" Augie').");
+        System.out.println("    -c, --agreecczero           Values: none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
+        System.out.println("    -e, --passphrase            Values: any string.       Used to encrypt the upload. Data will only be available to users with this password.");
+        System.out.println("    -f, --useunspecified        Values: true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
+        System.out.println("    -I, --sticky                Values: any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
+        System.out.println("    -l, --customlicense         Values: any string.       Provide custom custom license information.");
+        System.out.println("    -m, --tempdir               Values: any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
+        System.out.println("    -M, --customlicensefile     Values: any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
+        System.out.println("    -N, --threads               Values: number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
+        System.out.println("    -O, --compress              Values: true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
+        System.out.println("    -R, --server                Values: any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
+        System.out.println("    -w, --showencinfo           Values: true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
+        System.out.println("    -x, --explode               Values: true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
+        System.out.println("    -y, --dataonly              Values: true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
+        System.out.println();
+        System.out.println("HASHES OUTPUT");
+        System.out.println("    The flag \"--allhashes\" or \"-a\" will print out all file hashes to standard output (stdout). Each uploaded file will result in a single line printed in the following format:");
+        System.out.println();
+        System.out.println("        /path/to/file\tfiles_hash");
+        System.out.println();
+        System.out.println("    Should you be uploading a directory, the final hash (which is used to download the entire upload) is also printed to standard output as the very last line of output. To help with parsing, the following line will appear after all file hash entries and before the final hash:");
+        System.out.println();
+        System.out.println("        --- Upload Completed ---");
+        System.out.println();
+        System.out.println("    If the \"all hashes\" feature is enabled, the output will have the following form:");
+        System.out.println();
+        System.out.println("        /path/to/file[1]\tfile[1]_hash");
+        System.out.println("        /path/to/file[2]\tfile[2]_hash");
+        System.out.println("        ...");
+        System.out.println("        /path/to/file[N-1]\tfile[N-1]_hash");
+        System.out.println("        /path/to/file[N]\tfile[N]_hash");
+        System.out.println("        --- Upload Completed ---");
+        System.out.println("        hash");
+        System.out.println();
+        System.out.println("    If the \"all hashes\" feature is disabled, the only output will be the upload hash on a single line.");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    0: Program exited normally (e.g., upload succeeded, help displayed, etc.)");
+        System.out.println("    1: Unknown error.");
+        System.out.println("    2: Missing required argument(s).");
+        System.out.println("    3: Problem with argument(s).");
+        System.out.println("    4: File to upload not found.");
+        System.out.println("    5: Connection issues.");
+        System.out.println("    6: Could not open user file.");
+        System.out.println("    7: User file expired.");
+        System.out.println("    8: User login failed.");
     }
 
     /**
-     * <p>Print out command-line usage.</p>
-     * @param isError If true, usage printed to standard error. Else, printed to standard out.
+     * <p>Command-line interface to tool. Use -h or --help to see usage.</p>
+     * @param args The set of arguments to be used when parsing the program.
+     * @throws Exception
      */
-    private static void printUsage(PrintStream console) {
-        console.println();
-        console.println("USAGE");
-        console.println("    [FLAGS] <FILE/DIRECTORY TO UPLOAD>");
-        console.println();
-        console.println("DESCRIPTION");
-        console.println("    Upload a file or directory. The last argument is the path to the file or directory to upload.");
-        console.println();
-        console.println("MEMORY ALLOCATION");
-        console.println("    You should use the JVM option:");
-        console.println();
-        console.println("    java -Xmx512m -jar ...");
-        console.println();
-        console.println("    The allocates 512m of memory for the tool. You can adjust this amount (e.g., you don't have 512MB available memory or you want to allocate more.)");
-        console.println();
-        console.println("USER FILE AND SECURITY");
-        console.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
-        console.println();
-        console.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
-        console.println();
-        console.println("LICENSE AGGREEMENT");
-        console.println("    A license agreement can be uploaded with your files. Uploading without a license puts the files into the public domain. Right now, the only built-in license is the Creative Commons Zero waiver (CC0). For more information, use the --describecczero parameter.");
-        console.println();
-        console.println("    You can provide a custom license. This can be as simple as providing contact information, or as complete as a legal license provided by a lawyer, institution or third party.");
-        console.println();
-        console.println("REQUIRED PARAMETERS");
-        console.println();
-        console.println("  LOGIN: PLEASE SELECT ONE OF THE FOLLOWING OPTIONS:");
-        console.println();
-        console.println("  OPTION 1: USER ZIP FILE");
-        console.println("    -z,  --userzipfile          Values: any two strings.  The location of your user zip file and the password (e.g., \"-z /path/to/Augie.zip.encrypted notmypassword\").");
-        console.println("  OPTION 2: HTTP LOGIN");
-        console.println("    -L,  --login                Values: any two strings.  The username and password for your log in (e.g., \"-L Augie notmypassword\").");
-        console.println();
-        console.println("RECOMMENDED PARAMETERS");
-        console.println("    These parameters make your files more useful by providing information for users who are browsing.");
-        console.println();
-        console.println("    -d, --description           Values: any string.       Brief description of upload.");
-        console.println("    -D, --descriptionfile       Values: any string.       Brief description of upload (in a plain-text file, specify path to file).");
-        console.println("    -t, --title                 Values: any string.       Brief title.");
-        console.println("    -T, --titlefile             Values: any string.       Brief title (in a plain-text file, specify path to file).");
-        console.println();
-        console.println("OPTIONAL OUTOUT & RUNTIME PARAMETERS");
-        console.println("    By default, only the hash for the upload is printed to standard output, and errors printed to standard err. These options modify this behavior.");
-        console.println();
-        console.println("    -a, --allhashes             Values: none.             Print out hashes for each file to standard out. Will be printed as /path/to/file\tfile_hash, with each file output on a separate line. Easily parsed: for each line, split on whitespace and verify two columns and that second is a hash. More on this feature in section HASHES OUTPUT.");
-        console.println("    -C, --describecczero        Values: none.             Describe the Creative Commons Zero (CC0) waiver and exit.");
-        console.println("    -E, --email                 Values: email address.    Send a confirmation email when upload is finished. For more than one email, use multiple separate flags, e.g., -E jane@domain.org -E john@domain.org");
-        console.println("    -g, --debug                 Values: none.             Prints out useful debugging information.");
-        console.println("    -h, --help                  Values: none.             Print usage and exit. All other arguments will be ignored.");
-        console.println("    -n, --buildnumber           Values: none.             Print version number and exit. All other arguments will be ignored.");
-        console.println("    -S, --showsummary           Values: none.             Prints out a summary of time and speed to standard error upon completion of a project upload.");
-        console.println("    -v, --verbose               Values: none.             Print out progress information for all files. Intended for human agents, and not automated tool. Will produce a lot of standard output, not easily parsed.");
-        console.println();
-        console.println("OPTIONAL PARAMETERS");
-        console.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
-        console.println();
-        console.println("    -A, --annotation            Values: any two strings.  Adds an annotation to the meta data. (e.g., '-A \"My Name\" Augie').");
-        console.println("    -c, --agreecczero           Values: none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
-        console.println("    -e, --passphrase            Values: any string.       Used to encrypt the upload. Data will only be available to users with this password.");
-        console.println("    -f, --useunspecified        Values: true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
-        console.println("    -I, --sticky                Values: any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
-        console.println("    -l, --customlicense         Values: any string.       Provide custom custom license information.");
-        console.println("    -m, --tempdir               Values: any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
-        console.println("    -M, --customlicensefile     Values: any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
-        console.println("    -N, --threads               Values: number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
-        console.println("    -O, --compress              Values: true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
-        console.println("    -V, --server                Values: any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
-        console.println("    -w, --showencinfo           Values: true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
-        console.println("    -x, --explode               Values: true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
-        console.println("    -y, --dataonly              Values: true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
-        console.println();
-        console.println("HASHES OUTPUT");
-        console.println("    The flag \"--allhashes\" or \"-a\" will print out all file hashes to standard output (stdout). Each uploaded file will result in a single line printed in the following format:");
-        console.println();
-        console.println("        /path/to/file\tfiles_hash");
-        console.println();
-        console.println("    Should you be uploading a directory, the final hash (which is used to download the entire upload) is also printed to standard output as the very last line of output. To help with parsing, the following line will appear after all file hash entries and before the final hash:");
-        console.println();
-        console.println("        --- Upload Completed ---");
-        console.println();
-        console.println("    If the \"all hashes\" feature is enabled, the output will have the following form:");
-        console.println();
-        console.println("        /path/to/file[1]\tfile[1]_hash");
-        console.println("        /path/to/file[2]\tfile[2]_hash");
-        console.println("        ...");
-        console.println("        /path/to/file[N-1]\tfile[N-1]_hash");
-        console.println("        /path/to/file[N]\tfile[N]_hash");
-        console.println("        --- Upload Completed ---");
-        console.println("        hash");
-        console.println();
-        console.println("    If the \"all hashes\" feature is disabled, the only output will be the upload hash on a single line.");
-        console.println();
-        console.println("RETURN CODES");
-        console.println("    To check the return code for a process in bash console, use $? special variable. If non-zero, check standard error for messages.");
-        console.println();
-        console.println("    0:     Program exited normally (e.g., upload succeeded, help displayed, etc.)");
-        console.println("    1:     Unknown error.");
-        console.println("    2:     Missing required argument(s).");
-        console.println("    3:     Problem with argument(s).");
-        console.println("    4:     File to upload not found.");
-        console.println("    5:     Connection issues.");
-        console.println("    6:     Could not open user file.");
-        console.println("    7:     User file expired.");
-        console.println("    8:     User login failed.");
+    public static void main(String[] args) throws Exception {
+        try {
+            if (args.length == 0) {
+                printUsage();
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
+
+            // flags
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-g") || args[i].equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-C") || args[i].equals("--describecczero")) {
+                    System.out.println("=========================== Create Commons Zero (CC0) Waiver ===========================");
+                    System.out.println();
+                    System.out.println(License.CC0.getDescription());
+                    System.out.println();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("--build") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche uploader, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                }
+            }
+
+            // configure
+            try {
+                ConfigureTranche.load(args);
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
+
+            AddFileTool aft = new AddFileTool();
+            boolean showSummary = DEFAULT_SHOW_SUMMARY;
+            try {
+                for (int i = 1; i < args.length - 1; i += 2) {
+                    String arg = args[i];
+                    if (arg.equals("-g") || arg.equals("--debug")) {
+                        i--;
+                    } else if (arg.equals("-S") || arg.equals("--showsummary")) {
+                        showSummary = true;
+                        i--;
+                    } else if (arg.equals("-a") || arg.equals("--allhashes")) {
+                        aft.addListener(new AddFileToolAdapter() {
+
+                            @Override
+                            public void finishedFile(AddFileToolEvent event) {
+                                System.out.println(event.getFileName() + "\t" + event.getFileHash());
+                            }
+
+                            @Override
+                            public void finishedDirectory(AddFileToolEvent event) {
+                                System.out.println("--- Upload Completed ---");
+                            }
+                        });
+                        i--;
+                    } else if (arg.equals("-v") || arg.equals("--verbose")) {
+                        aft.addListener(new CommandLineAddFileToolListener(aft, System.out));
+                        i--;
+                    } else if (arg.equals("-u") || arg.equals("--user")) {
+                        System.err.println("WARNING: The use of -u, --user has been deprecated. Use -z, --userzipfile instead.");
+                    } else if (arg.equals("-p") || arg.equals("--userpassword")) {
+                        System.err.println("WARNING: The use of -p, --userpassword has been deprecated. Use -z, --userzipfile instead.");
+                    } else if (arg.equals("-z") || arg.equals("--userzipfile")) {
+                        try {
+                            UserZipFile user = new UserZipFile(new File(args[i + 1]));
+                            user.setPassphrase(args[i + 2]);
+                            i++;
+                            aft.setUserCertificate(user.getCertificate());
+                            aft.setUserPrivateKey(user.getPrivateKey());
+                        } catch (Exception e) {
+                            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                            LogUtil.logError(e);
+                            if (!TestUtil.isTesting()) {
+                                System.exit(6);
+                            } else {
+                                throw e;
+                            }
+                        }
+                    } else if (arg.equals("-U") || arg.equals("--username")) {
+                        System.err.println("WARNING: The use of -U, --username has been deprecated. Use -L, --login instead.");
+                    } else if (arg.equals("-P") || arg.equals("--password")) {
+                        System.err.println("WARNING: The use of -P, --password has been deprecated. Use -L, --login instead.");
+                    } else if (arg.equals("-L") || arg.equals("--login")) {
+                        try {
+                            UserZipFile user = UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]);
+                            i++;
+                            aft.setUserCertificate(user.getCertificate());
+                            aft.setUserPrivateKey(user.getPrivateKey());
+                        } catch (Exception e) {
+                            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                            LogUtil.logError(e);
+                            if (!TestUtil.isTesting()) {
+                                System.exit(8);
+                            } else {
+                                throw e;
+                            }
+                        }
+                    } else if (arg.equals("-E") || arg.equals("--email")) {
+                        aft.addConfirmationEmail(args[i + 1]);
+                    } else if (arg.equals("-V") || arg.equals("--server")) {
+                        aft.addServerToUse(args[i + 1]);
+                    } else if (arg.equals("-I") || arg.equals("--sticky")) {
+                        aft.addStickyServer(args[i + 1]);
+                    } else if (arg.equals("-d") || arg.equals("--description")) {
+                        aft.setDescription(args[i + 1]);
+                    } else if (arg.equals("-D") || arg.equals("--descriptionfile")) {
+                        FileInputStream fis = null;
+                        ByteArrayOutputStream baos = null;
+                        try {
+                            fis = new FileInputStream(args[i + 1]);
+                            baos = new ByteArrayOutputStream();
+                            IOUtil.getBytes(fis, baos);
+                            aft.setDescription(new String(baos.toByteArray()));
+                        } finally {
+                            IOUtil.safeClose(baos);
+                            IOUtil.safeClose(fis);
+                        }
+                    } else if (arg.equals("-t") || arg.equals("--title")) {
+                        aft.setTitle(args[i + 1]);
+                    } else if (arg.equals("-T") || arg.equals("--titlefile")) {
+                        FileInputStream fis = null;
+                        ByteArrayOutputStream baos = null;
+                        try {
+                            fis = new FileInputStream(args[i + 1]);
+                            baos = new ByteArrayOutputStream();
+                            IOUtil.getBytes(fis, baos);
+                            aft.setTitle(new String(baos.toByteArray()));
+                        } finally {
+                            IOUtil.safeClose(baos);
+                            IOUtil.safeClose(fis);
+                        }
+                    } else if (arg.equals("-c") || arg.equals("--agreecczero")) {
+                        aft.setLicense(License.CC0);
+                        i--;
+                    } else if (arg.equals("-l") || arg.equals("--customlicense")) {
+                        aft.setLicense(new License("Custom License", "", args[i + 1], false));
+                    } else if (arg.equals("-M") || arg.equals("--customlicensefile")) {
+                        FileInputStream fis = null;
+                        ByteArrayOutputStream baos = null;
+                        try {
+                            fis = new FileInputStream(args[i + 1]);
+                            baos = new ByteArrayOutputStream();
+                            IOUtil.getBytes(fis, baos);
+                            aft.setLicense(new License("Custom License", "", new String(baos.toByteArray()), false));
+                        } finally {
+                            IOUtil.safeClose(baos);
+                            IOUtil.safeClose(fis);
+                        }
+                    } else if (arg.equals("-e") || arg.equals("--encryptionpassword") || arg.equals("--passphrase")) {
+                        aft.setPassphrase(args[i + 1]);
+                    } else if (arg.equals("-b") || arg.equals("--usebatch") || arg.equals("--batch")) {
+                        System.err.println("WARNING: The use of -b, --usebatch, --batch has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
+                    } else if (arg.equals("-N") || arg.equals("--threads")) {
+                        aft.setThreadCount(Integer.parseInt(args[i + 1]));
+                    } else if (arg.equals("-r") || arg.equals("--remotereplication")) {
+                        System.err.println("WARNING: The use of -r, --remotereplication has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
+                    } else if (arg.equals("-H") || arg.equals("--enforcehashspans")) {
+                        System.err.println("WARNING: The use of -H, --enforcehashspans has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
+                    } else if (arg.equals("-q") || arg.equals("--requiredreps")) {
+                        System.err.println("WARNING: The use of -q, --requiredreps has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
+                    } else if (arg.equals("--register")) {
+                        System.err.println("WARNING: The use of --register has been deprecated. It currently does nothing, and the options may be removed in future versions of AddFileTool.");
+                    } else if (arg.equals("-x") || arg.equals("--explode")) {
+                        aft.setExplodeBeforeUpload(Boolean.parseBoolean(args[i + 1]));
+                    } else if (arg.equals("-O") || arg.equals("--compress")) {
+                        aft.setCompress(Boolean.parseBoolean(args[i + 1]));
+                    } else if (arg.equals("-y") || arg.equals("--dataonly")) {
+                        aft.setDataOnly(Boolean.parseBoolean(args[i + 1]));
+                    } else if (arg.equals("-w") || arg.equals("--showencinfo")) {
+                        aft.setShowMetaDataIfEncrypted(Boolean.parseBoolean(args[i + 1]));
+                    } else if (arg.equals("-f") || arg.equals("--useunspecified")) {
+                        aft.setUseUnspecifiedServers(Boolean.parseBoolean(args[i + 1]));
+                    } else if (arg.equals("-m") || arg.equals("--tempdir")) {
+                        TempFileUtil.setTemporaryDirectory(new File(args[i + 1]));
+                    } else if (arg.equals("-A") || arg.equals("--annotation")) {
+                        aft.addMetaDataAnnotation(new MetaDataAnnotation(args[i + 1], args[i + 2]));
+                        i++;
+                    } else if (arg.equals("-H") || arg.equals("--proxyhost")) {
+                        System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
+                    } else if (arg.equals("-X") || arg.equals("--proxyport")) {
+                        System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(3);
+                } else {
+                    throw e;
+                }
+            }
+
+            // perform upload
+            try {
+                aft.setFile(new File(args[args.length - 1]));
+                AddFileToolReport report = aft.execute(TimeUtil.getTrancheTimestamp());
+                if (report.isFailed()) {
+                    Set<Exception> exceptions = new HashSet<Exception>();
+                    for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                        System.err.println("  " + pew.toString());
+                        exceptions.add(pew.exception);
+                    }
+                    LogUtil.logError(exceptions);
+                } else {
+                    System.out.println(report.getHash());
+                    if (showSummary) {
+                        System.err.println("Total upload time: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
+                        System.err.println("Total bytes uploaded: " + Text.getFormattedBytes(report.getBytesUploaded()));
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                LogUtil.logError(e);
+                if (!TestUtil.isTesting()) {
+                    if (e instanceof FileNotFoundException) {
+                        System.exit(4);
+                    } else {
+                        System.exit(1);
+                    }
+                } else {
+                    throw e;
+                }
+            }
+
+            // exit
+            if (!TestUtil.isTesting()) {
+                System.exit(0);
+            } else {
+                return;
+            }
+        } catch (Exception e) {
+            debugErr(e);
+            if (!TestUtil.isTesting()) {
+                System.exit(1);
+            } else {
+                throw e;
+            }
+        }
     }
 
     /**
@@ -2062,7 +2069,7 @@ public class AddFileTool {
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
         private int emptyCount = 0;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         private final LinkedList<FileToUpload> fileStack;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         public BigHash primaryFileHash;
@@ -2571,7 +2578,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
@@ -2880,7 +2887,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
         public MetaDataUploadingThread(Set<FileEncodingThread> fileThreads, Set<DataUploadingThread> dataThreads, Set<MetaDataUploadingThread> metaThreads, PriorityBlockingQueue<MetaChunk> metaChunkQueue) {

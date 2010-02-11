@@ -166,7 +166,7 @@ public class CreateUserZipFileFrame extends GenericFrame {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         // configure the Tranche network
         ConfigureTrancheGUI.load(args);
 

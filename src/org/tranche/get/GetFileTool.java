@@ -20,9 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -137,12 +135,12 @@ public class GetFileTool {
     private final GetFileToolFailedChunksListener failedChunksListener;
 
     public GetFileTool() {
-        
+
         // Create and add listener for failed chunks
         failedChunksListener = new GetFileToolFailedChunksListener();
         this.addListener(failedChunksListener);
     }
-    
+
     /**
      * 
      * @return
@@ -1045,8 +1043,12 @@ public class GetFileTool {
                 }
             }
             // register our download only if nothing was skipped during download and there were no failures
-            if (!skippedFile && !report.isFailed() && !TestUtil.isTesting()) {
-                GetFileToolUtil.registerDownload(this, report);
+            if (!TestUtil.isTesting()) {
+                if (!skippedFile && !report.isFailed()) {
+                    GetFileToolUtil.registerDownload(this, report);
+                } else if (report.isFailed()) {
+                    GetFileToolUtil.registerFailedDownload(this, report);
+                }
             }
             locked = false;
         }
@@ -1961,249 +1963,263 @@ public class GetFileTool {
     }
 
     /**
+     * <p>Print out command-line usage.</p>
+     */
+    private static void printUsage() {
+        System.out.println();
+        System.out.println("USAGE");
+        System.out.println("    [FLAGS / PARAMETERS] <HASH> <SAVE LOCATION>");
+        System.out.println();
+        System.out.println("DESCRIPTION");
+        System.out.println("    Downloads the data set with the given <HASH> to the <SAVE LOCATION>. If download succeeds, the only standard output is the path to the directory of the download.");
+        System.out.println();
+        System.out.println("MEMORY ALLOCATION");
+        System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
+        System.out.println();
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -h, --help                  Print usage and exit.");
+        System.out.println("    -V, --version               Print version number and exit.");
+        System.out.println();
+        System.out.println("OUTPUT FLAGS");
+        System.out.println("    -d, --debug                 If you have problems with a download, you can use this option to print detailed information. This helps us find potential errors in the code.");
+        System.out.println("    -S, --summary               Prints out a summary of time and speed to standard error upon completion of a download.");
+        System.out.println("    -v, --verbose               Print download progress information.");
+        System.out.println();
+        System.out.println("STANDARD PARAMETERS");
+        System.out.println("    -e, --passphrase            Value: any string.     If the data set is encrypted, use this to unencrypt.");
+        System.out.println("    -i, --timestamp             Value: any number.     Specifies the timestamp that the given file or data set was uploaded. Serves to disambiguate the data set that is to be downloaded.");
+        System.out.println("    -p, --path                  Value: any string.     Specifies the relative path in a data set of the file that is to be downloaded. Serves to disambiguate the file that is to be downloaded.");
+        System.out.println("    -s, --useunspecified        Value: true/false.     Whether unspecified servers should be used. If false, only the servers that you specify with the \"-V\" or \"--server\" flags will be used. Otherwise, other servers will be used, as well. Default value is " + DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
+        System.out.println("    -r, --regex                 Value: any string.     Matches a specified regular expression with the relative name of every file (as a file). Uses standard Java regular expression rules.");
+        System.out.println("    -R, --server                Value: any string.     Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
+        System.out.println("    -u, --uname                 Value: any string.     Specifies the name of the uploader for the given file or data set. Serves to disambiguate the file or data set that is to be downloaded.");
+        System.out.println();
+        System.out.println("ADDITIONAL PARAMETERS");
+        System.out.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
+        System.out.println();
+        System.out.println("    -a, --validate              Value: true/false.     Verify integrity of data and validate signed by proper users. Default value is " + DEFAULT_VALIDATE + ".");
+        System.out.println("    -b, --batch                 Value: true/false.     Enables faster uploads by simulateously downloading small chunks of data together. Default value is " + DEFAULT_BATCH + ".");
+        System.out.println("    -c, --continue              Value: true/false.     Upon failure, continue to download as much as possible. Default value is " + DEFAULT_CONTINUE_ON_FAILURE + ".");
+        System.out.println("    -m, --tempdir               Value: any string.     Path to use for temporary directory instead of default. Default is based on different heuristics for OS and filesystem permissions. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
+        System.out.println("    -t, --threads               Value: any number.     The maximum number of threads to use. Increasing may require more memory, and may result in increased CPU usage, increased bandwidth, increased disk accesses and faster downloads. Default value is " + DEFAULT_THREADS + ".");
+        System.out.println();
+        System.out.println("RETURN CODES");
+        System.out.println("    0: Exited normally");
+        System.out.println("    1: Unknown error");
+        System.out.println("    2: Some file was not found. Most likely, a file specified in an argument was not found.");
+        System.out.println("    3: Failed to download.");
+        System.out.println("    4: Problem with an argument.");
+        System.out.println("    5: Passphrase either wrong or missing.");
+        System.out.println();
+    }
+
+    /**
      * <p>Command-line interface. Use -h or --help for usage information, or if using Java API, use GetFileTool.printUsage() to print to standard out.</p>
      * @param args
      * @throws java.lang.Exception
      */
     public static void main(String[] args) throws Exception {
-
-        // register the bouncy castle code
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        // load Tranche configuration
-        ConfigureTranche.load(args);
-
-        // print + exit args
-        for (String arg : args) {
-            if (arg.equals("-n") || arg.equals("--buildnumber")) {
-                System.out.println("Tranche downloader, build: @buildNumber");
+        try {
+            if (args.length == 0) {
+                printUsage();
                 if (!TestUtil.isTesting()) {
-                    System.exit(0);
-                } else {
-                    return;
-                }
-            } else if (arg.equals("-h") || arg.equals("--help")) {
-                printUsage(System.out);
-                if (!TestUtil.isTesting()) {
-                    System.exit(0);
+                    System.exit(2);
                 } else {
                     return;
                 }
             }
-        }
 
-        // if no arguments, print and exit
-        if (args.length <= 2) {
-            printUsage(System.out);
+            // print and exit flags
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-d") || args[i].equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                }
+            }
+
+            // configure
+            try {
+                ConfigureTranche.load(args);
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
+            }
+
+            GetFileTool gft = new GetFileTool();
+            boolean showSummary = DEFAULT_SHOW_SUMMARY;
+            try {
+                for (int i = 1; i < args.length - 2; i += 2) {
+                    String arg = args[i];
+                    if (arg.equals("-d") || arg.equals("--debug")) {
+                        i--;
+                    } else if (arg.equals("-v") || arg.equals("--verbose")) {
+                        gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
+                        i--;
+                    } else if (arg.equals("-S") || arg.equals("--summary")) {
+                        showSummary = true;
+                        i--;
+                    } else if (arg.equals("-e") || arg.equals("--passphrase")) {
+                        gft.setPassphrase(args[i + 1]);
+                    } else if (arg.equals("-i") || arg.equals("--timestamp")) {
+                        try {
+                            gft.setUploadTimestamp(Long.valueOf(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a number value for " + arg + ", received " + args[i + 1]);
+                        }
+                    } else if (arg.equals("-o") || arg.equals("--output")) {
+                        System.err.println("WARNING: The use of -o, --output has been deprecated.");
+                    } else if (arg.equals("-p") || arg.equals("--path")) {
+                        gft.setUploadRelativePath(args[i + 1]);
+                    } else if (arg.equals("-r") || arg.equals("--regex")) {
+                        gft.setRegEx(args[i + 1]);
+                    } else if (arg.equals("-s") || arg.equals("--useunspecified")) {
+                        try {
+                            gft.setUseUnspecifiedServers(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
+                    } else if (arg.equals("-u") || arg.equals("--uname")) {
+                        gft.setUploaderName(args[i + 1]);
+                    } else if (arg.equals("-R") || arg.equals("--server")) {
+                        gft.getServersToUse().add(args[i + 1]);
+                    } else if (arg.equals("-a") || arg.equals("--validate")) {
+                        try {
+                            gft.setValidate(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
+                    } else if (arg.equals("-c") || arg.equals("--continue")) {
+                        try {
+                            gft.setContinueOnFailure(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
+                    } else if (arg.equals("-b") || arg.equals("--batch")) {
+                        try {
+                            gft.setBatch(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
+                    } else if (arg.equals("-m") || arg.equals("--tempdir")) {
+                        TempFileUtil.setTemporaryDirectory(new File(args[i + 1]));
+                    } else if (arg.equals("-t") || arg.equals("--threads")) {
+                        gft.setThreadCount(Integer.parseInt(args[i + 1]));
+                    } else if (arg.equals("-H") || arg.equals("--proxyhost")) {
+                        System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
+                    } else if (arg.equals("-X") || arg.equals("--proxyport")) {
+                        System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
+                    }
+                }
+
+                // Set hash
+                gft.setHash(BigHash.createHashFromString(args[args.length - 2]));
+                // set the save location
+                gft.setSaveFile(new File(args[args.length - 1]));
+            } catch (Exception e) {
+                System.err.println("ERROR: " + e.getMessage());
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(4);
+                } else {
+                    throw e;
+                }
+            }
+
+            try {
+                // perform the download
+                MetaData metaData = gft.getMetaData();
+                GetFileToolReport report = null;
+                if (metaData != null) {
+                    if (metaData.isProjectFile()) {
+                        report = gft.getDirectory();
+                    } else {
+                        report = gft.getFile();
+                    }
+                }
+
+                // make a report
+                if (report.isFailed()) {
+                    System.err.println("FAILURE");
+                    // Aware of JUnit tests calling GetFileTool.main
+                    if (!TestUtil.isTesting()) {
+                        System.exit(3);
+                    } else {
+                        throw new RuntimeException("Download failed.");
+                    }
+                } else {
+                    // The only output: full path of downloaded project
+                    System.out.println(gft.getSaveFile().getAbsolutePath());
+                    // show summary
+                    if (showSummary) {
+                        System.out.println("Time elapsed: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
+                    }
+                    // Aware of JUnit tests calling GetFileTool.main
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                }
+            } catch (PassphraseRequiredException pre) {
+                System.err.println("Problem unencrypting data: " + pre.getMessage());
+                if (!TestUtil.isTesting()) {
+                    System.exit(6);
+                } else {
+                    throw pre;
+                }
+            } catch (FileNotFoundException ce) {
+                System.err.println("Can't find the file:" + ce.getMessage());
+                LogUtil.logError(ce);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    throw ce;
+                }
+            } catch (Exception e) {
+                System.err.println(e.getClass().getSimpleName() + " with message: " + e.getMessage());
+                LogUtil.logError(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(1);
+                } else {
+                    throw e;
+                }
+            }
+
+            // exit
             if (!TestUtil.isTesting()) {
-                System.exit(2);
+                System.exit(0);
             } else {
                 return;
             }
-        }
-
-        GetFileTool gft = new GetFileTool();
-        // arguments
-        boolean showSummary = DEFAULT_SHOW_SUMMARY;
-        try {
-            // get the arguments
-            for (int i = 1; i < args.length - 2; i += 2) {
-                String arg = args[i];
-                if (arg.equals("-d") || arg.equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
-                    i--;
-                } else if (arg.equals("-v") || arg.equals("--verbose")) {
-                    gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
-                    i--;
-                } else if (arg.equals("-S") || arg.equals("--summary")) {
-                    showSummary = true;
-                    i--;
-                } else if (arg.equals("-e") || arg.equals("--passphrase")) {
-                    gft.setPassphrase(args[i + 1]);
-                } else if (arg.equals("-i") || arg.equals("--timestamp")) {
-                    try {
-                        gft.setUploadTimestamp(Long.valueOf(args[i + 1]));
-                    } catch (Exception e) {
-                        throw new UnknownArgumentException("Expect a number value for " + arg + ", received " + args[i + 1]);
-                    }
-                } else if (arg.equals("-o") || arg.equals("--output")) {
-                    System.err.println("WARNING: The use of -o, --output has been deprecated.");
-                } else if (arg.equals("-p") || arg.equals("--path")) {
-                    gft.setUploadRelativePath(args[i + 1]);
-                } else if (arg.equals("-r") || arg.equals("--regex")) {
-                    gft.setRegEx(args[i + 1]);
-                } else if (arg.equals("-s") || arg.equals("--useunspecified")) {
-                    try {
-                        gft.setUseUnspecifiedServers(Boolean.parseBoolean(args[i + 1]));
-                    } catch (Exception e) {
-                        throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
-                    }
-                } else if (arg.equals("-u") || arg.equals("--uname")) {
-                    gft.setUploaderName(args[i + 1]);
-                } else if (arg.equals("-V") || arg.equals("--server")) {
-                    gft.getServersToUse().add(args[i + 1]);
-                } else if (arg.equals("-a") || arg.equals("--validate")) {
-                    try {
-                        gft.setValidate(Boolean.parseBoolean(args[i + 1]));
-                    } catch (Exception e) {
-                        throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
-                    }
-                } else if (arg.equals("-c") || arg.equals("--continue")) {
-                    try {
-                        gft.setContinueOnFailure(Boolean.parseBoolean(args[i + 1]));
-                    } catch (Exception e) {
-                        throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
-                    }
-                } else if (arg.equals("-b") || arg.equals("--batch")) {
-                    try {
-                        gft.setBatch(Boolean.parseBoolean(args[i + 1]));
-                    } catch (Exception e) {
-                        throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
-                    }
-                } else if (arg.equals("-m") || arg.equals("--tempdir")) {
-                    TempFileUtil.setTemporaryDirectory(new File(args[i + 1]));
-                } else if (arg.equals("-t") || arg.equals("--threads")) {
-                    gft.setThreadCount(Integer.parseInt(args[i + 1]));
-                } else if (arg.equals("-H") || arg.equals("--proxyhost")) {
-                    System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
-                } else if (arg.equals("-X") || arg.equals("--proxyport")) {
-                    System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
-                } else {
-                    throw new UnknownArgumentException("Unrecognized option: " + arg);
-                }
-            }
-
-            // Set hash
-            gft.setHash(BigHash.createHashFromString(args[args.length - 2]));
-            // set the save location
-            gft.setSaveFile(new File(args[args.length - 1]));
-        } catch (Exception pae) {
-            System.err.println("Problem with arguments: " + pae.getMessage());
-            printUsage(System.err);
-            if (!TestUtil.isTesting()) {
-                System.exit(4);
-            } else {
-                throw pae;
-            }
-        }
-
-        try {
-            // perform the download
-            MetaData metaData = gft.getMetaData();
-            GetFileToolReport report = null;
-            if (metaData != null) {
-                if (metaData.isProjectFile()) {
-                    report = gft.getDirectory();
-                } else {
-                    report = gft.getFile();
-                }
-            }
-
-            // make a report
-            if (report.isFailed()) {
-                System.err.println("FAILURE");
-                // Aware of JUnit tests calling GetFileTool.main
-                if (!TestUtil.isTesting()) {
-                    System.exit(3);
-                } else {
-                    throw new RuntimeException("Download failed.");
-                }
-            } else {
-                // The only output: full path of downloaded project
-                System.out.println(gft.getSaveFile().getAbsolutePath());
-                // show summary
-                if (showSummary) {
-                    System.out.println("Time elapsed: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
-                }
-                // Aware of JUnit tests calling GetFileTool.main
-                if (!TestUtil.isTesting()) {
-                    System.exit(0);
-                } else {
-                    return;
-                }
-            }
-        } catch (PassphraseRequiredException pre) {
-            System.err.println("Problem unencrypting data: " + pre.getMessage());
-            if (!TestUtil.isTesting()) {
-                System.exit(6);
-            } else {
-                throw pre;
-            }
-        } catch (FileNotFoundException ce) {
-            System.err.println("Can't find the file:" + ce.getMessage());
-            LogUtil.logError(ce);
-            if (!TestUtil.isTesting()) {
-                System.exit(2);
-            } else {
-                throw ce;
-            }
         } catch (Exception e) {
-            System.err.println(e.getClass().getSimpleName() + " with message: " + e.getMessage());
-            LogUtil.logError(e);
+            debugErr(e);
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
                 throw e;
             }
         }
-    }
-
-    /**
-     * <p>Print out command-line usage.</p>
-     * @param console
-     */
-    private static void printUsage(PrintStream console) {
-        console.println();
-        console.println("USAGE");
-        console.println("    [FLAGS] <HASH> <SAVE LOCATION>");
-        console.println();
-        console.println("DESCRIPTION");
-        console.println("    Downloads the data set with the given HASH to the SAVE LOCATION.");
-        console.println();
-        console.println("    If download succeeds, the only standard output is the path to the directory of the download. See RETURN CODES for the values of the return codes.");
-        console.println();
-        console.println("MEMORY ALLOCATION");
-        console.println("    You should use the JVM option:");
-        console.println();
-        console.println("    java -Xmx512m");
-        console.println();
-        console.println("    The allocates 512m of memory for the tool. You can adjust this amount (e.g., you don't have 512MB available memory or you want to allocate more.)");
-        console.println();
-        console.println("OUTPUT FLAGS");
-        console.println("    -d, --debug                 Value: none.           If you have problems with a download, you can use this option to print detailed information. This helps us find potential errors in the code.");
-        console.println("    -h, --help                  Value: none.           Print usage and exit. All other arguments will be ignored.");
-        console.println("    -n, --buildnumber           Value: none.           Print version number and exit. All other arguments will be ignored.");
-        console.println("    -S, --summary               Value: none.           Prints out a summary of time and speed to standard error upon completion of a download.");
-        console.println("    -v, --verbose               Value: none.           Print download progress information.");
-        console.println();
-        console.println("STANDARD PARAMETERS");
-        console.println("    -e, --passphrase            Value: any string.     If the data set is encrypted, use this to unencrypt.");
-        console.println("    -i, --timestamp             Value: any number.     Specifies the timestamp that the given file or data set was uploaded. Serves to disambiguate the data set that is to be downloaded.");
-        console.println("    -p, --path                  Value: any string.     Specifies the relative path in a data set of the file that is to be downloaded. Serves to disambiguate the file that is to be downloaded.");
-        console.println("    -s, --useunspecified        Value: true/false.     Whether unspecified servers should be used. If false, only the servers that you specify with the \"-V\" or \"--server\" flags will be used. Otherwise, other servers will be used, as well. Default value is " + DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
-        console.println("    -r, --regex                 Value: any string.     Matches a specified regular expression with the relative name of every file (as a file). Uses standard Java regular expression rules.");
-        console.println("    -u, --uname                 Value: any string.     Specifies the name of the uploader for the given file or data set. Serves to disambiguate the file or data set that is to be downloaded.");
-        console.println("    -V, --server                Value: any string.     Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
-        console.println();
-        console.println("ADDITIONAL PARAMETERS");
-        console.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
-        console.println();
-        console.println("    -a, --validate              Value: true/false.     Verify integrity of data and validate signed by proper users. Default value is " + DEFAULT_VALIDATE + ".");
-        console.println("    -b, --batch                 Value: true/false.     Enables faster uploads by simulateously downloading small chunks of data together. Default value is " + DEFAULT_BATCH + ".");
-        console.println("    -c, --continue              Value: true/false.     Upon failure, continue to download as much as possible. Default value is " + DEFAULT_CONTINUE_ON_FAILURE + ".");
-        console.println("    -m, --tempdir               Value: any string.     Path to use for temporary directory instead of default. Default is based on different heuristics for OS and filesystem permissions. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
-        console.println("    -t, --threads               Value: any number.     The maximum number of threads to use. Increasing may require more memory, and may result in increased CPU usage, increased bandwidth, increased disk accesses and faster downloads. Default value is " + DEFAULT_THREADS + ".");
-        console.println();
-        console.println("RETURN CODES");
-        console.println("    To check the return code for a process in UNIX bash console, use $? special variable. If non-zero, check standard error for messages.");
-        console.println();
-        console.println("    0:     Program exited normally (e.g., download succeeded, help displayed, etc.)");
-        console.println("    1:     Unknown error.");
-        console.println("    2:     Some file was not found. Most likely, a file specified in an argument was not found.");
-        console.println("    3:     Failed to download.");
-        console.println("    4:     Problem with an argument.");
-        console.println("    5:     Passphrase either wrong or missing.");
-        console.println();
     }
 
     /**
@@ -2379,7 +2395,11 @@ public class GetFileTool {
                 // open the temp file for writing
                 RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
                 // set the size
-                raf.setLength(part.getHash().getLength());
+                try {
+                    raf.setLength(part.getHash().getLength());
+                } catch (IOException e) {
+                    throw new NotEnoughDiskSpaceException();
+                }
                 // creating the file decoding object
                 fileDecoding = new FileDecoding(tempFile, raf);
             } else {
@@ -2410,7 +2430,11 @@ public class GetFileTool {
             // open the temp file for writing
             RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
             // set the size
-            raf.setLength(md.getEncodings().get(md.getEncodings().size() - 1).getHash().getLength());
+            try {
+                raf.setLength(md.getHash().getLength());
+            } catch (IOException e) {
+                throw new NotEnoughDiskSpaceException();
+            }
             // creating the file decoding object
             fileDecoding = new FileDecoding(tempFile, raf);
         }
@@ -2907,7 +2931,7 @@ public class GetFileTool {
          */
         private boolean isFinished(DataChunk dataChunk) {
             boolean isForcedStop = isStopped() || GetFileTool.this.isStopped();
-            boolean isExpectMore = (dataChunk != null) || !dataChunkQueue.isEmpty() || !isStopWhenFinished();
+            boolean isExpectMore = dataChunk != null || !dataChunkQueue.isEmpty() || !isStopWhenFinished();
             return isForcedStop || !isExpectMore;
         }
 

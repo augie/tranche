@@ -25,16 +25,16 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Hashtable;
 import org.bouncycastle.jce.X509Principal;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
+import org.tranche.security.SecurityUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
+import org.tranche.util.TestUtil;
 
 /**
  * <p>This is a helper class that makes user files, i.e. X.509 certificates and assocated private keys. The information is saved in a password protected ZIP file.</p>
@@ -44,7 +44,7 @@ import org.tranche.util.DebugUtil;
 public class MakeUserZipFileTool {
 
     private static boolean debug = false;
-    private String name,  passphrase;
+    private String name, passphrase;
     private Date startDate;
     private long validDays;
     private X509Certificate signerCertificate;
@@ -73,7 +73,7 @@ public class MakeUserZipFileTool {
         }
 
         // execute
-        Security.addProvider(new BouncyCastleProvider());
+        SecurityUtil.lazyLoad();
         // make up a new RSA keypair
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
         keyGen.initialize(1024);
@@ -248,20 +248,23 @@ public class MakeUserZipFileTool {
         System.out.println("DESCRIPTION");
         System.out.println("    Creates a user zip file with the user name <NAME> and passphrase <PASSPHRASE> that is valid for <VALID DAYS> days and saves it to <FILE>.");
         System.out.println();
+        System.out.println("PRINT AND EXIT FLAGS");
+        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.out.println();
+        System.out.println("    -h, --help          Print usage and exit.");
+        System.out.println("    -V, --version       Print version number and exit.");
+        System.out.println();
         System.out.println("OUTPUT FLAGS");
-        System.out.println("    -d, --debug                 Values: none.               If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
-        System.out.println("    -h, --help                  Values: none.               Print usage and exit. All other arguments will be ignored.");
-        System.out.println("    -n, --buildnumber           Values: none.               Print version number and exit. All other arguments will be ignored.");
-        System.out.println("    -V, --version               Values: none.               Print version number and exit. All other arguments will be ignored.");
+        System.out.println("    -d, --debug         If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
         System.out.println();
         System.out.println("PARAMETERS");
-        System.out.println("    -s, --signer                Values: two strings.        Optional. A user zip file and its passphrase used to sign the new user zip file.");
+        System.out.println("    -s, --signer        Values: two strings.        Optional. A user zip file and its passphrase used to sign the new user zip file.");
         System.out.println();
         System.out.println("RETURN CODES");
-        System.out.println("    0:     Exited normally");
-        System.out.println("    1:     Unknown error");
-        System.out.println("    2:     Bad argument");
-        System.out.println("    3:     Known error");
+        System.out.println("    0: Exited normally");
+        System.out.println("    1: Unknown error");
+        System.out.println("    2: Problem with argument(s)");
+        System.out.println("    3: Known error");
         System.out.println();
     }
 
@@ -272,41 +275,59 @@ public class MakeUserZipFileTool {
      */
     public static void main(String args[]) throws Exception {
         try {
-            if (args.length < 4) {
+            if (args.length == 0) {
                 printUsage();
-                System.exit(0);
-            }
-
-            // Look for help request. If one, print and exit.
-            for (int i = 0; i < args.length - 4; i++) {
-                if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
-                    System.out.println("Tranche, build #@buildNumber");
-                    System.exit(0);
-                } else if (args[i].equals("-h") || args[i].equals("--help")) {
-                    printUsage();
-                    System.exit(0);
-                } else if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
-                    UserZipFile.setDebug(true);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
                 }
             }
 
-            //
+            // flags first
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-d") || args[i].equals("--debug")) {
+                    DebugUtil.setDebug(true);
+                    setDebug(true);
+                    UserZipFile.setDebug(true);
+                } else if (args[i].equals("-h") || args[i].equals("--help")) {
+                    printUsage();
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
+                    System.out.println("Tranche, build #@buildNumber");
+                    if (!TestUtil.isTesting()) {
+                        System.exit(0);
+                    } else {
+                        return;
+                    }
+                } else if (args[i].equals("-s") || args[i].equals("--signer")) {
+                    i += 2;
+                }
+            }
+
             MakeUserZipFileTool tool = new MakeUserZipFileTool();
 
-            // parameters
-            for (int i = 0; i < args.length - 4; i += 2) {
+            // parameters next
+            for (int i = 0; i < args.length - 4; i++) {
                 if (args[i].equals("-s") || args[i].equals("--signer")) {
                     try {
                         UserZipFile signer = new UserZipFile(new File(args[i + 1]));
                         signer.setPassphrase(args[i + 2]);
                         tool.setSignerCertificate(signer.getCertificate());
                         tool.setSignerPrivateKey(signer.getPrivateKey());
-                        i++;
+                        i += 2;
                     } catch (Exception e) {
-                        System.out.println("ERROR: " + e.getMessage());
-                        System.exit(2);
+                        System.out.println("ERROR: Could not load signer.");
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
                     }
                 }
             }
@@ -317,18 +338,31 @@ public class MakeUserZipFileTool {
             try {
                 tool.setValidDays(Integer.valueOf(args[args.length - 2]));
             } catch (Exception e) {
-                System.out.println("ERROR: Invalid value for <DAYS VALID>.");
-                System.exit(2);
+                System.out.println("ERROR: Invalid value for # of valid days.");
+                debugErr(e);
+                if (!TestUtil.isTesting()) {
+                    System.exit(2);
+                } else {
+                    return;
+                }
             }
             tool.setSaveFile(new File(args[args.length - 1]));
 
             // execute
             tool.makeCertificate();
 
-            System.exit(0);
+            if (!TestUtil.isTesting()) {
+                System.exit(0);
+            } else {
+                return;
+            }
         } catch (Exception e) {
             debugErr(e);
-            System.exit(1);
+            if (!TestUtil.isTesting()) {
+                System.exit(1);
+            } else {
+                return;
+            }
         }
     }
 
@@ -338,6 +372,8 @@ public class MakeUserZipFileTool {
      */
     public static final void setDebug(boolean debug) {
         MakeUserZipFileTool.debug = debug;
+
+
     }
 
     /**
@@ -346,6 +382,8 @@ public class MakeUserZipFileTool {
      */
     public static final boolean isDebug() {
         return debug;
+
+
     }
 
     /**
@@ -356,6 +394,8 @@ public class MakeUserZipFileTool {
         if (debug) {
             DebugUtil.printOut(MakeUserZipFileTool.class.getName() + "> " + line);
         }
+
+
     }
 
     /**
@@ -365,6 +405,7 @@ public class MakeUserZipFileTool {
     private static final void debugErr(Exception e) {
         if (debug) {
             DebugUtil.reportException(e);
+
         }
     }
 }

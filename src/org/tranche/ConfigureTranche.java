@@ -403,18 +403,40 @@ public class ConfigureTranche {
      * <p>The default timeout per NT server request.</p>
      */
     public static final String DEFAULT_TIME_UPDATE_TIMEOUT = "10000";
-    private static final Properties properties = new Properties();
+    private static final Properties properties = new Properties(), defaultProperties = new Properties();
     private static Map<String, String> attributesCache = null;
     private static final List<String> networkTimeServers = new LinkedList<String>();
     private static long lastAttributeCacheTimestampModulusValue = -1;
     private static final long attributesCacheTimestampModulus = 10000000;
-    private static boolean loaded = false,  updated = false,  defaultNetworkTimeServersLoaded = false;
-
+    private static boolean loaded = false, updated = false, defaultNetworkTimeServersLoaded = false;
 
     static {
         // load the HTTPS protocol just once on startup
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
         reset();
+        setDefault(PROP_EMAIL_URL, DEFAULT_EMAIL_URL);
+        setDefault(PROP_SERVER_DIRECTORY, DEFAULT_SERVER_DIRECTORY);
+        setDefault(PROP_SERVER_PORT, DEFAULT_SERVER_PORT);
+        setDefault(PROP_SERVER_SSL, DEFAULT_SERVER_SSL);
+        setDefault(PROP_SERVER_QUEUE_SIZE, DEFAULT_SERVER_QUEUE_SIZE);
+        setDefault(PROP_SERVER_USER_SIMULTANEOUS_REQUESTS, DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS);
+        setDefault(PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS, DEFAULT_SERVER_SERVER_SIMULTANEOUS_REQUESTS);
+        setDefault(PROP_SERVER_TIMEOUT, DEFAULT_SERVER_TIMEOUT);
+        setDefault(PROP_SERVER_KEEP_ALIVE_TIMEOUT, DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT);
+        setDefault(PROP_STATUS_UPDATE_CLIENT_FREQUENCY, DEFAULT_STATUS_UPDATE_CLIENT_FREQUENCY);
+        setDefault(PROP_STATUS_UPDATE_SERVER_FREQUENCY, DEFAULT_STATUS_UPDATE_SERVER_FREQUENCY);
+        setDefault(PROP_STATUS_UPDATE_SERVER_GROUPING, DEFAULT_STATUS_UPDATE_SERVER_GROUPING);
+        setDefault(PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD, DEFAULT_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
+        setDefault(PROP_SERVER_TIME_BETWEEN_REGISTRATIONS, DEFAULT_SERVER_TIME_BETWEEN_REGISTRATIONS);
+        setDefault(PROP_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_INTERVAL);
+        setDefault(PROP_DEFUNCT_SERVER_THRESHOLD, DEFAULT_DEFUNCT_SERVER_THRESHOLD);
+        setDefault(PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL, DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL);
+        setDefault(PROP_REPLICATIONS, DEFAULT_REPLICATIONS);
+        setDefault(PROP_UPDATE_CONFIG_INTERVAL, DEFAULT_UPDATE_CONFIG_INTERVAL);
+        setDefault(PROP_TIME_CHANGE_CHECK_INTERVAL, DEFAULT_TIME_CHANGE_CHECK_INTERVAL);
+        setDefault(PROP_TIME_CHANGE_CHECK_DEVIATION, DEFAULT_TIME_CHANGE_CHECK_DEVIATION);
+        setDefault(PROP_TIME_UPDATE_INTERVAL, DEFAULT_TIME_UPDATE_INTERVAL);
+        setDefault(PROP_TIME_UPDATE_TIMEOUT, DEFAULT_TIME_UPDATE_TIMEOUT);
     }
 
     /**
@@ -494,35 +516,30 @@ public class ConfigureTranche {
     }
 
     /**
+     *
+     * @param property
+     */
+    public synchronized static final void getDefault(String property) {
+        defaultProperties.getProperty(property, "");
+    }
+
+    /**
+     * 
+     * @param property
+     * @param value
+     */
+    protected synchronized static final void setDefault(String property, String value) {
+        defaultProperties.setProperty(property, value);
+    }
+
+    /**
      * 
      */
     private synchronized static final void reset() {
         debugOut("Clearing all properties.");
         properties.clear();
         debugOut("Setting default properties.");
-        set(PROP_EMAIL_URL, DEFAULT_EMAIL_URL);
-        set(PROP_SERVER_DIRECTORY, DEFAULT_SERVER_DIRECTORY);
-        set(PROP_SERVER_PORT, DEFAULT_SERVER_PORT);
-        set(PROP_SERVER_SSL, DEFAULT_SERVER_SSL);
-        set(PROP_SERVER_QUEUE_SIZE, DEFAULT_SERVER_QUEUE_SIZE);
-        set(PROP_SERVER_USER_SIMULTANEOUS_REQUESTS, DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS);
-        set(PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS, DEFAULT_SERVER_SERVER_SIMULTANEOUS_REQUESTS);
-        set(PROP_SERVER_TIMEOUT, DEFAULT_SERVER_TIMEOUT);
-        set(PROP_SERVER_KEEP_ALIVE_TIMEOUT, DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT);
-        set(PROP_STATUS_UPDATE_CLIENT_FREQUENCY, DEFAULT_STATUS_UPDATE_CLIENT_FREQUENCY);
-        set(PROP_STATUS_UPDATE_SERVER_FREQUENCY, DEFAULT_STATUS_UPDATE_SERVER_FREQUENCY);
-        set(PROP_STATUS_UPDATE_SERVER_GROUPING, DEFAULT_STATUS_UPDATE_SERVER_GROUPING);
-        set(PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD, DEFAULT_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
-        set(PROP_SERVER_TIME_BETWEEN_REGISTRATIONS, DEFAULT_SERVER_TIME_BETWEEN_REGISTRATIONS);
-        set(PROP_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_INTERVAL);
-        set(PROP_DEFUNCT_SERVER_THRESHOLD, DEFAULT_DEFUNCT_SERVER_THRESHOLD);
-        set(PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL, DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL);
-        set(PROP_REPLICATIONS, DEFAULT_REPLICATIONS);
-        set(PROP_UPDATE_CONFIG_INTERVAL, DEFAULT_UPDATE_CONFIG_INTERVAL);
-        set(PROP_TIME_CHANGE_CHECK_INTERVAL, DEFAULT_TIME_CHANGE_CHECK_INTERVAL);
-        set(PROP_TIME_CHANGE_CHECK_DEVIATION, DEFAULT_TIME_CHANGE_CHECK_DEVIATION);
-        set(PROP_TIME_UPDATE_INTERVAL, DEFAULT_TIME_UPDATE_INTERVAL);
-        set(PROP_TIME_UPDATE_TIMEOUT, DEFAULT_TIME_UPDATE_TIMEOUT);
+        properties.putAll(defaultProperties);
     }
 
     /**
@@ -542,27 +559,25 @@ public class ConfigureTranche {
      * <p>Safely loads the network configuration from the passed in arguments.</p>
      * <p>Takes only the first argument from the array and passes it to the ConfigureTranche.load(String) method.</p>
      * @param args
+     * @throws IOException
      */
-    public static void load(String[] args) {
-        try {
-            load(args[0]);
-        } catch (Exception e) {
-            // likely no arguments given
-        }
+    public static void load(String[] args) throws IOException {
+        load(args[0]);
     }
 
     /**
      * <p>Takes the location to the configuration file that contains this Tranche network's configuration information.</p>
      * <p>The file can be in the JAR package, on the local file system, or on the Internet. The program will try to find the file in that same order and will use the first one it finds.</p>
      * @param configFile
+     * @throws IOException
      */
-    public static void load(String configFile) {
+    public static void load(String configFile) throws IOException {
         InputStream is = null;
         try {
             is = openStreamToFile(configFile);
             load(is);
         } catch (Exception e) {
-            debugErr(e);
+            throw new IOException("Could not open repository configuration file (" + configFile + "). Configuration file location must be the first argument and can be in the JVM classpath, on the local file system, or on the Internet.");
         } finally {
             IOUtil.safeClose(is);
         }
@@ -693,8 +708,7 @@ public class ConfigureTranche {
     }
 
     /**
-     * <p>Opens an input stream to a file with a nebulous location.</p>
-     * <p>First tries a Java package, then tries on the file system, then tries the Internet.</p>
+     * <p>Opens an input stream to a file. First tries a Java package, then tries on the file system, then tries the Internet.</p>
      * @param file
      * @return
      * @throws java.io.IOException
@@ -720,7 +734,15 @@ public class ConfigureTranche {
 
         // is it a file on the Internet?
         if (is == null) {
-            is = new URL(file).openStream();
+            try {
+                is = new URL(file).openStream();
+            } catch (Exception e) {
+                debugErr(e);
+            }
+        }
+
+        if (is == null) {
+            throw new IOException("Could not open file: " + file);
         }
 
         return is;

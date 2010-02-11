@@ -13,56 +13,49 @@
     <property name="test" location="test"/>
     <property name="lib"  location="lib"/>
     <property name="subprojects" location="subprojects"/>
-    <property name="subprojects.gui" location="subprojects/GUI"/>
-    <property name="src.gui" location="${subprojects.gui}/src"/>
-    <property name="test.gui" location="${subprojects.gui}/test"/>
-    <property name="lib.gui" location="${subprojects.gui}/lib"/>
     <property name="build" location="b"/>
     <property name="build.rt" location="${build}/rt"/>
-    <property name="build.gui" location="b-gui"/>
-    <property name="build.rt.gui" location="${build.gui}/rt"/>
     <property name="name.lib" value="lib"/>
     <property name="dist.lib" location="${dist}/${name.lib}"/>
     <property name="dist.lib.zip" location="${dist}/tranche-lib.zip"/>
-    <property name="name.lib.gui" value="lib-gui"/>
-    <property name="dist.lib.gui" location="${dist}/${name.lib.gui}"/>
-    <property name="dist.lib.gui.zip" location="${dist}/tranche-lib-gui.zip"/>
     <property name="name.javadoc" value="javadocs"/>
     <property name="dist.javadoc" location="${dist}/${name.javadoc}"/>
     <property name="dist.javadoc.zip" location="${dist}/javadocs.zip"/>
+    <property name="name.jar" value="tranche.jar"/>
+    <property name="dist.jar" location="${dist}/${name.jar}"/>
+    <property name="dist.zip" location="${dist}/tranche-b${buildNumber}.zip"/>
+
+    <!-- GUI -->
+    <property name="subprojects.gui" location="${subprojects}/GUI"/>
+    <property name="src.gui" location="${subprojects.gui}/src"/>
+    <property name="test.gui" location="${subprojects.gui}/test"/>
+    <property name="lib.gui" location="${subprojects.gui}/lib"/>
+    <property name="build.gui" location="b-gui"/>
+    <property name="build.rt.gui" location="${build.gui}/rt"/>
+    <property name="name.lib.gui" value="lib-gui"/>
+    <property name="dist.lib.gui" location="${dist}/${name.lib.gui}"/>
+    <property name="dist.lib.gui.zip" location="${dist}/tranche-lib-gui.zip"/>
     <property name="name.javadoc.gui" value="javadocs-gui"/>
     <property name="dist.javadoc.gui" location="${dist}/${name.javadoc.gui}"/>
     <property name="dist.javadoc.gui.zip" location="${dist}/javadocs-gui.zip"/>
-    <property name="name.jar" value="tranche.jar"/>
-    <property name="dist.jar" location="${dist}/${name.jar}"/>
     <property name="name.jar.gui" value="tranche-gui.jar"/>
     <property name="dist.jar.gui" location="${dist}/${name.jar.gui}"/>
-    <property name="dist.zip" location="${dist}/tranche-b${buildNumber}.zip"/>
     <property name="dist.gui.zip" location="${dist}/tranche-gui-b${buildNumber}.zip"/>
 
-    <!-- set the variables needed for the server build -->
+    <!-- tools -->
+    <property name="dir.tools" location="build/tools"/>
+    <property name="build.tools" location="${build}/tools"/>
+    <property name="dist.tools.zip" location="${dist}/tranche-tools-b${buildNumber}.zip"/>
     <property name="dir.server" location="build/server"/>
-    <property name="build.server" location="${build}/server"/>
-    <property name="build.server.jar" location="${build.server}/tranche-server.jar"/>
-    <property name="dist.server.zip" location="${dist}/tranche-server-b${buildNumber}.zip"/>
-
-    <!-- set the variables needed for the GetFileTool JAR build -->
+    <property name="build.server.jar" location="${build.tools}/tranche-server.jar"/>
     <property name="dir.get" location="build/get"/>
-    <property name="build.get" location="${build}/get"/>
-    <property name="build.get.jar" location="${build.get}/tranche-get.jar"/>
-    <property name="dist.get.zip" location="${dist}/tranche-get-b${buildNumber}.zip"/>
-
-    <!-- set the variables needed for the AddFileTool JAR build -->
+    <property name="build.get.jar" location="${build.tools}/tranche-get.jar"/>
     <property name="dir.add" location="build/add"/>
-    <property name="build.add" location="${build}/add"/>
-    <property name="build.add.jar" location="${build.add}/tranche-add.jar"/>
-    <property name="dist.add.zip" location="${dist}/tranche-add-b${buildNumber}.zip"/>
-
-    <!-- set the variables needed for the MakeRepositoryCertsTool JAR build -->
+    <property name="build.add.jar" location="${build.tools}/tranche-add.jar"/>
     <property name="dir.certs" location="build/certs"/>
-    <property name="build.certs" location="${build}/certs"/>
-    <property name="build.certs.jar" location="${build.certs}/tranche-certs.jar"/>
-    <property name="dist.certs.zip" location="${dist}/tranche-certs-b${buildNumber}.zip"/>
+    <property name="build.certs.jar" location="${build.tools}/tranche-certs.jar"/>
+    <property name="dir.gui" location="build/gui"/>
+    <property name="build.gui.jar" location="${build.tools}/tranche-gui.jar"/>
 
     <!-- path required for runtime compiling-->
     <path id="path.rt.compile">
@@ -100,10 +93,7 @@
 
     <target name="dist.quick" description="Builds the code, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui"/>
-        <antcall target="dist.server"/>
-        <antcall target="dist.get"/>
-        <antcall target="dist.add"/>
-        <antcall target="dist.certs"/>
+        <antcall target="dist.tools"/>
         <antcall target="sign-jars"/>
         <antcall target="javadoc"/>
         <antcall target="javadoc.gui"/>
@@ -126,10 +116,7 @@
 
     <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui" />
-        <antcall target="dist.server" />
-        <antcall target="dist.get" />
-        <antcall target="dist.add" />
-        <antcall target="dist.certs" />
+        <antcall target="dist.tools" />
         <antcall target="javadoc" />
         <antcall target="javadoc.gui" />
         <antcall target="clover" />
@@ -272,64 +259,32 @@
         </javadoc>
     </target>
 
-    <target name="dist.server" description="Make a server code release.">
-        <mkdir dir="${build.server}"/>
-        <mkdir dir="${build.server}/lib"/>
-        <copy todir="${build.server}/lib">
+    <target name="dist.tools" description="Make a server code release.">
+        <mkdir dir="${build.tools}"/>
+        <mkdir dir="${build.tools}/lib"/>
+        <copy todir="${build.tools}/lib">
             <fileset dir="${lib}" includes="*.jar"/>
+            <fileset file="${dist.jar}"/>
         </copy>
-        <copy todir="${build.server}">
-            <fileset dir="${dir.server}" excludes="**/MANIFEST.MF"/>
+        <copy todir="${build.tools}">
+            <fileset dir="${dir.tools}"/>
         </copy>
         <jar jarfile="${build.server.jar}"
              manifest="${dir.server}/MANIFEST.MF"
              basedir="${build.rt}" />
-        <zip destfile="${dist.server.zip}" basedir="${build.server}" />
-    </target>
-
-    <target name="dist.certs" description="Makes a JAR for the make default certificates tool.">
-        <mkdir dir="${build.certs}"/>
-        <mkdir dir="${build.certs}/lib"/>
-        <copy todir="${build.certs}/lib">
-            <fileset dir="${lib}" includes="*.jar"/>
-        </copy>
-        <copy todir="${build.certs}">
-            <fileset dir="${dir.certs}" excludes="**/MANIFEST.MF"/>
-        </copy>
-        <jar jarfile="${build.certs.jar}"
-             manifest="${dir.certs}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <zip destfile="${dist.certs.zip}" basedir="${build.certs}" />
-    </target>
-
-    <target name="dist.get" description="Makes a JAR for the get file tool.">
-        <mkdir dir="${build.get}"/>
-        <mkdir dir="${build.get}/lib"/>
-        <copy todir="${build.get}/lib">
-            <fileset dir="${lib}" includes="*.jar"/>
-        </copy>
-        <copy todir="${build.get}">
-            <fileset dir="${dir.get}" excludes="**/MANIFEST.MF"/>
-        </copy>
-        <jar jarfile="${build.get.jar}"
-             manifest="${dir.get}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <zip destfile="${dist.get.zip}" basedir="${build.get}" />
-    </target>
-
-    <target name="dist.add" description="Makes a JAR for the add file tool.">
-        <mkdir dir="${build.add}"/>
-        <mkdir dir="${build.add}/lib"/>
-        <copy todir="${build.add}/lib">
-            <fileset dir="${lib}" includes="*.jar"/>
-        </copy>
-        <copy todir="${build.add}">
-            <fileset dir="${dir.add}" excludes="**/MANIFEST.MF"/>
-        </copy>
         <jar jarfile="${build.add.jar}"
              manifest="${dir.add}/MANIFEST.MF"
              basedir="${build.rt}" />
-        <zip destfile="${dist.add.zip}" basedir="${build.add}" />
+        <jar jarfile="${build.get.jar}"
+             manifest="${dir.get}/MANIFEST.MF"
+             basedir="${build.rt}" />
+        <jar jarfile="${build.certs.jar}"
+             manifest="${dir.certs}/MANIFEST.MF"
+             basedir="${build.rt}" />
+        <jar jarfile="${build.gui.jar}"
+             manifest="${dir.gui}/MANIFEST.MF"
+             basedir="${build.rt.gui}" />
+        <zip destfile="${dist.tools.zip}" basedir="${build.tools}" />
     </target>
 
     <!-- Executes the JUnit tests on the code -->
