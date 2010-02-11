@@ -71,21 +71,21 @@ Name, value pairs:
 || name || The name of the repository. || ||
 || description || The description of the repository (what is it storing?). || ||
 || admin.emails || A comma-separated list of email addresses to which email notifications will be sent. || ||
-|| contact.email || The email address to which users of the repository can contact the administrators. || ||
+|| contact.email || The email address for users to contact. || ||
 || replications || The number of replications required for each chunk of data. || 3 ||
 || home.url || The URL for the repository web site. || ||
 || signup.url || The URL for users to sign up for the repository. || ||
 || contact.url || The URL where users can contact the administrators. || ||
-|| launch.advanced.url || The URL that launches the GUI. || ||
-|| launch.download.url || The URL that launches the download wizard. || ||
-|| launch.upload.url || The URL that launches the upload wizard. || ||
-|| project.cache.url || || ||
-|| project.cache.hash || || ||
-|| project.url || || ||
-|| project.publish.url || || ||
-|| email.url || || https://trancheproject.org/email/send.jsp ||
-|| user.login.url || || ||
-|| time.change.check.interval || || 10000 ||
+|| launch.advanced.url || The URL used to launch the Tranche Java Web Start application. || ||
+|| launch.download.url || The URL used to launch the Tranche Downloader Java Web Start application. || ||
+|| launch.upload.url || The URL used to launch the Tranche Uploader Java Web Start application. || ||
+|| project.cache.url || The URL of the project cache. || ||
+|| project.cache.hash || The Tranche hash of the project cache. The project cache URL will be tried first. || ||
+|| project.url || The URL of the data set's descriptive information. || ||
+|| project.publish.url || The URL where a user can go to publish their data sets. || ||
+|| email.url || The URL to HTTP POST email requests. || https://trancheproject.org/email/send.jsp ||
+|| user.login.url || The URL where users can log in to get their valid user zip files. || ||
+|| time.change.check.interval || The number of milliseconds between checking if the system time has been changed significantly. || 10000 ||
 || time.change.check.deviation || || 1000 ||
 || time.update.interval || || 21600000 ||
 || time.update.timeout || The timeout per NT server request. || 10000 ||
@@ -127,7 +127,7 @@ Name, value pairs:
 || server.config.attributes.url || || ||
 || server.server.registration.time || The amount of time that may pass before reregistering the local server with connected servers in the server status update process. || 3600000 ||
 || server.user.simultaneous.requests || The number of requests a single user can have executed simultaneously on a server. || 3 ||
-|| server.server.simultaneous.requests || The number of requests a single server can have executed simultaneously on a server. Must be at >= 2. || 10 ||
+|| server.server.simultaneous.requests || The number of requests a single server can have executed simultaneously on a server. || 10 ||
 || server.offline.notification.interval || || 86400000 ||
 
 
