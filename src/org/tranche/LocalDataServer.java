@@ -36,9 +36,9 @@ public class LocalDataServer {
     private static FlatFileTrancheServer ffts;
     private static Server server;
     private static File rootDir;
-    private static int port;
-    private static boolean ssl;
-    private static UserZipFile userZipFile = null;
+    private static int port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
+    private static boolean ssl = ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL);
+    private static UserZipFile userZipFile;
     private static TrancheServerCommandLineClient client;
 
     private LocalDataServer() {

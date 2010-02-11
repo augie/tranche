@@ -412,12 +412,12 @@ public class ServerConfigurationPanel extends JPanel {
     private class LocalServerPanel extends JPanel {
 
         private SignInUserButton userButton = new SignInUserButton();
-        private JTextField portField = new GenericTextField(),  rootDirField = new GenericTextField();
+        private JTextField portField = new GenericTextField(), rootDirField = new GenericTextField();
         private GenericCheckBox sslCheckBox = new GenericCheckBox("SSL", LocalDataServer.isSSL());
         private JButton toggleServerButton = null;
         private int MARGIN = ServerConfigurationPanel.HORIZONTAL_MARGIN;
         // Text for the toggleServerButton
-        private final String START_TEXT = "Start the server",  STOP_TEXT = "Stop the server";
+        private final String START_TEXT = "Start the server", STOP_TEXT = "Stop the server";
 
         public LocalServerPanel() {
             setBackground(Styles.COLOR_BACKGROUND);
@@ -470,7 +470,9 @@ public class ServerConfigurationPanel extends JPanel {
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 gbc.insets = new Insets(0, MARGIN, MARGIN, MARGIN);
                 rootDirField.setToolTipText("The root directory for the server.");
-                rootDirField.setText(LocalDataServer.getRootDirectory().getAbsolutePath());
+                if (LocalDataServer.getRootDirectory() != null) {
+                    rootDirField.setText(LocalDataServer.getRootDirectory().getAbsolutePath());
+                }
                 add(rootDirField, gbc);
 
                 // add a button to select a file
@@ -896,8 +898,8 @@ public class ServerConfigurationPanel extends JPanel {
         private User user;
         private String name;
         private JButton removeButton;
-        public final static byte READ_CONFIG = 0,  WRITE_CONFIG = 1,  WRITE_DATA = 2,  WRITE_META = 3,  DELETE_DATA = 4,  DELETE_META = 5;
-        private GenericCheckBox readConfigBox,  writeConfigBox,  writeDataBox,  writeMetaBox,  deleteDataBox,  deleteMetaBox;
+        public final static byte READ_CONFIG = 0, WRITE_CONFIG = 1, WRITE_DATA = 2, WRITE_META = 3, DELETE_DATA = 4, DELETE_META = 5;
+        private GenericCheckBox readConfigBox, writeConfigBox, writeDataBox, writeMetaBox, deleteDataBox, deleteMetaBox;
 
         public SingleUserEmbeddedPanel(final User user) {
 
@@ -1270,7 +1272,7 @@ public class ServerConfigurationPanel extends JPanel {
         private int index;
         private JPanel panel;
         private JButton removeHashSpanButton;
-        private JTextField firstBigHashField,  secondBigHashField;
+        private JTextField firstBigHashField, secondBigHashField;
 
         public EmbeddedHashSpanPanel(final HashSpansPanel panel, AbstractHashSpan span, final int index) {
 
@@ -1494,7 +1496,7 @@ public class ServerConfigurationPanel extends JPanel {
 
         private DataDirectoriesPanel panel;
         private DataDirectoryConfiguration config;
-        private JTextField directoryField,  sizeField;
+        private JTextField directoryField, sizeField;
         private JButton removeButton;
         private int index;
 
@@ -1905,7 +1907,7 @@ public class ServerConfigurationPanel extends JPanel {
          */
         protected long getMillisForSelectedAutoUpdate() {
 
-            final long SECOND = 1000,  MINUTE = 60 * SECOND,  HOUR = 60 * MINUTE;
+            final long SECOND = 1000, MINUTE = 60 * SECOND, HOUR = 60 * MINUTE;
 
             String s = this.autoUpdateComboBox.getSelectedItem().toString();
 
@@ -2621,8 +2623,8 @@ public class ServerConfigurationPanel extends JPanel {
          */
         private class AttributeTableRow {
 
-            private String name,  value;
-            private boolean edittable,  readable,  deletable;
+            private String name, value;
+            private boolean edittable, readable, deletable;
 
             AttributeTableRow(String name, String value) {
                 this.name = name;
@@ -2714,9 +2716,9 @@ public class ServerConfigurationPanel extends JPanel {
      */
     private class AddAttributeFrame extends JFrame implements MouseListener {
 
-        private JButton addButton,  cancelButton;
-        private JTextField nameField,  valueField;
-        private int MARGIN_LEFT = 10,  MARGIN_RIGHT = 10,  LABEL_MARGIN_TOP = 10,  FIELD_MARGIN_TOP = 3;
+        private JButton addButton, cancelButton;
+        private JTextField nameField, valueField;
+        private int MARGIN_LEFT = 10, MARGIN_RIGHT = 10, LABEL_MARGIN_TOP = 10, FIELD_MARGIN_TOP = 3;
         private AttributesPanel panel;
         private final static String addLabel = "Add Attribute to Configuration";
         private final static String editLabel = "Edit Attribute in Configuration";
