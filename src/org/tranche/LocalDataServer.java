@@ -23,7 +23,6 @@ import org.tranche.server.Server;
 import org.tranche.servers.ServerUtil;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.DebugUtil;
-import org.tranche.util.PreferencesUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -35,23 +34,38 @@ public class LocalDataServer {
     private static boolean debug = false;
     private static FlatFileTrancheServer ffts;
     private static Server server;
-    private static File rootDir;
+    private static File rootDir = new File(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_DIRECTORY));
     private static int port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
     private static boolean ssl = ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL);
     private static UserZipFile userZipFile;
     private static TrancheServerCommandLineClient client;
 
+    /**
+     *
+     */
     private LocalDataServer() {
     }
 
+    /**
+     *
+     * @return
+     */
     public static FlatFileTrancheServer getFlatFileTrancheServer() {
         return ffts;
     }
 
+    /**
+     *
+     * @return
+     */
     public static Server getServer() {
         return server;
     }
 
+    /**
+     *
+     * @return
+     */
     public static boolean isServerRunning() {
         if (server == null) {
             return false;
@@ -59,44 +73,83 @@ public class LocalDataServer {
         return server.isAlive();
     }
 
+    /**
+     *
+     * @return
+     */
     public static File getRootDirectory() {
         return rootDir;
     }
 
+    /**
+     *
+     * @param rootDir
+     */
     public static void setRootDirectory(File rootDir) {
         LocalDataServer.rootDir = rootDir;
     }
 
+    /**
+     *
+     * @return
+     */
     public static int getPort() {
         return port;
     }
 
+    /**
+     *
+     * @param port
+     */
     public static void setPort(int port) {
         LocalDataServer.port = port;
     }
 
+    /**
+     *
+     * @return
+     */
     public static boolean isSSL() {
         return ssl;
     }
 
+    /**
+     *
+     * @param ssl
+     */
     public static void setSSL(boolean ssl) {
         LocalDataServer.ssl = ssl;
     }
 
+    /**
+     *
+     * @return
+     */
     public static UserZipFile getUserZipFile() {
         return userZipFile;
     }
 
+    /**
+     *
+     * @param userZipFile
+     */
     public static void setUserZipFile(UserZipFile userZipFile) {
         LocalDataServer.userZipFile = userZipFile;
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     private static void setUpFFTS() throws Exception {
+        if (rootDir == null) {
+            throw new NullPointerException("Root directory is null.");
+        }
         if (!rootDir.exists()) {
-            throw new IOException("Root directory does not exist.");
+            throw new IOException("Root directory does not exist: " + rootDir.getAbsolutePath());
         }
         if (!rootDir.canWrite()) {
-            throw new IOException("Root directory is not writable.");
+            throw new IOException("Root directory is not writable: " + rootDir.getAbsolutePath());
         }
         ffts = new FlatFileTrancheServer(rootDir);
         if (userZipFile != null) {
@@ -105,6 +158,10 @@ public class LocalDataServer {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public static void start() throws Exception {
         if (isServerRunning()) {
             throw new Exception("Server is running.");
@@ -116,19 +173,20 @@ public class LocalDataServer {
         setUpFFTS();
         server = new Server(ffts, port, ssl);
         server.start();
-
-        // save the preferences
-        PreferencesUtil.set(ConfigureTranche.PROP_SERVER_PORT, String.valueOf(port), false);
-        PreferencesUtil.set(ConfigureTranche.PROP_SERVER_SSL, String.valueOf(ssl), false);
-        PreferencesUtil.set(ConfigureTranche.PROP_SERVER_DIRECTORY, rootDir.getAbsolutePath(), false);
-        PreferencesUtil.save();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public static void stop() throws Exception {
         server.setRun(false);
         ffts = null;
     }
 
+    /**
+     *
+     */
     public static void printUsage() {
         System.out.println();
         System.out.println("USAGE");
@@ -272,7 +330,7 @@ public class LocalDataServer {
                         i += 2;
                         userZipFile = user;
                     } catch (Exception e) {
-                        System.err.println("ERROR: Could not load user zip file. " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        System.err.println("ERROR: " + e.getMessage());
                         debugErr(e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
@@ -313,7 +371,6 @@ public class LocalDataServer {
                 }
             }
 
-            debugOut("Main method exiting.");
             if (!TestUtil.isTesting()) {
                 System.exit(0);
             } else {
