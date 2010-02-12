@@ -86,24 +86,30 @@ Name, value pairs:
 || email.url || The URL to HTTP POST email requests. || https://trancheproject.org/email/send.jsp ||
 || user.login.url || The URL where users can log in to get their valid user zip files. || ||
 || time.change.check.interval || The number of milliseconds between checking if the system time has been changed significantly. || 10000 ||
-|| time.change.check.deviation || || 1000 ||
-|| time.update.interval || || 21600000 ||
+|| time.change.check.deviation || The number of milliseconds the actual timestamp can deviate from the expected timestamp before resetting the network time. || 1000 ||
+|| time.update.interval || The number of milliseconds between forcing a reset of the network time. || 21600000 ||
 || time.update.timeout || The timeout per NT server request. || 10000 ||
-|| status.update.client.frequency || || 60000 ||
-|| status.update.server.frequency || || 30000 ||
-|| status.update.server.grouping || || 5 ||
+|| status.update.client.frequency || The number of milliseconds between updating the network status table on a client. || 60000 ||
+|| status.update.server.frequency || The number of milliseconds between updating the network status table on a server. || 30000 ||
+|| status.update.server.grouping || The number of servers in a network status table group. Used in server status propagation. || 5 ||
 || connection.full.hashspan.threshold || The point at which only a single full hash span of servers are connected to. || 25 ||
-|| connection.keep.alive.interval || || 8000 ||
+|| connection.keep.alive.interval || The number of milliseconds between sending a ping to each connected server to keep the socket alive. || 8000 ||
 || status.defunct.threshold || Servers that are offline and do not update within this time get removed from the table. || 604800000 ||
 || update.conf.url || The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location. || ||
-|| update.conf.interval || || 10000000 ||
+|| update.conf.interval || The number of milliseconds between updating the configuration. || 10000000 ||
 
 
 
 ===CERTIFICATES Category===
+
+Here is how Tranche tries to load certificates and keys:
+  # *Java package*: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/pc-tranche.conf`.
+  # *File system*: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/pc-tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\pc-tranche.conf` for Windows.
+  # *Internet*: will attempt to load from the Internet if could not load from Java or the file system.
+
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| security.certificate.admin || || ||
+|| security.certificate.admin ||  || ||
 || security.certificate.write || || ||
 || security.certificate.user || || ||
 || security.certificate.read || || ||
@@ -135,12 +141,12 @@ Name, value pairs:
 ===LOGGING Category===
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| log.error.url || || ||
-|| log.server.url || || ||
-|| log.upload.url || || ||
-|| log.upload.failure.url || || ||
-|| log.download.url || || ||
-|| log.download.failure.url || || ||
+|| log.error.url || The URL to which the software will submit error logs. || ||
+|| log.server.url || The URL to which the software will submit server logs. || ||
+|| log.upload.url || The URL to which the software will register uploads. || ||
+|| log.upload.failure.url || The URL to which the software will register upload failures.  || ||
+|| log.download.url || The URL to which the software will register downloads. || ||
+|| log.download.failure.url || The URL to which the software will register failed downloads. || ||
 
 
 
