@@ -109,32 +109,32 @@ Here is how Tranche tries to load certificates and keys:
 
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| security.certificate.admin ||  || ||
-|| security.certificate.write || || ||
-|| security.certificate.user || || ||
-|| security.certificate.read || || ||
-|| security.certificate.autocert || || ||
-|| security.certificate.anon || || ||
-|| security.key.anon || || ||
-|| security.certificate.email || || ||
-|| security.key.email || || ||
+|| security.certificate.admin || The location of the public certificate for the administrator (all priveleges). || ||
+|| security.certificate.write || The location of the public certificate for the write-only user. || ||
+|| security.certificate.user || The location of the public certificate for the standard user (read, write, delete). || ||
+|| security.certificate.read || The location of the public certificate for the read-only user. || ||
+|| security.certificate.autocert || The location of the public certificate for the auto-certificate user (read, write). || ||
+|| security.certificate.anon || The location of the public certificate for the anonymous user. || ||
+|| security.key.anon || The location of the private key for the anonymous user. || ||
+|| security.certificate.email || The location of the public certificate for the email user. || ||
+|| security.key.email || The location of the private key for the email user. || ||
 
 
 
 ===SERVER Category===
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| server.directory || || ||
-|| server.port || || 443 ||
-|| server.ssl || || false ||
-|| server.queue.size || || 10 ||
-|| server.timeout || || 60000 ||
-|| server.keepalive.timeout || || 120000 ||
-|| server.config.attributes.url || || ||
+|| server.directory || The location of the directory that contains all the server configuration and runtime files. || ||
+|| server.port || The starting port number for a server. || 443 ||
+|| server.ssl || The starting boolean for whether a server should communicate over SSL. || false ||
+|| server.queue.size || The maximum number of requests a client can have outstanding on a server. || 10 ||
+|| server.timeout || The maximum number of milliseconds before a request to a server times out if it doesn't send back a feep-alive signal. || 60000 ||
+|| server.keepalive.timeout || The maximum number of milliseconds before a request that is being kept alive is timed out. || 120000 ||
+|| server.config.attributes.url || The URL of the updated server configuration attributes. || ||
 || server.server.registration.time || The amount of time that may pass before reregistering the local server with connected servers in the server status update process. || 3600000 ||
 || server.user.simultaneous.requests || The number of requests a single user can have executed simultaneously on a server. || 3 ||
 || server.server.simultaneous.requests || The number of requests a single server can have executed simultaneously on a server. || 10 ||
-|| server.offline.notification.interval || || 86400000 ||
+|| server.offline.notification.interval || The number of milliseconds between sending offline server notification emails. || 86400000 ||
 
 
 
@@ -168,10 +168,10 @@ A list of domain names or IP addresses of Tranche servers that are banned.
 ===GUI Category===
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| module.list.start || || ||
-|| module.list.hash || || ||
-|| module.list.url || || ||
-|| upload.pool.size || || 1 ||
-|| download.pool.size || || 1 ||
-|| hash.auto_complete || || true ||
-|| swt || || false ||
+|| module.list.start || A comma-separated list of hashes for modules that should be loaded on startup. || ||
+|| module.list.hash || The hash of the list of possible modules. || ||
+|| module.list.url || The URL of the list of possible modules. || ||
+|| upload.pool.size || The starting number of uploads that can occur at any one time. || 1 ||
+|| download.pool.size || The starting numbeher of downloads that can occur at any one time. || 1 ||
+|| hash.auto_complete || The starting boolean of whether the hash popup suggestion window should be used. || true ||
+|| swt || The starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets. || false ||
