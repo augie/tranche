@@ -124,7 +124,7 @@ Name, value pairs:
 ===SERVER Category===
 Name, value pairs:
 || *Name* || *Description* || *Default* ||
-|| server.directory || The location of the directory that contains all the server configuration and runtime files. || ||
+|| server.directory || The location of the directory that contains all the server configuration and runtime files. || ./ ||
 || server.port || The starting port number for a server. || 443 ||
 || server.ssl || The starting boolean for whether a server should communicate over SSL. || false ||
 || server.queue.size || The maximum number of requests a client can have outstanding on a server. || 10 ||
