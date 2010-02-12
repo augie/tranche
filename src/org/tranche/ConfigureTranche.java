@@ -52,43 +52,43 @@ public class ConfigureTranche {
 
     private static boolean debug = false;
     /**
-     * <p></p>
+     * <p>The general category.</p>
      */
     public static final String CATEGORY_GENERAL = "[GENERAL]";
     /**
-     * <p></p>
+     * <p>The core servers category.</p>
      */
     public static final String CATEGORY_CORE_SERVERS = "[CORE SERVERS]";
     /**
-     * <p></p>
+     * <p>The banned servers category.</p>
      */
     public static final String CATEGORY_BANNED_SERVERS = "[BANNED SERVERS]";
     /**
-     * <p></p>
+     * <p>The certificates category.</p>
      */
     public static final String CATEGORY_CERTIFICATES = "[CERTIFICATES]";
     /**
-     * <p></p>
+     * <p>The logging category.</p>
      */
     public static final String CATEGORY_LOGGING = "[LOGGING]";
     /**
-     * <p></p>
+     * <p>The server category.</p>
      */
     public static final String CATEGORY_SERVER = "[SERVER]";
     /**
-     * <p></p>
+     * <p>The network time servers category.</p>
      */
     public static final String CATEGORY_NETWORK_TIME_SERVERS = "[NETWORK TIME SERVERS]";
     /**
-     * <p>The name of this Tranche network.</p>
+     * <p>The name of the repository.</p>
      */
     public static final String PROP_NAME = "name";
     /**
-     * <p>The description of this Tranche network.</p>
+     * <p>The description of the repository.</p>
      */
     public static final String PROP_DESCRIPTION = "description";
     /**
-     * <p></p>
+     * <p>A comma-separated list of email addresses to which email notifications will be sent.</p>
      */
     public static final String PROP_ADMIN_EMAIL_ACCOUNTS = "admin.emails";
     /**
@@ -96,263 +96,135 @@ public class ConfigureTranche {
      */
     public static final String PROP_CONTACT_EMAIL = "contact.email";
     /**
-     * <p></p>
+     * <p>The number of replications required for each chunk of data.</p>
      */
     public static final String PROP_REPLICATIONS = "replications";
     /**
-     * <p></p>
+     * <p>The default value of the number of replications required for each chunk of data.</p>
      */
     public static final String DEFAULT_REPLICATIONS = "3";
+    /**
+     * <p>The URL for the repository web site.</p>
+     */
+    public static final String PROP_HOME_URL = "home.url";
+    /**
+     * <p>The URL for users to sign up for the repository.</p>
+     */
+    public static final String PROP_SIGN_UP_URL = "signup.url";
+    /**
+     * <p>The URL where users can contact the administrators.</p>
+     */
+    public static final String PROP_CONTACT_URL = "contact.url";
     /**
      * <p>The URL used to launch the Tranche Java Web Start application.</p>
      */
     public static final String PROP_LAUNCH_TRANCHE_URL = "launch.advanced.url";
     /**
-     * <p></p>
-     */
-    public static final String PROP_HOME_URL = "home.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SIGN_UP_URL = "signup.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_CONTACT_URL = "contact.url";
-    /**
-     * <p></p>
+     * <p>The URL used to launch the Tranche Downloader Java Web Start application.</p>
      */
     public static final String PROP_DOWNLOAD_TOOL_URL = "launch.download.url";
     /**
-     * <p></p>
+     * <p>The URL used to launch the Tranche Uploader Java Web Start application.</p>
      */
     public static final String PROP_UPLOAD_TOOL_URL = "launch.upload.url";
     /**
-     * <p></p>
+     * <p>The URL of the project cache.</p>
      */
     public static final String PROP_PROJECT_CACHE_URL = "project.cache.url";
     /**
-     * <p></p>
+     * <p>The Tranche hash of the project cache. The project cache URL will be tried first.</p>
      */
     public static final String PROP_PROJECT_CACHE_HASH = "project.cache.hash";
     /**
-     * <p></p>
+     * <p>The URL of the data set's descriptive information.</p>
      */
     public static final String PROP_DATA_URL = "project.url";
     /**
-     * <p></p>
+     * <p>The URL where a user can go to publish their data sets.</p>
      */
     public static final String PROP_PUBLISH_PASSPHRASE_URL = "project.publish.url";
     /**
-     * <p></p>
+     * <p>The URL to HTTP POST email requests.</p>
      */
     public static final String PROP_EMAIL_URL = "email.url";
     /**
-     * <p></p>
+     * <p>The default URL to HTTP POST email requests.</p>
      */
     public static final String DEFAULT_EMAIL_URL = "https://trancheproject.org/email/send.jsp";
     /**
-     * <p></p>
+     * <p>The URL where users can log in to get their valid user zip files.</p>
      */
     public static final String PROP_USER_LOG_IN_URL = "user.login.url";
     /**
-     * <p></p>
+     * <p>The number of milliseconds between checking if the system time has been changed significantly.</p>
      */
-    public static final String PROP_SERVER_CONFIG_ATTR_URL = "server.config.attributes.url";
+    public static final String PROP_TIME_CHANGE_CHECK_INTERVAL = "time.change.check.interval";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between checking if the system time has been changed significantly.</p>
      */
-    public static final String PROP_SERVER_DIRECTORY = "server.directory";
+    public static final String DEFAULT_TIME_CHANGE_CHECK_INTERVAL = "10000";
     /**
-     * <p></p>
+     * <p>The number of milliseconds the actual timestamp can deviate from the expected timestamp before resetting the network time.</p>
      */
-    public static final String DEFAULT_SERVER_DIRECTORY = "";
+    public static final String PROP_TIME_CHANGE_CHECK_DEVIATION = "time.change.check.deviation";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds the actual timestamp can deviate from the expected timestamp before resetting the network time.</p>
      */
-    public static final String PROP_SERVER_TIMEOUT = "server.timeout";
+    public static final String DEFAULT_TIME_CHANGE_CHECK_DEVIATION = "1000";
     /**
-     * <p></p>
+     * <p>The number of milliseconds between forcing a reset of the network time.</p>
      */
-    public static final String DEFAULT_SERVER_TIMEOUT = "60000";
+    public static final String PROP_TIME_UPDATE_INTERVAL = "time.update.interval";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between forcing a reset of the network time.</p>
      */
-    public static final String PROP_SERVER_KEEP_ALIVE_TIMEOUT = "server.keepalive.timeout";
+    public static final String DEFAULT_TIME_UPDATE_INTERVAL = "21600000";
     /**
-     * <p></p>
+     * <p>The timeout per NT server request.</p>
      */
-    public static final String DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT = "120000";
+    public static final String PROP_TIME_UPDATE_TIMEOUT = "time.update.timeout";
     /**
-     * <p></p>
+     * <p>The default timeout per NT server request.</p>
      */
-    public static final String PROP_SERVER_QUEUE_SIZE = "server.queue.size";
+    public static final String DEFAULT_TIME_UPDATE_TIMEOUT = "10000";
     /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_QUEUE_SIZE = "10";
-    /**
-     * <p>The number of requests a single user can have executed simultaneously on a server.</p>
-     */
-    public static final String PROP_SERVER_USER_SIMULTANEOUS_REQUESTS = "server.user.simultaneous.requests";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS = "3";
-    /**
-     * <p>The number of requests a single server can have executed simultaneously on a server. Must be at >= 2.</p>
-     */
-    public static final String PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS = "server.server.simultaneous.requests";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_SERVER_SIMULTANEOUS_REQUESTS = "10";
-    /**
-     * <p>The amount of time that may pass before reregistering the local server with connected servers in the server status update process.</p>
-     */
-    public static final String PROP_SERVER_TIME_BETWEEN_REGISTRATIONS = "server.server.registration.time";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_TIME_BETWEEN_REGISTRATIONS = "3600000";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SERVER_PORT = "server.port";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_PORT = "443";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SERVER_SSL = "server.ssl";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_SERVER_SSL = "false";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_UPDATE_CONFIG_URL = "update.conf.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_UPDATE_CONFIG_INTERVAL = "update.conf.interval";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_UPDATE_CONFIG_INTERVAL = "10000000";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SOFTWARE_UPDATE_ZIP_URL = "update.software.zip.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SOFTWARE_UPDATE_SIGNATURE_URL = "update.software.signature.url";
-    /**
-     * <p>Where to submit error messages that users submit.</p>
-     */
-    public static final String PROP_LOG_ERROR_URL = "log.error.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_SERVER_URL = "log.server.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_UPLOAD_URL = "log.upload.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_UPLOAD_FAILURE_URL = "log.upload.failure.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_DOWNLOAD_URL = "log.download.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_LOG_DOWNLOAD_FAILURE = "log.download.failure.url";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_ADMIN = "security.certificate.admin";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_WRITE = "security.certificate.write";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_USER = "security.certificate.user";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_READ = "security.certificate.read";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_AUTOCERT = "security.certificate.autocert";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_ANONYMOUS = "security.certificate.anon";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_KEY_ANONYMOUS = "security.key.anon";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTIFICATE_EMAIL = "security.certificate.email";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_KEY_EMAIL = "security.key.email";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_SECURITY_CERTS_URL = "security.certs.url";
-    /**
-     * <p></p>
+     * <p>The number of milliseconds between updating the network status table on a client.</p>
      */
     public static final String PROP_STATUS_UPDATE_CLIENT_FREQUENCY = "status.update.client.frequency";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between updating the network status table on a client.</p>
      */
     public static final String DEFAULT_STATUS_UPDATE_CLIENT_FREQUENCY = "60000";
     /**
-     * <p></p>
+     * <p>The number of milliseconds between updating the network status table on a server.</p>
      */
     public static final String PROP_STATUS_UPDATE_SERVER_FREQUENCY = "status.update.server.frequency";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between updating the network status table on a server.</p>
      */
     public static final String DEFAULT_STATUS_UPDATE_SERVER_FREQUENCY = "30000";
     /**
-     * <p></p>
+     * <p>The number of servers in a network status table group. Used in server status propagation.</p>
      */
     public static final String PROP_STATUS_UPDATE_SERVER_GROUPING = "status.update.server.grouping";
     /**
-     * <p></p>
+     * <p>The default number of servers in a network status table group.</p>
      */
     public static final String DEFAULT_STATUS_UPDATE_SERVER_GROUPING = "5";
     /**
-     * <p>The point at which only a single full hash span of servers are connected to.</p>
+     * <p>The number of servers at which only a single full hash span of servers are connected to.</p>
      */
     public static final String PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD = "connection.full.hashspan.threshold";
     /**
-     * <p></p>
+     * <p>The default number of servers at which only a single full hash span of servers are connected to.</p>
      */
     public static final String DEFAULT_CONNECTION_FULL_HASH_SPAN_THRESHOLD = "25";
     /**
-     * <p></p>
+     * <p>The number of milliseconds between sending a ping to each connected server to keep the socket alive.</p>
      */
     public static final String PROP_KEEP_ALIVE_INTERVAL = "connection.keep.alive.interval";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between sending a ping to each connected server to keep the socket alive.</p>
      */
     public static final String DEFAULT_KEEP_ALIVE_INTERVAL = "8000";
     /**
@@ -364,45 +236,161 @@ public class ConfigureTranche {
      */
     public static final String DEFAULT_DEFUNCT_SERVER_THRESHOLD = "604800000";
     /**
-     * <p></p>
+     * <p>The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location.</p>
+     */
+    public static final String PROP_UPDATE_CONFIG_URL = "update.conf.url";
+    /**
+     * <p>The number of milliseconds between updating the configuration.</p>
+     */
+    public static final String PROP_UPDATE_CONFIG_INTERVAL = "update.conf.interval";
+    /**
+     * <p>The default number of milliseconds between updating the configuration.</p>
+     */
+    public static final String DEFAULT_UPDATE_CONFIG_INTERVAL = "10000000";
+    /**
+     * <p>The URL to which the software will submit error logs.</p>
+     */
+    public static final String PROP_LOG_ERROR_URL = "log.error.url";
+    /**
+     * <p>The URL to which the software will submit server logs.</p>
+     */
+    public static final String PROP_LOG_SERVER_URL = "log.server.url";
+    /**
+     * <p>The URL to which the software will register uploads.</p>
+     */
+    public static final String PROP_LOG_UPLOAD_URL = "log.upload.url";
+    /**
+     * <p>The URL to which the software will register upload failures.</p>
+     */
+    public static final String PROP_LOG_UPLOAD_FAILURE_URL = "log.upload.failure.url";
+    /**
+     * <p>The URL to which the software will register downloads.</p>
+     */
+    public static final String PROP_LOG_DOWNLOAD_URL = "log.download.url";
+    /**
+     * <p>The URL to which the software will register failed downloads.</p>
+     */
+    public static final String PROP_LOG_DOWNLOAD_FAILURE = "log.download.failure.url";
+    /**
+     * <p>The location of the public certificate for the administrator (all priveleges).</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_ADMIN = "security.certificate.admin";
+    /**
+     * <p>The location of the public certificate for the write-only user.</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_WRITE = "security.certificate.write";
+    /**
+     * <p>The location of the public certificate for the standard user (read, write, delete).</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_USER = "security.certificate.user";
+    /**
+     * <p>The location of the public certificate for the read-only user.</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_READ = "security.certificate.read";
+    /**
+     * <p>The location of the public certificate for the auto-certificate user (read, write).</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_AUTOCERT = "security.certificate.autocert";
+    /**
+     * <p>The location of the public certificate for the anonymous user.</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_ANONYMOUS = "security.certificate.anon";
+    /**
+     * <p>The location of the private key for the anonymous user.</p>
+     */
+    public static final String PROP_SECURITY_KEY_ANONYMOUS = "security.key.anon";
+    /**
+     * <p>The location of the public certificate for the email user.</p>
+     */
+    public static final String PROP_SECURITY_CERTIFICATE_EMAIL = "security.certificate.email";
+    /**
+     * <p>The location of the private key for the email user.</p>
+     */
+    public static final String PROP_SECURITY_KEY_EMAIL = "security.key.email";
+    /**
+     * <p>The starting location of the directory that contains all the server configuration and runtime files.</p>
+     */
+    public static final String PROP_SERVER_DIRECTORY = "server.directory";
+    /**
+     * <p>The default location of the directory that contains all the server configuration and runtime files.</p>
+     */
+    public static final String DEFAULT_SERVER_DIRECTORY = "";
+    /**
+     * <p>The starting port number for a server.</p>
+     */
+    public static final String PROP_SERVER_PORT = "server.port";
+    /**
+     * <p>The default starting port number for a server.</p>
+     */
+    public static final String DEFAULT_SERVER_PORT = "443";
+    /**
+     * <p>The starting boolean for whether a server should communicate over SSL.</p>
+     */
+    public static final String PROP_SERVER_SSL = "server.ssl";
+    /**
+     * <p>The default starting boolean for whether a server should communicate over SSL.</p>
+     */
+    public static final String DEFAULT_SERVER_SSL = "false";
+    /**
+     * <p>The maximum number of requests a client can have outstanding on a server.</p>
+     */
+    public static final String PROP_SERVER_QUEUE_SIZE = "server.queue.size";
+    /**
+     * <p>The default maximum number of requests a client can have outstanding on a server.</p>
+     */
+    public static final String DEFAULT_SERVER_QUEUE_SIZE = "10";
+    /**
+     * <p>The maximum number of milliseconds before a request to a server times out if it doesn't send back a feep-alive signal.</p>
+     */
+    public static final String PROP_SERVER_TIMEOUT = "server.timeout";
+    /**
+     * <p>The default maximum number of milliseconds before a request to a server times out if it doesn't send back a feep-alive signal.</p>
+     */
+    public static final String DEFAULT_SERVER_TIMEOUT = "60000";
+    /**
+     * <p>The maximum number of milliseconds before a request that is being kept alive is timed out.</p>
+     */
+    public static final String PROP_SERVER_KEEP_ALIVE_TIMEOUT = "server.keepalive.timeout";
+    /**
+     * <p>The default maximum number of milliseconds before a request that is being kept alive is timed out.</p>
+     */
+    public static final String DEFAULT_SERVER_KEEP_ALIVE_TIMEOUT = "120000";
+    /**
+     * <p>The URL of the updated server configuration attributes.</p>
+     */
+    public static final String PROP_SERVER_CONFIG_ATTR_URL = "server.config.attributes.url";
+    /**
+     * <p>The amount of time that may pass before reregistering the local server with connected servers in the server status update process.</p>
+     */
+    public static final String PROP_SERVER_TIME_BETWEEN_REGISTRATIONS = "server.server.registration.time";
+    /**
+     * <p>The default amount of time that may pass before reregistering the local server with connected servers in the server status update process.</p>
+     */
+    public static final String DEFAULT_SERVER_TIME_BETWEEN_REGISTRATIONS = "3600000";
+    /**
+     * <p>The number of requests a single user can have executed simultaneously on a server.</p>
+     */
+    public static final String PROP_SERVER_USER_SIMULTANEOUS_REQUESTS = "server.user.simultaneous.requests";
+    /**
+     * <p>The default number of requests a single user can have executed simultaneously on a server.</p>
+     */
+    public static final String DEFAULT_SERVER_USER_SIMULTANEOUS_REQUESTS = "3";
+    /**
+     * <p>The number of requests a single server can have executed simultaneously on a server.</p>
+     */
+    public static final String PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS = "server.server.simultaneous.requests";
+    /**
+     * <p>The default number of requests a single server can have executed simultaneously on a server.</p>
+     */
+    public static final String DEFAULT_SERVER_SERVER_SIMULTANEOUS_REQUESTS = "10";
+    /**
+     * <p>The number of milliseconds between sending offline server notification emails.</p>
      */
     public static final String PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL = "server.offline.notification.interval";
     /**
-     * <p></p>
+     * <p>The default number of milliseconds between sending offline server notification emails.</p>
      */
     public static final String DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL = "86400000";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_TIME_CHANGE_CHECK_INTERVAL = "time.change.check.interval";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_TIME_CHANGE_CHECK_INTERVAL = "10000";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_TIME_CHANGE_CHECK_DEVIATION = "time.change.check.deviation";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_TIME_CHANGE_CHECK_DEVIATION = "1000";
-    /**
-     * <p></p>
-     */
-    public static final String PROP_TIME_UPDATE_INTERVAL = "time.update.interval";
-    /**
-     * <p></p>
-     */
-    public static final String DEFAULT_TIME_UPDATE_INTERVAL = "21600000";
-    /**
-     * <p>The timeout per NT server request.</p>
-     */
-    public static final String PROP_TIME_UPDATE_TIMEOUT = "time.update.timeout";
-    /**
-     * <p>The default timeout per NT server request.</p>
-     */
-    public static final String DEFAULT_TIME_UPDATE_TIMEOUT = "10000";
     private static final Properties properties = new Properties(), defaultProperties = new Properties();
     private static Map<String, String> attributesCache = null;
     private static final List<String> networkTimeServers = new LinkedList<String>();
@@ -668,7 +656,7 @@ public class ConfigureTranche {
 
             if (!updated) {
                 updated = true;
-                //update();
+                update();
             }
         } catch (Exception e) {
             debugErr(e);

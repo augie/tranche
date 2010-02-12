@@ -34,9 +34,9 @@ public class LocalDataServer {
     private static boolean debug = false;
     private static FlatFileTrancheServer ffts;
     private static Server server;
-    private static File rootDir = new File(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_DIRECTORY));
-    private static int port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
-    private static boolean ssl = ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL);
+    private static File rootDir;
+    private static int port;
+    private static boolean ssl;
     private static UserZipFile userZipFile;
     private static TrancheServerCommandLineClient client;
 
@@ -142,9 +142,6 @@ public class LocalDataServer {
      * @throws Exception
      */
     private static void setUpFFTS() throws Exception {
-        if (rootDir == null) {
-            throw new NullPointerException("Root directory is null.");
-        }
         if (!rootDir.exists()) {
             throw new IOException("Root directory does not exist: " + rootDir.getAbsolutePath());
         }
@@ -282,12 +279,16 @@ public class LocalDataServer {
                 }
             }
 
+            // set defaults
+            setRootDirectory(new File(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_DIRECTORY)));
+            setPort(ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT));
+            setSSL(ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
+
             // parameters next
             for (int i = 1; i < args.length - 1; i++) {
                 if (args[i].equals("-H") || args[i].equals("--host")) {
                     try {
                         ServerUtil.setHostName(args[i + 1]);
-                        i++;
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid host name: " + args[i + 1]);
                         debugErr(e);
@@ -296,11 +297,12 @@ public class LocalDataServer {
                         } else {
                             return;
                         }
+                    } finally {
+                        i++;
                     }
                 } else if (args[i].equals("-p") || args[i].equals("--port")) {
                     try {
-                        port = Integer.valueOf(args[i + 1]);
-                        i++;
+                        setPort(Integer.valueOf(args[i + 1]));
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid port value: " + args[i + 1]);
                         debugErr(e);
@@ -309,11 +311,12 @@ public class LocalDataServer {
                         } else {
                             return;
                         }
+                    } finally {
+                        i++;
                     }
                 } else if (args[i].equals("-s") || args[i].equals("--ssl")) {
                     try {
-                        ssl = Boolean.valueOf(args[i + 1]);
-                        i++;
+                        setSSL(Boolean.valueOf(args[i + 1]));
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid SSL value: " + args[i + 1]);
                         debugErr(e);
@@ -322,13 +325,14 @@ public class LocalDataServer {
                         } else {
                             return;
                         }
+                    } finally {
+                        i++;
                     }
                 } else if (args[i].equals("-z") || args[i].equals("--userzipfile")) {
                     try {
                         UserZipFile user = new UserZipFile(new File(args[i + 1]));
                         user.setPassphrase(args[i + 2]);
-                        i += 2;
-                        userZipFile = user;
+                        setUserZipFile(user);
                     } catch (Exception e) {
                         System.err.println("ERROR: " + e.getMessage());
                         debugErr(e);
@@ -337,6 +341,8 @@ public class LocalDataServer {
                         } else {
                             return;
                         }
+                    } finally {
+                        i += 2;
                     }
                 }
             }

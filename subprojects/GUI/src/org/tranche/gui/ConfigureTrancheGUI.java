@@ -31,51 +31,51 @@ public class ConfigureTrancheGUI extends ConfigureTranche {
 
     private static boolean debug = false;
     /**
-     * <p></p>
+     * <p>The graphical user interface category.</p>
      */
     public static final String CATEGORY_GUI = "[GUI]";
     /**
-     * <p></p>
+     * <p>The URL of the list of possible modules.</p>
      */
     public static final String PROP_MODULE_LIST_URL = "module.list.url";
     /**
-     * <p></p>
+     * <p>The hash of the list of possible modules.</p>
      */
     public static final String PROP_MODULE_LIST_HASH = "module.list.hash";
     /**
-     * <p></p>
+     * <p>A comma-separated list of hashes for modules that should be loaded on startup.</p>
      */
     public static final String PROP_STARTUP_MODULES = "module.list.start";
     /**
-     * <p></p>
+     * <p>The starting number of uploads that can occur at any one time.</p>
      */
     public static final String PROP_UPLOAD_POOL_SIZE = "upload.pool.size";
     /**
-     * <p></p>
+     * <p>The default starting number of uploads that can occur at any one time.</p>
      */
     public static final String DEFAULT_UPLOAD_POOL_SIZE = "1";
     /**
-     * <p></p>
+     * <p>The starting number of downloads that can occur at any one time.</p>
      */
     public static final String PROP_DOWNLOAD_POOL_SIZE = "download.pool.size";
     /**
-     * <p></p>
+     * <p>The default starting number of downloads that can occur at any one time.</p>
      */
     public static final String DEFAULT_DOWNLOAD_POOL_SIZE = "1";
     /**
-     * <p></p>
+     * <p>The starting boolean of whether the hash popup suggestion window should be used.</p>
      */
     public static final String PROP_AUTO_COMPLETE_HASH = "hash.auto_complete";
     /**
-     * <p></p>
+     * <p>The default starting boolean of whether the hash popup suggestion window should be used.</p>
      */
     public static final String DEFAULT_AUTO_COMPLETE_HASH = "true";
     /**
-     * <p></p>
+     * <p>The starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets.</p>
      */
     public static final String PROP_SWT = "swt";
     /**
-     * <p></p>
+     * <p>The default starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets.</p>
      */
     public static final String DEFAULT_SWT = "false";
 

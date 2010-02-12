@@ -62,6 +62,7 @@ import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import org.tranche.ConfigureTranche;
 import org.tranche.LocalDataServer;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
@@ -92,6 +93,7 @@ import org.tranche.users.User;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
+import org.tranche.util.PreferencesUtil;
 
 /**
  * <p>All the options needed to start and configure a local server or configure a remote server.</p>
@@ -413,7 +415,7 @@ public class ServerConfigurationPanel extends JPanel {
 
         private SignInUserButton userButton = new SignInUserButton();
         private JTextField portField = new GenericTextField(), rootDirField = new GenericTextField();
-        private GenericCheckBox sslCheckBox = new GenericCheckBox("SSL", LocalDataServer.isSSL());
+        private GenericCheckBox sslCheckBox = new GenericCheckBox("SSL", PreferencesUtil.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
         private JButton toggleServerButton = null;
         private int MARGIN = ServerConfigurationPanel.HORIZONTAL_MARGIN;
         // Text for the toggleServerButton
@@ -470,8 +472,8 @@ public class ServerConfigurationPanel extends JPanel {
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 gbc.insets = new Insets(0, MARGIN, MARGIN, MARGIN);
                 rootDirField.setToolTipText("The root directory for the server.");
-                if (LocalDataServer.getRootDirectory() != null) {
-                    rootDirField.setText(LocalDataServer.getRootDirectory().getAbsolutePath());
+                if (PreferencesUtil.get(ConfigureTranche.PROP_SERVER_DIRECTORY) != null) {
+                    rootDirField.setText(PreferencesUtil.get(ConfigureTranche.PROP_SERVER_DIRECTORY));
                 }
                 add(rootDirField, gbc);
 
@@ -528,7 +530,7 @@ public class ServerConfigurationPanel extends JPanel {
                 gbc.fill = GridBagConstraints.HORIZONTAL;
                 gbc.gridwidth = GridBagConstraints.RELATIVE;
                 gbc.insets = new Insets(0, MARGIN, 0, MARGIN);
-                portField.setText(String.valueOf(LocalDataServer.getPort()));
+                portField.setText(String.valueOf(PreferencesUtil.getInt(ConfigureTranche.PROP_SERVER_PORT)));
                 add(portField, gbc);
 
                 gbc.weightx = 0;
