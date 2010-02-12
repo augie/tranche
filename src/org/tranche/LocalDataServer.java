@@ -187,10 +187,10 @@ public class LocalDataServer {
     public static void printUsage() {
         System.out.println();
         System.out.println("USAGE");
-        System.out.println("    [FLAGS / PARAMETERS] <DIRECTORY>");
+        System.out.println("    [FLAGS / PARAMETERS]");
         System.out.println();
         System.out.println("DESCRIPTION");
-        System.out.println("    Runs a Tranche data server with the configuration files in <DIRECTORY>.");
+        System.out.println("    Runs a Tranche data server.");
         System.out.println();
         System.out.println("MEMORY ALLOCATION");
         System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
@@ -205,6 +205,7 @@ public class LocalDataServer {
         System.out.println("    -d, --debug             If you have problems, you can use this option to print debugging information. These will help use solve problems if you can repeat your problem with this flag on.");
         System.out.println();
         System.out.println("PARAMETERS");
+        System.out.println("    -D, --directory         Value: string.                  The directory that contains the server configurations and runtime files.");
         System.out.println("    -H, --host              Value: string.                  The host name / IP address by which the server will be known.");
         System.out.println("    -p, --port              Value: positive integer.        The port number to which the server will be bound.");
         System.out.println("    -s, --ssl               Value: true/false.              Whether the server should operate over SSL connections.");
@@ -255,6 +256,8 @@ public class LocalDataServer {
                     } else {
                         return;
                     }
+                } else if (args[i].equals("-D") || args[i].equals("--directory")) {
+                    i++;
                 } else if (args[i].equals("-H") || args[i].equals("--host")) {
                     i++;
                 } else if (args[i].equals("-p") || args[i].equals("--port")) {
@@ -286,7 +289,21 @@ public class LocalDataServer {
 
             // parameters next
             for (int i = 1; i < args.length - 1; i++) {
-                if (args[i].equals("-H") || args[i].equals("--host")) {
+                if (args[i].equals("-D") || args[i].equals("--directory")) {
+                    try {
+                        setRootDirectory(new File(args[i + 1]));
+                    } catch (Exception e) {
+                        System.err.println("ERROR: Invalid root directory value: " + args[i + 1]);
+                        debugErr(e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
+                    } finally {
+                        i++;
+                    }
+                } else if (args[i].equals("-H") || args[i].equals("--host")) {
                     try {
                         ServerUtil.setHostName(args[i + 1]);
                     } catch (Exception e) {
@@ -344,18 +361,6 @@ public class LocalDataServer {
                     } finally {
                         i += 2;
                     }
-                }
-            }
-
-            try {
-                rootDir = new File(args[args.length - 1]);
-            } catch (Exception e) {
-                System.err.println("ERROR: Invalid directory value: " + args[args.length - 1]);
-                debugErr(e);
-                if (!TestUtil.isTesting()) {
-                    System.exit(2);
-                } else {
-                    return;
                 }
             }
 
