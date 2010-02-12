@@ -314,7 +314,7 @@ public class ConfigureTranche {
     /**
      * <p>The default location of the directory that contains all the server configuration and runtime files.</p>
      */
-    public static final String DEFAULT_SERVER_DIRECTORY = "";
+    public static final String DEFAULT_SERVER_DIRECTORY = "./";
     /**
      * <p>The starting port number for a server.</p>
      */
