@@ -174,4 +174,3 @@ Name, value pairs:
 || upload.pool.size || The starting number of uploads that can occur at any one time. || 1 ||
 || download.pool.size || The starting numbeher of downloads that can occur at any one time. || 1 ||
 || hash.auto_complete || The starting boolean of whether the hash popup suggestion window should be used. || true ||
-|| swt || The starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets. || false ||
