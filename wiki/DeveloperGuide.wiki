@@ -2,6 +2,7 @@
   * [WhitePaper Read the white paper.]
   * [StartingRepository How to start a repository]
   * [ToDo To-Do List]
+  * [ChangeLog Changes that have be made listed by build number.]
 
 
 ==Contributing==
