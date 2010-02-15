@@ -1,8 +1,8 @@
 #labels Featured,Phase-Implementation
-  * [WhitePaper Read the white paper.]
+  * [WhitePaper Read the white paper]
   * [StartingRepository How to start a repository]
   * [ToDo To-Do List]
-  * [ChangeLog Change log listed by build number.]
+  * [ChangeLog Change log listed by build number]
 
 
 ==Contributing==
