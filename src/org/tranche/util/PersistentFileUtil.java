@@ -67,6 +67,12 @@ public class PersistentFileUtil {
         return file;
     }
 
+    /**
+     * 
+     * @param directoryName
+     * @return
+     * @throws IOException
+     */
     public synchronized static File getPersistentDirectory(String directoryName) throws IOException {
         if (!persistentDirectory.exists()) {
             persistentDirectory.mkdirs();

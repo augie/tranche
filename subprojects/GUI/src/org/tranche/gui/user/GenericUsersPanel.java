@@ -46,7 +46,7 @@ import org.tranche.users.UserZipFile;
 
 /**
  *
- * @author James A. Hill <augman85@gmail.com>
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class GenericUsersPanel extends JPanel {
 

@@ -19,16 +19,10 @@ import java.awt.Component;
 import java.io.File;
 import java.util.concurrent.ArrayBlockingQueue;
 import javax.swing.JFileChooser;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Shell;
-import org.tranche.util.PreferencesUtil;
 
 /**
  *
- * @author James A. Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class FileChooser extends JFileChooser {
 
@@ -77,73 +71,6 @@ public class FileChooser extends JFileChooser {
 
     @Override
     public int showOpenDialog(Component relativeTo) {
-        // if trying to use SWT, give it a go
-        if (PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_SWT)) {
-            // catch NoClassDefFound errors
-            try {
-                // make the shell
-                Shell shell = new Shell(new Display(), SWT.ON_TOP);
-                // the implicit classloader code -- i.e. requires a SWT library at build time
-                int style = SWT.OPEN;
-                if (multiSelectionEnabled) {
-                    style = style | SWT.MULTI;
-                }
-
-                String selectedFile = null;
-                if (fileSelectionMode == FILES_ONLY) {
-                    FileDialog fileDialog = new FileDialog(shell, style);
-                    if (dialogTitle != null) {
-                        fileDialog.setText(dialogTitle);
-                    }
-                    if (fileFilter != null) {
-                        fileDialog.setFilterExtensions(new String[]{fileFilter.getExtension()});
-                    }
-                    try {
-                        fileDialog.setFilterPath(startSelectedFile.getParentFile().getAbsolutePath());
-                        fileDialog.setFileName(startSelectedFile.getName());
-                    } catch (Exception e) {
-                    }
-                    selectedFile = fileDialog.open();
-                } else {
-                    DirectoryDialog dirDialog = new DirectoryDialog(shell, style);
-                    if (dialogTitle != null) {
-                        dirDialog.setText(dialogTitle);
-                    }
-                    try {
-                        dirDialog.setFilterPath(startSelectedFile.getAbsolutePath());
-                    } catch (Exception e) {
-                    }
-                    selectedFile = dirDialog.open();
-                }
-
-                // for null pointer exceptions
-                try {
-                    abq.offer(selectedFile);
-                    return APPROVE_OPTION;
-                } catch (Exception e) {
-                    abq.offer("");
-                    return CANCEL_OPTION;
-                } finally {
-                    try {
-                        shell.close();
-                    } catch (Exception e) {
-                    }
-                    try {
-                        shell.dispose();
-                    } catch (Exception e) {
-                    }
-                }
-
-            } catch (NoClassDefFoundError error) {
-                System.out.println("SWT libraries not found. Falling back on JFileChooser.");
-            } catch (Exception classLoaderException) {
-                System.out.println("SWT libraries not found. Falling back on JFileChooser.");
-                classLoaderException.printStackTrace();
-            } catch (UnsatisfiedLinkError linkException) {
-                System.out.println("Can't load SWT native libraries. Falling back on JFileChooser.");
-            }
-        }
-
         // fall back on JFileChooser
         JFileChooser jFileChooser = makeJFileChooser();
 
@@ -190,67 +117,6 @@ public class FileChooser extends JFileChooser {
 
     @Override
     public int showSaveDialog(Component relativeTo) {
-        // if using SWT, give it a shot
-        if (PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_SWT)) {
-            try {
-                // make the shell
-                Shell shell = new Shell(new Display(), SWT.ON_TOP);
-
-                int style = SWT.SAVE;
-
-                String selectedFile = null;
-                if (fileSelectionMode == FILES_ONLY) {
-                    FileDialog fileDialog = new FileDialog(shell, style);
-                    if (dialogTitle != null) {
-                        fileDialog.setText(dialogTitle);
-                    }
-                    try {
-                        fileDialog.setFilterPath(startSelectedFile.getParentFile().getAbsolutePath());
-                        fileDialog.setFileName(startSelectedFile.getName());
-                    } catch (Exception e) {
-                    }
-                    selectedFile = fileDialog.open();
-                } else {
-                    DirectoryDialog dirDialog = new DirectoryDialog(shell, style);
-                    if (dialogTitle != null) {
-                        dirDialog.setText(dialogTitle);
-                    }
-                    try {
-                        dirDialog.setFilterPath(startSelectedFile.getAbsolutePath());
-                    } catch (Exception e) {
-                    }
-                    selectedFile = dirDialog.open();
-                }
-
-                // for null pointer exceptions
-                try {
-                    abq.offer(selectedFile);
-                    return APPROVE_OPTION;
-                } catch (Exception e) {
-                    abq.offer("");
-                    return CANCEL_OPTION;
-                } finally {
-                    try {
-                        shell.close();
-                    } catch (Exception e) {
-                    }
-                    try {
-                        shell.dispose();
-                    } catch (Exception e) {
-                    }
-                }
-
-            } catch (NoClassDefFoundError error) {
-                System.out.println("SWT libraries not found. Falling back on JFileChooser.");
-            } catch (Exception classLoaderException) {
-                System.out.println("SWT libraries not found. Falling back on JFileChooser.");
-                classLoaderException.printStackTrace();
-            } catch (UnsatisfiedLinkError linkException) {
-                System.out.println("Can't load SWT native libraries. Falling back on JFileChooser.");
-            }
-        }
-
-
         // always fall back on JFileChooser
         JFileChooser jFileChooser = makeJFileChooser();
         int option = jFileChooser.showSaveDialog(relativeTo);

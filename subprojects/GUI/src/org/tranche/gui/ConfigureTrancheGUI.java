@@ -70,20 +70,11 @@ public class ConfigureTrancheGUI extends ConfigureTranche {
      * <p>The default starting boolean of whether the hash popup suggestion window should be used.</p>
      */
     public static final String DEFAULT_AUTO_COMPLETE_HASH = "true";
-    /**
-     * <p>The starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets.</p>
-     */
-    public static final String PROP_SWT = "swt";
-    /**
-     * <p>The default starting boolean of whether the Standard Widget Toolkit should be used. This shows some features using native operating system widgets.</p>
-     */
-    public static final String DEFAULT_SWT = "false";
 
     static {
         setDefault(PROP_UPLOAD_POOL_SIZE, DEFAULT_UPLOAD_POOL_SIZE);
         setDefault(PROP_DOWNLOAD_POOL_SIZE, DEFAULT_DOWNLOAD_POOL_SIZE);
         setDefault(PROP_AUTO_COMPLETE_HASH, DEFAULT_AUTO_COMPLETE_HASH);
-        setDefault(PROP_SWT, DEFAULT_SWT);
     }
 
     /**

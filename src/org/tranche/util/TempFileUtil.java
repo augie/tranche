@@ -37,7 +37,7 @@ import java.util.Map;
  *  the directory.</p>
  *
  * @author Jayson Falkner - jfalkner@umich.edu
- * @author James A. Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
 public class TempFileUtil {

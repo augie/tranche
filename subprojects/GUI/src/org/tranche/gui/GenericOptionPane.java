@@ -42,7 +42,7 @@ import org.tranche.gui.util.GUIUtil;
 /**
  * <p>Applies custom Tranche look to limited subset of JOptionPane interface.</p>
  * @author Bryan E. Smith - bryanesmith@gmail.com
- * @author James A. Hill <augman85@gmail.com>
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class GenericOptionPane {
 

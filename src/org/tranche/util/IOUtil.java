@@ -1093,30 +1093,31 @@ public class IOUtil {
 
     /**
      * <p>Copies any file in a memory-safe manner.</p>
-     * @param src
-     * @param dest Destination. Not that if any data exists, it will be over-written (clobbered).
+     * @param src 
+     * @param dest If any data exists, it will be over-written (clobbered).
      * @throws java.io.IOException
      */
     public static void copyFile(File src, File dest) throws IOException {
+        FileInputStream fis = null;
         InputStream in = null;
+        FileOutputStream fos = null;
         OutputStream out = null;
-
         try {
-            in = new BufferedInputStream(new FileInputStream(src));
-            out = new BufferedOutputStream(new FileOutputStream(dest));
+            fis = new FileInputStream(src);
+            in = new BufferedInputStream(fis);
+            fos = new FileOutputStream(dest);
+            out = new BufferedOutputStream(fos);
 
             byte[] buffer = new byte[256];
             int bytes;
-
             while ((bytes = in.read(buffer)) > 0) {
                 out.write(buffer, 0, bytes);
             }
         } finally {
             IOUtil.safeClose(in);
-            if (out != null) {
-                out.flush();
-                IOUtil.safeClose(out);
-            }
+            IOUtil.safeClose(fis);
+            IOUtil.safeClose(out);
+            IOUtil.safeClose(fos);
         }
     }
 

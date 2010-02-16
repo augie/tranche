@@ -2,15 +2,15 @@
            INCLUDED TOOLS
 ****************************************
 
+Add: Uploads.
+
 Certs: Makes a set of user zip files to be used as the base users of a repository.
 
 Get: Downloads.
 
-Add: Uploads.
+GUI: Launches the Java Swing GUI.
 
 Server: Starts a data server.
-
-GUI: Launches the Java Swing GUI.
 
 
 

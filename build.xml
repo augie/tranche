@@ -259,7 +259,7 @@
         </javadoc>
     </target>
 
-    <target name="dist.tools" description="Make a server code release.">
+    <target name="dist.tools" description="Make a command line tools release.">
         <mkdir dir="${build.tools}"/>
         <mkdir dir="${build.tools}/lib"/>
         <copy todir="${build.tools}/lib">
@@ -269,21 +269,11 @@
         <copy todir="${build.tools}">
             <fileset dir="${dir.tools}"/>
         </copy>
-        <jar jarfile="${build.server.jar}"
-             manifest="${dir.server}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <jar jarfile="${build.add.jar}"
-             manifest="${dir.add}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <jar jarfile="${build.get.jar}"
-             manifest="${dir.get}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <jar jarfile="${build.certs.jar}"
-             manifest="${dir.certs}/MANIFEST.MF"
-             basedir="${build.rt}" />
-        <jar jarfile="${build.gui.jar}"
-             manifest="${dir.gui}/MANIFEST.MF"
-             basedir="${build.rt.gui}" />
+        <jar jarfile="${build.server.jar}" manifest="${dir.server}/MANIFEST.MF" basedir="${build.rt}" />
+        <jar jarfile="${build.add.jar}" manifest="${dir.add}/MANIFEST.MF" basedir="${build.rt}" />
+        <jar jarfile="${build.get.jar}" manifest="${dir.get}/MANIFEST.MF" basedir="${build.rt}" />
+        <jar jarfile="${build.certs.jar}" manifest="${dir.certs}/MANIFEST.MF" basedir="${build.rt}" />
+        <jar jarfile="${build.gui.jar}" manifest="${dir.gui}/MANIFEST.MF" basedir="${build.rt.gui}" />
         <zip destfile="${dist.tools.zip}" basedir="${build.tools}" />
     </target>
 
@@ -337,9 +327,9 @@
 
     <!-- sign all the JARs so that they work with WebStart -->
     <target name="sign-jars">
-        <property name="Tranche.jar" value="${dist.jar}" />
-        <property name="Tranche" value="${dist}/Tranche" />
-        <unzip src="${Tranche.jar}" dest="${Tranche}">
+        <property name="tranche.jar" value="${dist.jar}" />
+        <property name="tranche" value="${dist}/tranche" />
+        <unzip src="${tranche.jar}" dest="${tranche}">
             <patternset>
                 <exclude name="**/*.RSA"/>
                 <exclude name="**/*.rsa"/>
@@ -347,14 +337,14 @@
                 <exclude name="**/*.SF"/>
             </patternset>
         </unzip>
-        <delete file="${Tranche.jar}"/>
-        <zip destfile="${Tranche.jar}" basedir="${Tranche}"/>
-        <delete dir="${Tranche}"/>
-        <signjar jar="${Tranche.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
+        <delete file="${tranche.jar}"/>
+        <zip destfile="${tranche.jar}" basedir="${tranche}"/>
+        <delete dir="${tranche}"/>
+        <signjar jar="${tranche.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
 
-        <property name="TrancheGUI.jar" value="${dist.jar.gui}" />
-        <property name="TrancheGUI" value="${dist}/TrancheGUI" />
-        <unzip src="${TrancheGUI.jar}" dest="${TrancheGUI}">
+        <property name="tranche-gui.jar" value="${dist.jar.gui}" />
+        <property name="tranche-gui" value="${dist}/tranche-gui" />
+        <unzip src="${tranche-gui.jar}" dest="${tranche-gui}">
             <patternset>
                 <exclude name="**/*.RSA"/>
                 <exclude name="**/*.rsa"/>
@@ -362,10 +352,10 @@
                 <exclude name="**/*.SF"/>
             </patternset>
         </unzip>
-        <delete file="${TrancheGUI.jar}"/>
-        <zip destfile="${TrancheGUI.jar}" basedir="${TrancheGUI}"/>
-        <delete dir="${TrancheGUI}"/>
-        <signjar jar="${TrancheGUI.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
+        <delete file="${tranche-gui.jar}"/>
+        <zip destfile="${tranche-gui.jar}" basedir="${tranche-gui}"/>
+        <delete dir="${tranche-gui}"/>
+        <signjar jar="${tranche-gui.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
 
         <property name="bcprov-jdk15-130.jar" value="${dist.lib}/bcprov-jdk15-130.jar" />
         <property name="bcprov-jdk15-130" value="${dist.lib}/bcprov-jdk15-130" />
@@ -456,216 +446,6 @@
         <zip destfile="${ProteomeCommons.org-IO.jar}" basedir="${ProteomeCommons.org-IO}"/>
         <delete dir="${ProteomeCommons.org-IO}"/>
         <signjar jar="${ProteomeCommons.org-IO.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-carbon-macosx.jar" value="${dist.lib.gui}/swt-carbon-macosx.jar" />
-        <property name="swt-carbon-macosx" value="${dist.lib.gui}/swt-carbon-macosx" />
-        <unzip src="${swt-carbon-macosx.jar}" dest="${swt-carbon-macosx}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-carbon-macosx.jar}"/>
-        <zip destfile="${swt-carbon-macosx.jar}" basedir="${swt-carbon-macosx}"/>
-        <delete dir="${swt-carbon-macosx}"/>
-        <signjar jar="${swt-carbon-macosx.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-gtk-linux-ppc.jar" value="${dist.lib.gui}/swt-gtk-linux-ppc.jar" />
-        <property name="swt-gtk-linux-ppc" value="${dist.lib.gui}/swt-gtk-linux-ppc" />
-        <unzip src="${swt-gtk-linux-ppc.jar}" dest="${swt-gtk-linux-ppc}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-gtk-linux-ppc.jar}"/>
-        <zip destfile="${swt-gtk-linux-ppc.jar}" basedir="${swt-gtk-linux-ppc}"/>
-        <delete dir="${swt-gtk-linux-ppc}"/>
-        <signjar jar="${swt-gtk-linux-ppc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-motif-linux-x86.jar" value="${dist.lib.gui}/swt-motif-linux-x86.jar" />
-        <property name="swt-motif-linux-x86" value="${dist.lib.gui}/swt-motif-linux-x86" />
-        <unzip src="${swt-motif-linux-x86.jar}" dest="${swt-motif-linux-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-motif-linux-x86.jar}"/>
-        <zip destfile="${swt-motif-linux-x86.jar}" basedir="${swt-motif-linux-x86}"/>
-        <delete dir="${swt-motif-linux-x86}"/>
-        <signjar jar="${swt-motif-linux-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-gtk-linux-x86.jar" value="${dist.lib.gui}/swt-gtk-linux-x86.jar" />
-        <property name="swt-gtk-linux-x86" value="${dist.lib.gui}/swt-gtk-linux-x86" />
-        <unzip src="${swt-gtk-linux-x86.jar}" dest="${swt-gtk-linux-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-gtk-linux-x86.jar}"/>
-        <zip destfile="${swt-gtk-linux-x86.jar}" basedir="${swt-gtk-linux-x86}"/>
-        <delete dir="${swt-gtk-linux-x86}"/>
-        <signjar jar="${swt-gtk-linux-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-gtk-linux-x86_64.jar" value="${dist.lib.gui}/swt-gtk-linux-x86_64.jar" />
-        <property name="swt-gtk-linux-x86_64" value="${dist.lib.gui}/swt-gtk-linux-x86_64" />
-        <unzip src="${swt-gtk-linux-x86_64.jar}" dest="${swt-gtk-linux-x86_64}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-gtk-linux-x86_64.jar}"/>
-        <zip destfile="${swt-gtk-linux-x86_64.jar}" basedir="${swt-gtk-linux-x86_64}"/>
-        <delete dir="${swt-gtk-linux-x86_64}"/>
-        <signjar jar="${swt-gtk-linux-x86_64.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-gtk-solaris-sparc.jar" value="${dist.lib.gui}/swt-gtk-solaris-sparc.jar" />
-        <property name="swt-gtk-solaris-sparc" value="${dist.lib.gui}/swt-gtk-solaris-sparc" />
-        <unzip src="${swt-gtk-solaris-sparc.jar}" dest="${swt-gtk-solaris-sparc}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-gtk-solaris-sparc.jar}"/>
-        <zip destfile="${swt-gtk-solaris-sparc.jar}" basedir="${swt-gtk-solaris-sparc}"/>
-        <delete dir="${swt-gtk-solaris-sparc}"/>
-        <signjar jar="${swt-gtk-solaris-sparc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-motif-aix-ppc.jar" value="${dist.lib.gui}/swt-motif-aix-ppc.jar" />
-        <property name="swt-motif-aix-ppc" value="${dist.lib.gui}/swt-motif-aix-ppc" />
-        <unzip src="${swt-motif-aix-ppc.jar}" dest="${swt-motif-aix-ppc}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-motif-aix-ppc.jar}"/>
-        <zip destfile="${swt-motif-aix-ppc.jar}" basedir="${swt-motif-aix-ppc}"/>
-        <delete dir="${swt-motif-aix-ppc}"/>
-        <signjar jar="${swt-motif-aix-ppc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-motif-linux-x86.jar" value="${dist.lib.gui}/swt-motif-linux-x86.jar" />
-        <property name="swt-motif-linux-x86" value="${dist.lib.gui}/swt-motif-linux-x86" />
-        <unzip src="${swt-motif-linux-x86.jar}" dest="${swt-motif-linux-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-motif-linux-x86.jar}"/>
-        <zip destfile="${swt-motif-linux-x86.jar}" basedir="${swt-motif-linux-x86}"/>
-        <delete dir="${swt-motif-linux-x86}"/>
-        <signjar jar="${swt-motif-linux-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-motif-solaris-sparc.jar" value="${dist.lib.gui}/swt-motif-solaris-sparc.jar" />
-        <property name="swt-motif-solaris-sparc" value="${dist.lib.gui}/swt-motif-solaris-sparc" />
-        <unzip src="${swt-motif-solaris-sparc.jar}" dest="${swt-motif-solaris-sparc}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-motif-solaris-sparc.jar}"/>
-        <zip destfile="${swt-motif-solaris-sparc.jar}" basedir="${swt-motif-solaris-sparc}"/>
-        <delete dir="${swt-motif-solaris-sparc}"/>
-        <signjar jar="${swt-motif-solaris-sparc.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-photon-qnx-x86.jar" value="${dist.lib.gui}/swt-photon-qnx-x86.jar" />
-        <property name="swt-photon-qnx-x86" value="${dist.lib.gui}/swt-photon-qnx-x86" />
-        <unzip src="${swt-photon-qnx-x86.jar}" dest="${swt-photon-qnx-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-photon-qnx-x86.jar}"/>
-        <zip destfile="${swt-photon-qnx-x86.jar}" basedir="${swt-photon-qnx-x86}"/>
-        <delete dir="${swt-photon-qnx-x86}"/>
-        <signjar jar="${swt-photon-qnx-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-win32-wce_ppc-arm-j2me.jar" value="${dist.lib.gui}/swt-win32-wce_ppc-arm-j2me.jar" />
-        <property name="swt-win32-wce_ppc-arm-j2me" value="${dist.lib.gui}/swt-win32-wce_ppc-arm-j2me" />
-        <unzip src="${swt-win32-wce_ppc-arm-j2me.jar}" dest="${swt-win32-wce_ppc-arm-j2me}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-win32-wce_ppc-arm-j2me.jar}"/>
-        <zip destfile="${swt-win32-wce_ppc-arm-j2me.jar}" basedir="${swt-win32-wce_ppc-arm-j2me}"/>
-        <delete dir="${swt-win32-wce_ppc-arm-j2me}"/>
-        <signjar jar="${swt-win32-wce_ppc-arm-j2me.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-win32-wce_ppc-arm-j2se.jar" value="${dist.lib.gui}/swt-win32-wce_ppc-arm-j2se.jar" />
-        <property name="swt-win32-wce_ppc-arm-j2se" value="${dist.lib.gui}/swt-win32-wce_ppc-arm-j2se" />
-        <unzip src="${swt-win32-wce_ppc-arm-j2se.jar}" dest="${swt-win32-wce_ppc-arm-j2se}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-win32-wce_ppc-arm-j2se.jar}"/>
-        <zip destfile="${swt-win32-wce_ppc-arm-j2se.jar}" basedir="${swt-win32-wce_ppc-arm-j2se}"/>
-        <delete dir="${swt-win32-wce_ppc-arm-j2se}"/>
-        <signjar jar="${swt-win32-wce_ppc-arm-j2se.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-win32-win32-x86.jar" value="${dist.lib.gui}/swt-win32-win32-x86.jar" />
-        <property name="swt-win32-win32-x86" value="${dist.lib.gui}/swt-win32-win32-x86" />
-        <unzip src="${swt-win32-win32-x86.jar}" dest="${swt-win32-win32-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-win32-win32-x86.jar}"/>
-        <zip destfile="${swt-win32-win32-x86.jar}" basedir="${swt-win32-win32-x86}"/>
-        <delete dir="${swt-win32-win32-x86}"/>
-        <signjar jar="${swt-win32-win32-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
-
-        <property name="swt-wpf-win32-x86.jar" value="${dist.lib.gui}/swt-wpf-win32-x86.jar" />
-        <property name="swt-wpf-win32-x86" value="${dist.lib.gui}/swt-wpf-win32-x86" />
-        <unzip src="${swt-wpf-win32-x86.jar}" dest="${swt-wpf-win32-x86}">
-            <patternset>
-                <exclude name="**/*.RSA"/>
-                <exclude name="**/*.rsa"/>
-                <exclude name="**/*.sf"/>
-                <exclude name="**/*.SF"/>
-            </patternset>
-        </unzip>
-        <delete file="${swt-wpf-win32-x86.jar}"/>
-        <zip destfile="${swt-wpf-win32-x86.jar}" basedir="${swt-wpf-win32-x86}"/>
-        <delete dir="${swt-wpf-win32-x86}"/>
-        <signjar jar="${swt-wpf-win32-x86.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
     </target>
 
     <!-- clover tasks -->

@@ -33,7 +33,7 @@ import org.tranche.util.EmailUtil;
 /**
  * Panel meant for use with GenericPopupFrame.
  * @author Bryan Smith <bryanesmith at gmail.com>
- * @author James A. Hill <augman85@gmail.com>
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class HelpPanel extends JPanel {
 

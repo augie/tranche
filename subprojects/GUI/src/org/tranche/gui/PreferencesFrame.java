@@ -250,7 +250,6 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
     private class GeneralPreferencesPanel extends JPanel {
 
-        private GenericCheckBox useSWT = new GenericCheckBox("Use Native Widgets");
         private GenericCheckBox useHashComplete = new GenericCheckBox("Open Hash Auto-Completion Window");
 
         public GeneralPreferencesPanel() {
@@ -263,21 +262,6 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
             gbc.weightx = 1;
             gbc.weighty = 0;
             gbc.gridwidth = GridBagConstraints.REMAINDER;
-
-            GenericLabel nativeWidgetsLabel = new GenericLabel("Native Widgets");
-            nativeWidgetsLabel.setFont(Styles.FONT_14PT_BOLD);
-            add(nativeWidgetsLabel, gbc);
-
-            DisplayTextArea nativeWidgetsDescription = new DisplayTextArea("Wherever possible, we can use your local operating system's " +
-                    "(as opposed to Java's) library of widgets.");
-            gbc.insets = new Insets(1, 5, 0, 0);
-            add(nativeWidgetsDescription, gbc);
-
-            // swt checkbox
-            useSWT.setBackground(getBackground());
-            useSWT.addActionListener(PreferencesFrame.this);
-            gbc.insets = new Insets(3, 5, 0, 0);
-            add(useSWT, gbc);
 
             GenericLabel hashAutoCompleteLabel = new GenericLabel("Hash Auto-Completion");
             hashAutoCompleteLabel.setFont(Styles.FONT_14PT_BOLD);
@@ -307,19 +291,16 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
         }
 
         public void loadPreferences() {
-            useSWT.setSelected(PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_SWT));
             useHashComplete.setSelected(PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH));
         }
 
         public void applyChanges() throws Exception {
-            PreferencesUtil.set(ConfigureTrancheGUI.PROP_SWT, String.valueOf(useSWT.isSelected()), false);
             PreferencesUtil.set(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH, String.valueOf(useHashComplete.isSelected()), false);
         }
 
         public boolean isChanged() {
             try {
-                return useSWT.isSelected() != PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_SWT) ||
-                        useHashComplete.isSelected() != PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH);
+                return useHashComplete.isSelected() != PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH);
             } catch (Exception e) {
                 return true;
             }
