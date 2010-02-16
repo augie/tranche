@@ -135,6 +135,7 @@ Name, value pairs:
 || server.user.simultaneous.requests || The number of requests a single user can have executed simultaneously on a server. || 3 ||
 || server.server.simultaneous.requests || The number of requests a single server can have executed simultaneously on a server. || 10 ||
 || server.offline.notification.interval || The number of milliseconds between sending offline server notification emails. || 86400000 ||
+|| server.clients.max || The maximum number of clients that can concurrently connect to a server. || 1000 ||
 
 
 
