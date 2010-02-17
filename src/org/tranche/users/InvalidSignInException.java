@@ -17,7 +17,7 @@ package org.tranche.users;
 
 /**
  *
- * @author James A Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class InvalidSignInException extends Exception {
 

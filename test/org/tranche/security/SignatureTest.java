@@ -15,7 +15,6 @@
  */
 package org.tranche.security;
 
-import org.tranche.security.Signature;
 import org.tranche.util.*;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -42,5 +41,12 @@ public class SignatureTest extends TrancheTestCase {
 
         assertTrue("Two signatures should be equal.", sig1.equals(sig2));
         assertNotNull("Signature should return hash code.", sig1.hashCode());
+    }
+
+    public void testToAndFromSignatureByteArray() throws Exception {
+        Signature sig = DevUtil.getBogusSignature();
+        byte[] sigBytes = sig.toByteArray();
+        Signature sigVerify = new Signature(sigBytes);
+        assertEquals("Should verify", sig, sigVerify);
     }
 }

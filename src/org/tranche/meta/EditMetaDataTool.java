@@ -2,7 +2,7 @@ package org.tranche.meta;
 
 /**
  *
- * @author James A Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class EditMetaDataTool {
 

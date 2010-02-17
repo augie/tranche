@@ -27,6 +27,7 @@ import java.util.zip.ZipInputStream;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TrancheTestCase;
 
@@ -243,7 +244,7 @@ public class UserZipFileTest extends TrancheTestCase {
     }
 
     public void testUserAllPrivilegesFlag() throws Exception {
-        UserZipFile user = DevUtil.makeNewUser(User.ALL_PRIVILEGES);
+        UserZipFile user = DevUtil.makeNewUser(RandomUtil.getString(10), User.ALL_PRIVILEGES);
         
         user.setFlags(User.NO_PRIVILEGES);
         assertFalse("User shouldn't be able to do anything.", user.canDeleteData());

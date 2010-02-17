@@ -58,7 +58,7 @@ public class ServerStatusUpdateProcessTest extends NetworkPackageTestCase {
                 row.setIsOnline(true);
                 unsortedRows.add(row);
             }
-            NetworkUtil.getStatus().setRows(unsortedRows);
+            NetworkUtil.updateRows(unsortedRows);
 
             // local server
             dir = TempFileUtil.createTemporaryDirectory("testServer");

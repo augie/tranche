@@ -391,6 +391,14 @@ public class ConfigureTranche {
      * <p>The default number of milliseconds between sending offline server notification emails.</p>
      */
     public static final String DEFAULT_SERVER_OFFLINE_NOTIFICATION_INTERVAL = "86400000";
+    /**
+     * <p>The maximum number of clients that can concurrently connect to a server.</p>
+     */
+    public static final String PROP_SERVER_CLIENTS_MAX = "server.clients.max";
+    /**
+     * <p>The default maximum number of clients that can concurrently connect to a server.</p>
+     */
+    public static final String DEFAULT_SERVER_CLIENTS_MAX = "1000";
     private static final Properties properties = new Properties(), defaultProperties = new Properties();
     private static Map<String, String> attributesCache = null;
     private static final List<String> networkTimeServers = new LinkedList<String>();
@@ -401,7 +409,6 @@ public class ConfigureTranche {
     static {
         // load the HTTPS protocol just once on startup
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
-        reset();
         setDefault(PROP_EMAIL_URL, DEFAULT_EMAIL_URL);
         setDefault(PROP_SERVER_DIRECTORY, DEFAULT_SERVER_DIRECTORY);
         setDefault(PROP_SERVER_PORT, DEFAULT_SERVER_PORT);
@@ -425,6 +432,8 @@ public class ConfigureTranche {
         setDefault(PROP_TIME_CHANGE_CHECK_DEVIATION, DEFAULT_TIME_CHANGE_CHECK_DEVIATION);
         setDefault(PROP_TIME_UPDATE_INTERVAL, DEFAULT_TIME_UPDATE_INTERVAL);
         setDefault(PROP_TIME_UPDATE_TIMEOUT, DEFAULT_TIME_UPDATE_TIMEOUT);
+        setDefault(PROP_SERVER_CLIENTS_MAX, DEFAULT_SERVER_CLIENTS_MAX);
+        reset();
     }
 
     /**

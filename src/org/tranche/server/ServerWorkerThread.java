@@ -60,7 +60,7 @@ public class ServerWorkerThread extends Thread {
     private static final long KEEP_ALIVE_THRESHOLD = RemoteTrancheServer.getResponseTimeout() / 10;
     private final Socket s;
     private final Server server;
-    private final ArrayBlockingQueue<ServerWorkerThreadQueueItem> queue = new ArrayBlockingQueue(ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_QUEUE_SIZE) * 4);
+    private final ArrayBlockingQueue<ServerWorkerThreadQueueItem> queue = new ArrayBlockingQueue((ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_QUEUE_SIZE) * 4) + 1);
     private final Set<Long> currentlyWorkingItems = new HashSet<Long>();
     private final Set<ServerWorkerOutputThread> outputThreads = new HashSet<ServerWorkerOutputThread>();
     private final ServerWorkerKeepAliveThread keepAliveThread = new ServerWorkerKeepAliveThread();
@@ -471,9 +471,6 @@ public class ServerWorkerThread extends Thread {
                     s.close();
                 } catch (Exception e) {
                 }
-
-                // remove from the list
-                server.removeWorker(ServerWorkerThread.this);
             }
         }
     }

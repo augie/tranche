@@ -330,14 +330,14 @@ public class RemoteUtil {
             } else if (errorMessage.equals(ServerIsNotReadableException.MESSAGE)) {
                 // read in updated status info and commit as update to current table
                 try {
-                    NetworkUtil.getStatus().setRow(new StatusTableRow(in));
+                    NetworkUtil.updateRow(new StatusTableRow(in));
                 } catch (Exception e) {
                 }
                 throw new ServerIsNotReadableException();
             } else if (errorMessage.equals(ServerIsNotWritableException.MESSAGE)) {
                 // read in updated status info and commit as update to current table
                 try {
-                    NetworkUtil.getStatus().setRow(new StatusTableRow(in));
+                    NetworkUtil.updateRow(new StatusTableRow(in));
                 } catch (Exception e) {
                 }
                 throw new ServerIsNotWritableException();
@@ -373,7 +373,7 @@ public class RemoteUtil {
             } else if (errorMessage.equals(ChunkDoesNotBelongException.MESSAGE)) {
                 // read in updated status info and commit as update to current table
                 try {
-                    NetworkUtil.getStatus().setRow(new StatusTableRow(in));
+                    NetworkUtil.updateRow(new StatusTableRow(in));
                 } catch (Exception e) {
                 }
                 // Still throw exception so application can handle

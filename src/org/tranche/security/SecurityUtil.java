@@ -79,6 +79,8 @@ public class SecurityUtil {
      * <p>Size of signature in bytes, used by buffer.</p>
      */
     public static final int SIGNATURE_BUFFER_SIZE = 10000;
+    private static X509Certificate adminCert = null,  userCert = null,  readOnlyCert = null,  writeOnlyCert = null,  autoCert = null,  anonCert = null,  emailCert = null;
+    private static PrivateKey anonKey = null,  emailKey = null;
 
     /**
      * <p>Create a hash using a particular hashing algorithm.</p>
@@ -464,47 +466,6 @@ public class SecurityUtil {
         return md.digest();
     }
 
-//     /**
-//      * Helper method to sign a file using a particular keystone, alias, and password.
-//      */
-//     public static void sign(String file, String keystore, String keystorePassword, String alias, String aliasPassword)throws IOException, GeneralSecurityException {
-//         byte[] digitalSignature = signBytes(file, keystore, keystorePassword, alias, aliasPassword);
-//
-//         // save the signature
-//         FileOutputStream fos = new FileOutputStream(file+".sha");
-//         fos.write(digitalSignature);
-//         fos.flush();
-//         fos.close();
-//     }
-//
-//     public static byte[] signBytes(String file, String keystore, String keystorePassword, String alias, String aliasPassword)throws IOException, GeneralSecurityException {
-//         FileInputStream fis = new FileInputStream(file);
-//         byte[] sig = signBytes(fis, keystore, keystorePassword, alias, aliasPassword);
-//         fis.close();
-//
-//         return sig;
-//     }
-//
-//     public static byte[] signBytes(InputStream is, String keystore, String keystorePassword, String alias, String aliasPassword)throws IOException, GeneralSecurityException {
-//         // get the private key
-//         PrivateKey privateKey = getPrivateKeyFromKeyStore(keystore, keystorePassword, alias, aliasPassword);
-//
-//         // sign the jar
-//         Signature sig = Signature.getInstance("SHA1withDSA");
-//         sig.initSign(privateKey);
-//         // buffer for speed
-//         byte[] buf = new byte[512];
-//         // update with jar contents
-//         for (int bytesRead = is.read(buf);bytesRead>0;bytesRead=is.read(buf)){
-//             sig.update(buf, 0, bytesRead);
-//         }
-//         // get the signature
-//         byte[] digitalSignature = sig.sign();
-//
-//         return digitalSignature;
-//     }
-//
-//
     /**
      * <p>Retrieve the PrivateKey (used to sign bytes) from the system keystore.</p>
      * @param keystore
@@ -549,22 +510,6 @@ public class SecurityUtil {
         // return the private key
         return privateKey;
     }
-//     /**
-//      * Helper method to get a private key from a KeyStore.
-//      */
-//     public static Certificate getCertificateFromKeyStore(String keystore, String keystorePassword, String alias) throws IOException, GeneralSecurityException {
-//         // check the signature on the jar
-//         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-//         ks.load(new FileInputStream(keystore), new String(keystorePassword).toCharArray());
-//
-//         // get the private
-//         Certificate cert = (Certificate)ks.getCertificate(alias);
-//
-//         // return the private key
-//         return cert;
-//     }
-    private static X509Certificate adminCert = null,  userCert = null,  readOnlyCert = null,  writeOnlyCert = null,  autoCert = null,  anonCert = null,  emailCert = null;
-    private static PrivateKey anonKey = null,  emailKey = null;
 
     /**
      * <p>Returns certificate with priveldges: read only</p>

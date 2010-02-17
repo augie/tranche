@@ -688,7 +688,7 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
         FlatFileTrancheServer ffts = null;
         try {
             ffts = new FlatFileTrancheServer(TempFileUtil.createTemporaryDirectory());
-            UserZipFile user = DevUtil.makeNewUser(User.CAN_GET_CONFIGURATION | User.CAN_SET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
+            UserZipFile user = DevUtil.makeNewUser(RandomUtil.getString(10), User.CAN_GET_CONFIGURATION | User.CAN_SET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
             ffts.getConfiguration().addUser(user);
             ffts.saveConfiguration();
 

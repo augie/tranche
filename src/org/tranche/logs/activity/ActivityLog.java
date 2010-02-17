@@ -185,7 +185,7 @@ public class ActivityLog {
                             byte[] possibleSignatureBytes = new byte[(int) this.getSignaturesFile().length()];
                             this.signaturesRAF.seek(0);
                             this.signaturesRAF.readFully(possibleSignatureBytes);
-                            Signature sig = ActivityLogUtil.fromSignatureByteArray(possibleSignatureBytes);
+                            new Signature(possibleSignatureBytes);
                             debugOut("    ... no signature indices, but was able to read in signature from signatures file. Repairable.");
 
                             // Prevent log clearing
@@ -286,7 +286,7 @@ public class ActivityLog {
                                 this.signaturesRAF.read(signatureBytes);
 
                                 // If this throws an exception, then cannot recover
-                                ActivityLogUtil.fromSignatureByteArray(signatureBytes);
+                                new Signature(signatureBytes);
 
                                 SignatureIndexEntry sie = new SignatureIndexEntry(e.signatureIndex + 1, lastSignatureOffset, lastSignatureLen);
 
@@ -1259,11 +1259,11 @@ public class ActivityLog {
                 byte[] signatureBytes = new byte[entry.signatureLen];
                 this.signaturesRAF.seek(entry.signatureOffset);
                 this.signaturesRAF.readFully(signatureBytes);
-                signature = ActivityLogUtil.fromSignatureByteArray(signatureBytes);
+                signature = new Signature(signatureBytes);
             }
             return signature;
-        } // getSignature
-    } // SignatureMap
+        }
+    }
 
     public long getActivityLogEntriesCount() {
         synchronized (this.activitiesLogRAF) {

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -34,20 +34,19 @@ import org.tranche.security.Signature;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.ServerModeFlag;
+import org.tranche.exceptions.RejectedRequestException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.flatfile.NonceMap;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.network.NetworkUtil;
 import org.tranche.remote.RemoteUtil;
-import org.tranche.remote.Token;
 import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.security.SecurityUtil;
 import org.tranche.server.logs.LogSubmitter;
 import org.tranche.util.IOUtil;
 import org.tranche.servers.ServerUtil;
 import org.tranche.util.DebugUtil;
-import org.tranche.util.EmailUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -64,29 +63,16 @@ public class Server extends Thread {
      * <p>Right now, them maximum size is setting meta data, so based on it's maximum value plus a MB of elbow room.</p>
      */
     public static final long DEFAULT_MAX_REQUEST_SIZE = MetaData.SIZE_MAX + BigHash.HASH_LENGTH + SecurityUtil.SIGNATURE_BUFFER_SIZE + NonceMap.NONCE_BYTES + (1024 * 1024);
-    /**
-     * <p>Maximum number of concurrent connections allowed</p>
-     */
-    public static final int DEFAULT_MAX_CONCURRENT_USERS = 1000;
-    /**
-     * <p>Timeout information</p>
-     */
-    public static final int SERVER_TIMEOUT_IN_MILLISECONDS = 180 * 1000;
-    /**
-     * 
-     */
-    public static final int SERVER_TIMEOUT_TICKS = 3;
     private static BufferedWriter redirectOutputWriter = null;
     private static File redirectOutputFile = null;
-    private final TrancheServer dfs;
-    private final Map<String, ServerItem> items = Collections.synchronizedMap(new HashMap<String, ServerItem>());
-    private final List<ServerWorkerThread> workers = Collections.synchronizedList(new ArrayList<ServerWorkerThread>());
+    private final TrancheServer ts;
+    private final Map<String, ServerItem> items = new HashMap<String, ServerItem>();
+    private final Set<ServerWorkerThread> workers = new HashSet<ServerWorkerThread>();
     private ServerSocket socket;
     private LogSubmitter submitter;
-    private int port;
-    private boolean ssl,  stopped = false,  isShuttingDown = false;
-    private int rejectedUsers = 0,  maxConcurrentUsers = DEFAULT_MAX_CONCURRENT_USERS;
+    private boolean ssl, stopped = false, isShuttingDown = false;
     private long maxRequestSize = DEFAULT_MAX_REQUEST_SIZE;
+    private int port, rejectedClients = 0;
     private ServerStartupThread serverStartupThread;
 
     /**
@@ -97,9 +83,9 @@ public class Server extends Thread {
      */
     public Server(TrancheServer dfs, int port) throws Exception {
         // set the variables of inters
-        this.dfs = dfs;
+        this.ts = dfs;
         this.port = port;
-        this.ssl = Boolean.valueOf(ConfigureTranche.PROP_SERVER_SSL);
+        this.ssl = ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL);
         setName("Tranche Server: " + this.port + ", ssl: " + this.ssl);
 
         init();
@@ -114,7 +100,7 @@ public class Server extends Thread {
      */
     public Server(TrancheServer dfs, int port, boolean ssl) throws Exception {
         // set the variables of inters
-        this.dfs = dfs;
+        this.ts = dfs;
         this.port = port;
         this.ssl = ssl;
         setName("Tranche Server: " + this.port + ", ssl: " + this.ssl);
@@ -129,6 +115,7 @@ public class Server extends Thread {
      */
     private void init() throws Exception {
         debugOut("Initializing server: " + getURL());
+
         // add the items
         addItem(new DeleteDataItem(this));
         addItem(new DeleteMetaDataItem(this));
@@ -166,37 +153,32 @@ public class Server extends Thread {
             socket = ServerSocketFactory.getDefault().createServerSocket(getPort());
         }
 
-        // dump the server URL to the FFTS config -- needed by HashSpanFixingThread
-        if (dfs instanceof FlatFileTrancheServer) {
-            // manually set the server URL information
-            FlatFileTrancheServer ffts = (FlatFileTrancheServer) dfs;
-            ffts.getConfiguration().setValue(ConfigKeys.URL, getURL());
-        } else if (dfs instanceof RoutingTrancheServer) {
-            // manually set the server URL information
-            RoutingTrancheServer routingTrancheServer = (RoutingTrancheServer) dfs;
-            routingTrancheServer.getConfiguration().setValue(ConfigKeys.URL, getURL());
-        }
-
         // URL changed -- also change log submitter
-        this.submitter = LogSubmitter.getSubmitter(getURL());
+        submitter = LogSubmitter.getSubmitter(getURL());
+
+        // dump the server URL to the FFTS config -- needed by HashSpanFixingThread
+        if (ts instanceof FlatFileTrancheServer) {
+            // manually set the server URL information
+            ((FlatFileTrancheServer) ts).getConfiguration().setValue(ConfigKeys.URL, getURL());
+        } else if (ts instanceof RoutingTrancheServer) {
+            // manually set the server URL information
+            ((RoutingTrancheServer) ts).getConfiguration().setValue(ConfigKeys.URL, getURL());
+        }
 
         // Start the thread that verified integrity of server data and attempts to get any
         // newly-added data
         if (!TestUtil.isTesting() || TestUtil.isTestingServerStartupThread()) {
-            serverStartupThread = new ServerStartupThread(Server.this, dfs);
-            serverStartupThread.setPriority(Thread.MIN_PRIORITY);
+            serverStartupThread = new ServerStartupThread(Server.this, ts);
             serverStartupThread.setDaemon(true);
             serverStartupThread.start();
         } else {
             try {
-                if (dfs instanceof FlatFileTrancheServer) {
-                    FlatFileTrancheServer ffts = (FlatFileTrancheServer) dfs;
-                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
+                if (ts instanceof FlatFileTrancheServer) {
+                    ((FlatFileTrancheServer) ts).getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
                 }
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                debugErr(e);
             }
-
             serverStartupThread = null;
         }
     }
@@ -206,7 +188,7 @@ public class Server extends Thread {
      * @return
      */
     public String getURL() {
-        return getURL(this.getHostName());
+        return getURL(getHostName());
     }
 
     /**
@@ -256,39 +238,45 @@ public class Server extends Thread {
      * @return
      */
     public TrancheServer getTrancheServer() {
-        return dfs;
+        return ts;
     }
 
     /**
      * 
      * @return
      */
-    public int getConnectedUsers() {
-        return this.workers.size();
+    public int getConnectedClients() {
+        synchronized (workers) {
+            return workers.size();
+        }
+    }
+
+    /**
+     * 
+     * @return
+     */
+    private Collection<ServerWorkerThread> getWorkers() {
+        Set<ServerWorkerThread> set = new HashSet<ServerWorkerThread>();
+        synchronized (workers) {
+            set.addAll(workers);
+        }
+        return set;
     }
 
     /**
      *
      * @return
      */
-    public int getRejectedUsers() {
-        return rejectedUsers;
+    public int getRejectedClients() {
+        return rejectedClients;
     }
 
     /**
      *
      * @return
      */
-    public int getMaxConcurrentUsers() {
-        return maxConcurrentUsers;
-    }
-
-    /**
-     *
-     * @param maxConcurrentUsers
-     */
-    public void setMaxConcurrentUsers(int maxConcurrentUsers) {
-        this.maxConcurrentUsers = maxConcurrentUsers;
+    public int getMaxConcurrentClients() {
+        return ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_CLIENTS_MAX);
     }
 
     /**
@@ -350,8 +338,8 @@ public class Server extends Thread {
         }
 
         // Use this instead of stored host value perchance hostname/ip overwritten in Configuration attributes
-        if (dfs instanceof FlatFileTrancheServer) {
-            return ((FlatFileTrancheServer)dfs).getHost();
+        if (ts instanceof FlatFileTrancheServer) {
+            return ((FlatFileTrancheServer) ts).getHost();
         } else {
             return ServerUtil.getHostName();
         }
@@ -363,14 +351,6 @@ public class Server extends Thread {
      */
     public boolean isCore() {
         return NetworkUtil.isStartupServer(getHostName());
-    }
-
-    /**
-     * 
-     * @param swt
-     */
-    public void removeWorker(ServerWorkerThread swt) {
-        workers.remove(swt);
     }
 
     /**
@@ -392,7 +372,7 @@ public class Server extends Thread {
         if (isShuttingDown) {
             return;
         }
-        dfs.requestShutdown(sig, nonce);
+        ts.requestShutdown(sig, nonce);
         IOUtil.safeClose(this);
     }
 
@@ -405,62 +385,45 @@ public class Server extends Thread {
         if (!run) {
             // Flag socket-acception loop to stop
             stopped = true;
-            try {
-                // synchronize on a permanent object
-                if (socket != null) {
-                    socket.close();
-                }
-            } catch (Exception e) {
-                debugErr(e);
-            }
 
             // close all worker threads
-            for (ServerWorkerThread swt : workers) {
+            for (ServerWorkerThread swt : getWorkers()) {
                 try {
                     swt.getSocket().close();
-                } catch (IOException ex) {
+                } catch (Exception e) {
+                    debugErr(e);
                 }
             }
 
-            // Close the log submitter. It must finish all pending writes.
-            submitter.close();
+            IOUtil.safeClose(socket);
 
-            try {
-
-                // ---------------------------------------------------------------------------------
-                // July 14 2009:
-                //   If close the Server object, should not close underlying servers! This server
-                //   only wraps the underlying server, which is otherwise independent.
-                //
-                //   This is important because Server might be restarted (e.g., when changing port)
-                // ---------------------------------------------------------------------------------
-
-//                // safe close the tranche server
-//                IOUtil.safeClose(dfs);
-
-                // kill all of the working threads
-                for (Thread t : workers) {
-                    try {
-                        // nicely wait a second
-                        t.join(1000);
-                        // forcefully interrupt it
-                        if (t.isAlive()) {
-                            t.interrupt();
-                        }
-                    } catch (Exception e) {
+            // kill all of the working threads
+            for (Thread t : getWorkers()) {
+                try {
+                    // nicely wait a second
+                    t.join(1000);
+                    // forcefully interrupt it
+                    if (t.isAlive()) {
+                        t.interrupt();
                     }
+                } catch (Exception e) {
                 }
+            }
+            synchronized (workers) {
                 workers.clear();
-            } catch (Exception e) {
             }
 
-            // If output file, close
-            if (redirectOutputWriter != null) {
-                IOUtil.safeClose(redirectOutputWriter);
-            }
+            IOUtil.safeClose(redirectOutputWriter);
 
             // notify the network util
             NetworkUtil.clearLocalServer();
+
+            // Close the log submitter. It must finish all pending writes.
+            try {
+                submitter.close();
+            } catch (Exception e) {
+                debugErr(e);
+            }
         }
     }
 
@@ -469,92 +432,83 @@ public class Server extends Thread {
      */
     @Override()
     public void run() {
-        debugOut("Starting server on port :" + getPort() + "; maximum of " + getMaxConcurrentUsers() + " concurrent users; timeout tick in millis: " + String.valueOf(SERVER_TIMEOUT_IN_MILLISECONDS / SERVER_TIMEOUT_TICKS));
+        debugOut("Starting server on port " + getPort());
         try {
-            Socket clientSocket = null;
-            // accept connections
-            int successiveFailureCount = 0;
             // set the local server -- also starts the updating of the network status
             NetworkUtil.setLocalServer(Server.this);
+            // listen for requests
+            Socket clientSocket = null;
+            int successiveFailureCount = 0;
             while (!isStopped()) {
                 try {
-                    debugOut("Server " + IOUtil.createURL(getHostName(), getPort(), isSSL()) + "; Accepting requests");
-                    clientSocket = this.socket.accept();
-                    debugOut("Server " + IOUtil.createURL(getHostName(), getPort(), isSSL()) + "; Request accepted");
-                } catch (IOException ex) {
-                    successiveFailureCount++;
-
+                    debugOut("Server " + IOUtil.createURL(getHostName(), getPort(), isSSL()) + "; Receiving connection request.");
+                    clientSocket = socket.accept();
+                } catch (IOException e) {
                     // Shutdown if excessive. Obvious network issues or server socket is dead.
-                    if (successiveFailureCount > 50) {
-                        // Close the server socket
-                        this.socket.close();
-
-                        // send the email
-                        EmailUtil.safeSendEmail("Tranche: Server " + getURL() + " Auto-Shutdown", ConfigureTranche.getAdminEmailAccounts(), "Server at " + IOUtil.createURL(dfs) + " failed trying to establish " + successiveFailureCount + " consecutive socket connections and shut itself down. This will happen if the server socket shuts down unexpectedly or there are horrendous network issues.");
-
-                        // Exit gracefully
-                        stopped = true;
+                    if (++successiveFailureCount > 5) {
+                        setRun(false);
                     }
-                    // Problems connecting, wait for next connection
                     // Prevent CPU from going nuts on successive connection attempts
                     Thread.yield();
                     continue;
                 }
+                successiveFailureCount = 0;
 
                 // Make sure there is actually a socket
                 if (clientSocket == null) {
                     continue;
                 }
-                // Reset the count
-                successiveFailureCount = 0;
 
-                // final ref
-                final Socket s = clientSocket;
-
-                // set the timeout
-                s.setSoTimeout(SERVER_TIMEOUT_IN_MILLISECONDS / SERVER_TIMEOUT_TICKS);
-
-                // If already maximum number users, close off w/ message
-                if (this.getConnectedUsers() > getMaxConcurrentUsers()) {
-                    s.getOutputStream().write(Token.REJECTED_CONNECTION);
-                    s.getOutputStream().flush();
-                    s.close();
-                    rejectedUsers++;
-                    continue;
-                }
-
-                // try spawning a new worker thread
                 try {
+                    debugOut("Server " + IOUtil.createURL(getHostName(), getPort(), isSSL()) + "; Established connection with " + clientSocket.getLocalAddress().getHostAddress() + ".");
+
+                    int timeout = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIMEOUT);
+                    if (timeout == 0) {
+                        clientSocket.setSoTimeout(60000);
+                    } else {
+                        clientSocket.setSoTimeout(timeout);
+                    }
+
+                    // If already maximum number clients, close off w/ message
+                    if (getConnectedClients() >= getMaxConcurrentClients()) {
+                        throw new Exception("Maximum number of concurrent clients reached: " + getMaxConcurrentClients());
+                    }
+
                     // spawn a thread to handle this
-                    ServerWorkerThread pswt = new ServerWorkerThread(s, this);
-                    // add to the set of workers
-                    workers.add(pswt);
+                    ServerWorkerThread pswt = new ServerWorkerThread(clientSocket, this);
                     // start it
                     pswt.start();
+                    // add to the set of workers
+                    synchronized (workers) {
+                        workers.add(pswt);
+                    }
                     // purge old workers
-                    for (int i = 0; i < workers.size(); i++) {
-                        ServerWorkerThread worker = workers.get(i);
+                    for (ServerWorkerThread worker : getWorkers()) {
                         if (!worker.isAlive()) {
-                            workers.remove(worker);
+                            synchronized (workers) {
+                                workers.remove(worker);
+                            }
                         }
                     }
                 } catch (Exception e) {
                     debugErr(e);
+                    rejectedClients++;
                     // try to send the error back to the user -- too many threads
+                    OutputStream out = null;
                     try {
-                        OutputStream out = s.getOutputStream();
-                        RemoteUtil.writeError("Can't connect. Too many users.", out);
+                        out = clientSocket.getOutputStream();
+                        RemoteUtil.writeError(RejectedRequestException.MESSAGE, out);
+                    } catch (Exception ex) {
+                        debugErr(ex);
+                    } finally {
                         IOUtil.safeClose(out);
-                    } catch (Exception ignore) {
                     }
                 }
             }
         } catch (Exception e) {
             debugErr(e);
-        } finally {
-            debugOut("*** Server instance listening on port " + getPort() + " is exiting. ***");
-            debugOut("A total of " + getRejectedUsers() + " connections were rejected by process.");
         }
+        debugOut("Server is exiting.");
     }
 
     /**

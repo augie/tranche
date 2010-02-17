@@ -19,10 +19,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.tranche.security.Signature;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.hash.BigHash;
-import org.tranche.remote.RemoteUtil;
 import org.tranche.util.IOUtil;
 
 /**
@@ -61,9 +59,7 @@ public class ActivityLogUtil {
     public static final int TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES = SIGNATURE_INDEX_SIZE_IN_BYTES + SIGNATURE_OFFSET_SIZE_IN_BYTES + SIGNATURE_LENGTH_SIZE_IN_BYTES;
 
     public static byte[] toActivityLogByteArray(ActivityLogEntry activityLogEntry) throws IOException {
-
         ByteArrayOutputStream baos = null;
-
         try {
 
             baos = new ByteArrayOutputStream(TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
@@ -131,7 +127,7 @@ public class ActivityLogUtil {
             IOUtil.getBytesFully(hashBytes, bais);
             bb = ByteBuffer.wrap(hashBytes);
             BigHash hash = BigHash.createFromBytes(hashBytes);
-            
+
             return new ActivityLogEntry(timestamp, activity, signatureIndex, hash);
 
         } finally {
@@ -186,51 +182,26 @@ public class ActivityLogUtil {
         ByteArrayInputStream bais = null;
         try {
             bais = new ByteArrayInputStream(signatureHeaderByteArray);
-            
+
             // Signature index is first 4 bytes
             byte[] signatureIndexBytes = new byte[SIGNATURE_INDEX_SIZE_IN_BYTES];
             IOUtil.getBytesFully(signatureIndexBytes, bais);
             ByteBuffer bb = ByteBuffer.wrap(signatureIndexBytes);
             int signatureIndex = bb.getInt();
-            
+
             // Signature offset is next 8 bytes
             byte[] signatureOffsetBytes = new byte[SIGNATURE_OFFSET_SIZE_IN_BYTES];
             IOUtil.getBytesFully(signatureOffsetBytes, bais);
             bb = ByteBuffer.wrap(signatureOffsetBytes);
             long signatureOffset = bb.getLong();
-            
+
             // Signature length (int bytes) is last 4 bytes
             byte[] signatureLengthBytes = new byte[SIGNATURE_LENGTH_SIZE_IN_BYTES];
             IOUtil.getBytesFully(signatureLengthBytes, bais);
             bb = ByteBuffer.wrap(signatureLengthBytes);
             int signatureLen = bb.getInt();
-            
+
             return new SignatureIndexEntry(signatureIndex, signatureOffset, signatureLen);
-            
-        } finally {
-            IOUtil.safeClose(bais);
-        }
-    }
-    
-    public static byte[] toSignatureByteArray(Signature signature) throws IOException, Exception {
-        // Quickly build the signature bytes
-        ByteArrayOutputStream baos = null;
-        try {
-            baos = new ByteArrayOutputStream();
-            RemoteUtil.writeSignature(signature, baos);
-            baos.flush();
-            byte[] bytes = baos.toByteArray();
-            return bytes;
-        } finally {
-            IOUtil.safeClose(baos);
-        }
-    }
-    
-    public static Signature fromSignatureByteArray(byte[] signatureBytes) throws IOException, Exception {
-        ByteArrayInputStream bais = null;
-        try {
-            bais = new ByteArrayInputStream(signatureBytes);
-            return RemoteUtil.readSignature(bais);
         } finally {
             IOUtil.safeClose(bais);
         }

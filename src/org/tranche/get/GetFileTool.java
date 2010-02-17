@@ -64,7 +64,6 @@ import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
 
 /**
  * <p>A tool for downloading from a Tranche repository.</p>
@@ -500,8 +499,9 @@ public class GetFileTool {
      * <p>Set whether the download is paused.</p>
      * @param paused Whether the download is paused.
      */
-    public void setPause(boolean paused) {
+    public synchronized void setPause(boolean paused) {
         this.paused = paused;
+        notifyAll();
     }
 
     /**
@@ -518,10 +518,16 @@ public class GetFileTool {
     private void waitHereOnPause() {
         while (paused) {
             // break point
-            if (isStopped()) {
+            if (stopped) {
                 return;
             }
-            ThreadUtil.safeSleep(1000);
+            synchronized (GetFileTool.this) {
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
         }
     }
 
@@ -1448,6 +1454,7 @@ public class GetFileTool {
             // ---------------------------------------------------------------------------
             ATTEMPT:
             for (int attempt = 0; attempt < 2; attempt++) {
+                byte[] bytes = null;
                 HOSTS:
                 for (String host : hosts) {
                     fireTryingMetaData(hash, host);
@@ -1465,7 +1472,7 @@ public class GetFileTool {
                                 debugOut(pew.toString());
                             }
                             if (!wrapper.isVoid()) {
-                                byte[] bytes = IOUtil.get1DBytes(wrapper);
+                                bytes = IOUtil.get1DBytes(wrapper);
                                 if (bytes == null) {
                                     continue HOSTS;
                                 }
@@ -1483,6 +1490,10 @@ public class GetFileTool {
                         exceptions.add(new PropagationExceptionWrapper(e, host, hash));
                         ConnectionUtil.reportExceptionHost(host, e);
                     }
+                }
+                // no meta data bytes found
+                if (bytes == null) {
+                    break ATTEMPT;
                 }
             }
             if (downloadMetaData == null) {
@@ -1864,7 +1875,7 @@ public class GetFileTool {
      */
     private void fire(GetFileToolEvent event) {
         // break point
-        if (isStopped()) {
+        if (stopped) {
             return;
         }
         waitHereOnPause();
@@ -1918,7 +1929,7 @@ public class GetFileTool {
      */
     private void fireFailure(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         // break point
-        if (isStopped()) {
+        if (stopped) {
             return;
         }
         waitHereOnPause();
@@ -2490,48 +2501,10 @@ public class GetFileTool {
 
         /**
          *
-         * @return
-         */
-        public boolean isStarted() {
-            return started;
-        }
-
-        /**
-         * 
-         */
-        private void started() {
-            started = true;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public boolean isFinished() {
-            return finished;
-        }
-
-        /**
-         *
-         */
-        private void finished() {
-            finished = true;
-        }
-
-        /**
-         *
          */
         public void halt() {
             debugOut("Halting");
             stopped = true;
-        }
-
-        /**
-         * 
-         * @return
-         */
-        public boolean isStopped() {
-            return stopped;
         }
 
         /**
@@ -2555,16 +2528,20 @@ public class GetFileTool {
         /**
          *
          */
-        public void waitForFinish() {
-            while (!isStarted() || !isFinished()) {
-                ThreadUtil.safeSleep(500);
+        public synchronized void waitForFinish() {
+            while (!started || !finished) {
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
             debugOut("Exiting file data download thread.");
         }
 
         @Override
         public void run() {
-            started();
+            started = true;
             try {
                 do {
                     DataChunk dataChunk = null;
@@ -2596,11 +2573,14 @@ public class GetFileTool {
                         }
                         haltAll();
                     }
-                } while (!isStopped() && !GetFileTool.this.isStopped());
+                } while (!stopped && !GetFileTool.this.stopped);
             } catch (Exception e) {
                 debugErr(e);
             } finally {
-                finished();
+                finished = true;
+                synchronized (FileDataDownloadingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }
@@ -2629,36 +2609,6 @@ public class GetFileTool {
 
         /**
          *
-         * @return
-         */
-        public boolean isStarted() {
-            return started;
-        }
-
-        /**
-         * 
-         */
-        private void started() {
-            started = true;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public boolean isFinished() {
-            return finished;
-        }
-
-        /**
-         *
-         */
-        private void finished() {
-            finished = true;
-        }
-
-        /**
-         *
          */
         public void halt() {
             debugOut("Halting");
@@ -2678,29 +2628,18 @@ public class GetFileTool {
         }
 
         /**
-         * 
-         * @return
-         */
-        public boolean isStopped() {
-            return stopped;
-        }
-
-        /**
          *
          */
-        public void waitForFinish() {
-            stopWhenFinished();
-            while (!isStarted() || !isFinished()) {
-                ThreadUtil.safeSleep(500);
+        public synchronized void waitForFinish() {
+            stopWhenFinished = true;
+            while (!started || !finished) {
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
             debugOut("Exiting data download thread.");
-        }
-
-        /**
-         *
-         */
-        private void stopWhenFinished() {
-            stopWhenFinished = true;
         }
 
         /**
@@ -2745,6 +2684,12 @@ public class GetFileTool {
             }
         }
 
+        /**
+         * 
+         * @param dataChunk
+         * @return
+         * @throws Exception
+         */
         private String getBatchHost(DataChunk dataChunk) throws Exception {
             // add to batch waiting list
             String[] hosts = getConnections(dataChunk.hash).toArray(new String[0]);
@@ -2795,7 +2740,7 @@ public class GetFileTool {
             ArrayList<BigHash> hashes = new ArrayList<BigHash>();
             for (DataChunk chunk : chunks) {
                 // break point
-                if (isStopped() || GetFileTool.this.isStopped()) {
+                if (stopped || GetFileTool.this.stopped) {
                     return;
                 }
                 hashes.add(chunk.hash);
@@ -2822,7 +2767,7 @@ public class GetFileTool {
                     for (int i = 0; i < dataBytesArray.length; i++) {
                         try {
                             // break point
-                            if (isStopped() || GetFileTool.this.isStopped()) {
+                            if (stopped || GetFileTool.this.stopped) {
                                 return;
                             }
                             // did not exist on server/network
@@ -2849,7 +2794,7 @@ public class GetFileTool {
                 ConnectionUtil.reportExceptionHost(host, e);
                 for (DataChunk chunk : chunks) {
                     // break point
-                    if (isStopped() || GetFileTool.this.isStopped()) {
+                    if (stopped || GetFileTool.this.stopped) {
                         return;
                     }
                     putBackChunk(chunk);
@@ -2864,7 +2809,7 @@ public class GetFileTool {
             debugOut("Downloading remaining data chunks.");
             while (true) {
                 // break point
-                if (isStopped() || GetFileTool.this.isStopped()) {
+                if (stopped || GetFileTool.this.stopped) {
                     return;
                 }
                 String host = null;
@@ -2883,7 +2828,7 @@ public class GetFileTool {
                     debugOut("Data chunks left to download: " + dataChunkQueue.size());
                     for (int i = 0; i < dataChunkQueue.size(); i++) {
                         // break point
-                        if (isStopped() || GetFileTool.this.isStopped()) {
+                        if (stopped || GetFileTool.this.stopped) {
                             return;
                         }
                         DataChunk dataChunk = dataChunkQueue.poll();
@@ -2893,6 +2838,7 @@ public class GetFileTool {
                         } catch (Exception e) {
                             fireFailedChunk(dataChunk, e);
                         }
+                        dataChunkQueue.notifyAll();
                     }
                 }
             }
@@ -2930,7 +2876,7 @@ public class GetFileTool {
          * @return
          */
         private boolean isFinished(DataChunk dataChunk) {
-            boolean isForcedStop = isStopped() || GetFileTool.this.isStopped();
+            boolean isForcedStop = stopped || GetFileTool.this.stopped;
             boolean isExpectMore = dataChunk != null || !dataChunkQueue.isEmpty() || !isStopWhenFinished();
             return isForcedStop || !isExpectMore;
         }
@@ -2940,7 +2886,7 @@ public class GetFileTool {
          */
         @Override
         public void run() {
-            started();
+            started = true;
             try {
                 DataChunk dataChunk = null;
                 do {
@@ -2949,8 +2895,11 @@ public class GetFileTool {
                         dataChunk = dataChunkQueue.poll(500, TimeUnit.MILLISECONDS);
                     } while (dataChunk == null && !stopWhenFinished && !(stopped || GetFileTool.this.stopped));
                     // break point
-                    if (isStopped() || GetFileTool.this.isStopped()) {
+                    if (stopped || GetFileTool.this.stopped) {
                         break;
+                    }
+                    synchronized (dataChunkQueue) {
+                        dataChunkQueue.notifyAll();
                     }
                     if (dataChunk == null && dataChunkQueue.isEmpty()) {
                         if (isBatch()) {
@@ -2995,7 +2944,10 @@ public class GetFileTool {
             } catch (Exception e) {
                 debugErr(e);
             } finally {
-                finished();
+                finished = true;
+                synchronized (DirectoryDataDownloadingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }
@@ -3022,22 +2974,6 @@ public class GetFileTool {
 
         /**
          *
-         * @return
-         */
-        public boolean isStarted() {
-            return started;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public boolean isFinished() {
-            return finished;
-        }
-
-        /**
-         *
          */
         public void halt() {
             stopped = true;
@@ -3059,17 +2995,13 @@ public class GetFileTool {
          *
          * @return
          */
-        public boolean isStopped() {
-            return stopped;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public void waitForFinish() {
-            while (!isStarted() || !isFinished()) {
-                ThreadUtil.safeSleep(500);
+        public synchronized void waitForFinish() {
+            while (!started || !finished) {
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
         }
 
@@ -3086,15 +3018,17 @@ public class GetFileTool {
                 debugOut("Queueing chunk " + dataChunkHash);
                 // wait until there is room
                 while (dataChunkQueue.size() >= DEFAULT_DATA_QUEUE_SIZE) {
-                    ThreadUtil.safeSleep(50);
+                    synchronized (dataChunkQueue) {
+                        try {
+                            dataChunkQueue.wait();
+                        } catch (Exception e) {
+                            debugErr(e);
+                        }
+                    }
                     // break point
-                    if (isStopped() || GetFileTool.this.isStopped()) {
+                    if (stopped || GetFileTool.this.stopped) {
                         return;
                     }
-                }
-                // break point
-                if (isStopped() || GetFileTool.this.isStopped()) {
-                    return;
                 }
                 dataChunkQueue.put(new DataChunk(offset, dataChunkHash, metaChunk));
                 offset += dataChunkHash.getLength();
@@ -3144,7 +3078,7 @@ public class GetFileTool {
             ArrayList<BigHash> hashes = new ArrayList<BigHash>();
             for (MetaChunk chunk : chunks) {
                 // break point
-                if (isStopped() || GetFileTool.this.isStopped()) {
+                if (stopped || GetFileTool.this.stopped) {
                     return;
                 }
                 hashes.add(chunk.part.getHash());
@@ -3171,7 +3105,7 @@ public class GetFileTool {
                     for (int i = 0; i < metaDataBytesArray.length; i++) {
                         try {
                             // break point
-                            if (isStopped() || GetFileTool.this.isStopped()) {
+                            if (stopped || GetFileTool.this.stopped) {
                                 return;
                             }
                             // did not exist on server/network
@@ -3196,7 +3130,7 @@ public class GetFileTool {
                 // put back all the chunks
                 for (MetaChunk chunk : chunks) {
                     // break point
-                    if (isStopped() || GetFileTool.this.isStopped()) {
+                    if (stopped || GetFileTool.this.stopped) {
                         return;
                     }
                     putBackChunk(chunk);
@@ -3250,7 +3184,7 @@ public class GetFileTool {
         private void downloadRemainingBatchChunks() {
             while (true) {
                 // break point
-                if (isStopped() || GetFileTool.this.isStopped()) {
+                if (stopped || GetFileTool.this.stopped) {
                     return;
                 }
                 String host = null;
@@ -3269,7 +3203,7 @@ public class GetFileTool {
                     debugOut("Meta chunks left to download: " + metaChunks.size());
                     for (int i = 0; i < metaChunks.size(); i++) {
                         // break point
-                        if (isStopped() || GetFileTool.this.isStopped()) {
+                        if (stopped || GetFileTool.this.stopped) {
                             return;
                         }
                         MetaChunk metaChunk = metaChunks.removeFirst();
@@ -3299,7 +3233,7 @@ public class GetFileTool {
                         }
                     }
                     // break point
-                    if (isStopped() || GetFileTool.this.isStopped()) {
+                    if (stopped || GetFileTool.this.stopped) {
                         break;
                     }
                     if (metaChunk == null) {
@@ -3346,11 +3280,14 @@ public class GetFileTool {
                             fireFailedChunk(metaChunk, e);
                         }
                     }
-                } while (!isStopped() && !GetFileTool.this.isStopped());
+                } while (!stopped && !GetFileTool.this.stopped);
             } catch (Exception e) {
                 debugErr(e);
             } finally {
                 finished = true;
+                synchronized (DirectoryMetaDataDownloadingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }

@@ -438,25 +438,23 @@ public class MultiServerRequestStrategy {
     @Override()
     public String toString() {
         StringBuffer buf = new StringBuffer();
-
-        buf.append("Starting server: " + this.getHostReceivingRequest() + "; depth: " + (this.getDepth() == INFINITE_DEPTH ? "infinite (cannot solve)" : this.getDepth()) + "\n");
-        for (String key : this.partitionsMap.keySet()) {
-            Set<String> associatedServers = this.partitionsMap.get(key);
+        buf.append("Starting server: " + this.getHostReceivingRequest() + "; depth: " + (this.getDepth() == INFINITE_DEPTH ? "infinite (cannot solve)" : this.getDepth()));
+        for (String key : partitionsMap.keySet()) {
+            Set<String> associatedServers = partitionsMap.get(key);
             StringBuffer set = new StringBuffer();
             set.append("{");
-            int i = 0;
+            int j = 0;
             for (String as : associatedServers) {
                 set.append(as);
-                if (i < associatedServers.size() - 1) {
+                if (j < associatedServers.size() - 1) {
                     set.append(", ");
                 }
-                i++;
+                j++;
             }
             set.append("}");
 
-            buf.append("    * " + key + " -> " + set + "\n");
+            buf.append("    * " + key + " -> " + set);
         }
-
         return buf.toString();
     }
 

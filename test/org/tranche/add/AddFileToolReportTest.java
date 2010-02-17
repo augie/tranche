@@ -16,7 +16,6 @@
 package org.tranche.add;
 
 import java.io.*;
-import org.tranche.exceptions.TodoException;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.util.DevUtil;
@@ -34,7 +33,7 @@ public class AddFileToolReportTest extends TrancheTestCase {
 
 
     public void testFileSerialization() throws Exception {
-        TestUtil.printTitle("AddFileToolReportTest: File Serialization Test()");
+        TestUtil.printTitle("AddFileToolReportTest:testFileSerialization()");
 
         final String HOST1 = "aardvark.org";
         final String HOST2 = "bryan.com";
@@ -111,7 +110,7 @@ public class AddFileToolReportTest extends TrancheTestCase {
 
 
      public void testDirectorySerialization() throws Exception {
-        TestUtil.printTitle("AddFileToolReportTest: Directory Serialization Test()");
+        TestUtil.printTitle("AddFileToolReportTest:testDirectorySerialization()");
 
         final String HOST1 = "aardvark.org";
         final String HOST2 = "bryan.com";

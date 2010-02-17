@@ -137,7 +137,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                                     debugErr(e);
                                 }
                                 table.removeDefunctRows();
-                                NetworkUtil.getStatus().setRows(table.getRows());
+                                NetworkUtil.updateRows(table.getRows());
                             } catch (Exception e) {
                                 debugErr(e);
                                 ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
@@ -175,7 +175,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                             debugOut("Updating from non-core server " + range.getConnectionHost());
                             StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
                             table.removeDefunctRows();
-                            NetworkUtil.getStatus().setRows(table.getRows());
+                            NetworkUtil.updateRows(table.getRows());
                         } finally {
                             ConnectionUtil.unlockConnection(range.getConnectionHost());
                         }

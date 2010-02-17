@@ -40,7 +40,6 @@ public class SignatureIndexEntry {
     public boolean equals(Object o) {
         if (o instanceof SignatureIndexEntry) {
             SignatureIndexEntry e = (SignatureIndexEntry)o;
-            
             return e.signatureIndex == this.signatureIndex && e.signatureLen == this.signatureLen && e.signatureOffset == this.signatureOffset;
         }
         return false;
@@ -48,10 +47,6 @@ public class SignatureIndexEntry {
     
     @Override()
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
-
-        buffer.append("SignatureIndexEntry: index=" + signatureIndex + "; length=" + signatureLen + "; offset=" + signatureOffset);
-
-        return buffer.toString();
+        return "SignatureIndexEntry: index=" + signatureIndex + "; length=" + signatureLen + "; offset=" + signatureOffset;
     }
 }

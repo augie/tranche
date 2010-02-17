@@ -18,6 +18,7 @@ package org.tranche.logs.activity;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.tranche.security.Signature;
 import org.tranche.hash.BigHash;
@@ -26,8 +27,9 @@ import org.tranche.util.IOUtil;
 /**
  * <p>Entry in activity log, which is used to log all requests that impact data held by Tranche server.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
+ * @author James "Augie" Hill - augman85@gmail.com
  */
-public class Activity implements Comparable {
+public class Activity implements Comparable<Activity>, Serializable {
 
     /**
      * <p>The value used when a timestamp is not known.</p>
@@ -105,7 +107,7 @@ public class Activity implements Comparable {
      * @param hash
      * @throws java.lang.Exception
      */
-    public Activity(final byte action, final Signature signature, final BigHash hash) throws Exception {
+    public Activity(byte action, Signature signature, BigHash hash) throws Exception {
         this(UNSET_TIMESTAMP, action, signature, hash);
     }
 
@@ -118,39 +120,70 @@ public class Activity implements Comparable {
      * @param hash
      * @throws java.lang.Exception
      */
-    public Activity(final long timestamp, final byte action, final Signature signature, final BigHash hash) throws Exception {
+    public Activity(long timestamp, byte action, Signature signature, BigHash hash) throws Exception {
         this.timestamp = timestamp;
         this.action = action;
         this.signature = signature;
         this.hash = hash;
-        this.signatureBytes = ActivityLogUtil.toSignatureByteArray(signature);
+        this.signatureBytes = signature.toByteArray();
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isTimestampSet() {
         return this.timestamp != UNSET_TIMESTAMP;
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isMetaData() {
         return isMetaData(this.action);
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isData() {
         return isData(this.action);
     }
 
+    /**
+     *
+     * @param actionByte
+     * @return
+     */
     public static boolean isMetaData(byte actionByte) {
         return (actionByte & CHUNK_META_DATA) == CHUNK_META_DATA;
     }
 
+    /**
+     *
+     * @param actionByte
+     * @return
+     */
     public static boolean isData(byte actionByte) {
         return (actionByte & CHUNK_DATA) == CHUNK_DATA;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override()
     public int hashCode() {
         return hash.hashCode() + action;
     }
 
+    /**
+     *
+     * @param o
+     * @return
+     */
     @Override()
     public boolean equals(Object o) {
         if (o instanceof Activity) {
@@ -160,21 +193,19 @@ public class Activity implements Comparable {
         return false;
     }
 
-    public int compareTo(Object o) {
-
-        if (o instanceof Activity) {
-            Activity a = (Activity) o;
-
-            if (this.timestamp < a.timestamp) {
-                return -1;
-            } else if (this.timestamp > a.timestamp) {
-                return 1;
-            } else {
-                return 0;
-            }
+    /**
+     *
+     * @param a
+     * @return
+     */
+    public int compareTo(Activity a) {
+        if (this.timestamp < a.timestamp) {
+            return -1;
+        } else if (this.timestamp > a.timestamp) {
+            return 1;
+        } else {
+            return 0;
         }
-
-        throw new RuntimeException("Cannot compare an Activity object to an instance of " + o.getClass().getSimpleName() + ".");
     }
 
     /**
@@ -243,7 +274,7 @@ public class Activity implements Comparable {
             // Read in signature. Remaining bytes.
             byte[] signaturesBytes = new byte[bytes.length - (ActivityLogUtil.TIMESTAMP_SIZE_IN_BYTES + ActivityLogUtil.ACTIVITY_SIZE_IN_BYTES + BigHash.HASH_LENGTH)];
             IOUtil.getBytesFully(signaturesBytes, bais);
-            Signature signature = ActivityLogUtil.fromSignatureByteArray(signaturesBytes);
+            Signature signature = new Signature(signaturesBytes);
 
             return new Activity(timestamp, activity, signature, hash);
         } finally {

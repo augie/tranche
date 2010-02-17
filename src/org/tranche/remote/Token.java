@@ -190,7 +190,7 @@ public class Token {
     /**
      * <p>The bytes form of ADD_SERVER_STRING</p>
      */
-    public static final byte[] REGISTER_SERVER = (REGISTER_SERVER_STRING + "\n").getBytes();//    /**
+    public static final byte[] REGISTER_SERVER = (REGISTER_SERVER_STRING + "\n").getBytes();
     /**
      * <p>The token for telling a server to close the connection</p>
      */
@@ -199,6 +199,14 @@ public class Token {
      * <p>The bytes form of CLOSE_STRING</p>
      */
     public static final byte[] CLOSE = (CLOSE_STRING + "\n").getBytes();
+    /**
+     * <p>The token for getting configuration</p>
+     */
+    public static final String GET_CONFIGURATION_NO_SIG_STRING = "GetConfigNoSig";
+    /**
+     * <p>The bytes form of GET_CONFIGURATION_NO_SIG_STRING</p>
+     */
+    public static final byte[] GET_CONFIGURATION_NO_SIG = (GET_CONFIGURATION_NO_SIG_STRING + "\n").getBytes();
     /** 
      * <p>The token for getting configuration</p>
      */

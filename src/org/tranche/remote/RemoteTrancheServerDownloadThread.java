@@ -23,6 +23,7 @@ import org.tranche.time.TimeUtil;
 
 /**
  * <p>The thread to be used to receive messages from a server.</p>
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class RemoteTrancheServerDownloadThread extends Thread {
 

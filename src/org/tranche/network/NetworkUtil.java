@@ -301,9 +301,12 @@ public class NetworkUtil {
 
             @Override
             public void run() {
-                ConfigureTranche.waitForStartup();
                 debugOut("Starting to load the network.");
                 try {
+                    if (TestUtil.isTesting()) {
+                        return;
+                    }
+                    ConfigureTranche.waitForStartup();
                     // keep track of the servers tried
                     Set<String> serversTried = new HashSet<String>();
                     debugOut("# startup server URLs: " + getStartupServerURLs().size());
@@ -385,6 +388,42 @@ public class NetworkUtil {
         };
         t.setDaemon(true);
         t.start();
+    }
+
+     /**
+     * <p>Updates the master status table with the given rows except when trying to update the local server row.</p>
+     * <p>If the local server row needs to be updated use NetworkUtil.getLocalServerRow().update(NetworkUtil.getLocalServer()) method.</p>
+     * @param row A status row
+     */
+    public static void updateRow(StatusTableRow row) {
+        debugOut("Updating a row in the master status table.");
+        // ignore the local server
+        if (NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
+            return;
+        }
+        debugOut(" Setting row: " + row.getHost());
+        // update the master status table
+        masterStatusTable.setRow(row);
+    }
+
+    /**
+     * <p>Updates the master status table with the given rows except when trying to update the local server row.</p>
+     * <p>If the local server row needs to be updated use NetworkUtil.getLocalServerRow().update(NetworkUtil.getLocalServer()) method.</p>
+     * @param rows A collection of status rows
+     */
+    public static void updateRows(Collection<StatusTableRow> rows) {
+        debugOut("Updating rows in the master status table.");
+        Collection<StatusTableRow> rowsToSet = new HashSet<StatusTableRow>();
+        for (StatusTableRow row : rows) {
+            // ignore the local server
+            if (!TestUtil.isTesting() && NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
+                continue;
+            }
+            debugOut(" Setting row: " + row.getHost());
+            rowsToSet.add(row);
+        }
+        // update the master status table
+        masterStatusTable.setRows(rowsToSet);
     }
 
     /**

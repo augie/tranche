@@ -152,13 +152,18 @@ public abstract class TrancheServer {
 
     /**
      * Returns a list of all projects that this server has.
-     *
      * @param   offset      the offset
      * @param   length      the length
      * @return              an array of project hashes
      * @throws  Exception   if any exception occurs
      */
     public abstract BigHash[] getProjectHashes(BigInteger offset, BigInteger length) throws Exception;
+
+    /**
+     * @return
+     * @throws Exception
+     */
+    public abstract Configuration getConfiguration() throws Exception;
 
     /**
      * @param   sig         the signature

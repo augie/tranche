@@ -121,7 +121,7 @@ public class DevUtil {
     public static synchronized UserZipFile getDevUser() throws Exception {
         // if the dev user is null, make it up
         if (devUser == null) {
-            devUser = makeNewUser(User.ALL_PRIVILEGES);
+            devUser = makeNewUser(RandomUtil.getString(10), User.ALL_PRIVILEGES);
         }
         return devUser;
     }
@@ -134,7 +134,7 @@ public class DevUtil {
     public static synchronized UserZipFile getFFTSUser() throws Exception {
         // if the dev user is null, make it up
         if (fftsUser == null) {
-            fftsUser = makeNewUser(User.CAN_GET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
+            fftsUser = makeNewUser(RandomUtil.getString(10), User.CAN_GET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA);
         }
         return fftsUser;
     }
@@ -148,18 +148,18 @@ public class DevUtil {
     public static synchronized UserZipFile getRoutingTrancheServerUser() throws Exception {
         // if the dev user is null, make it up
         if (routingTrancheServerUser == null) {
-            routingTrancheServerUser = makeNewUser(User.CAN_GET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA | User.CAN_DELETE_DATA | User.CAN_DELETE_META_DATA);
+            routingTrancheServerUser = makeNewUser(RandomUtil.getString(10), User.CAN_GET_CONFIGURATION | User.CAN_SET_DATA | User.CAN_SET_META_DATA | User.CAN_DELETE_DATA | User.CAN_DELETE_META_DATA);
         }
         return routingTrancheServerUser;
     }
 
-    public static UserZipFile makeNewUser(int flags) throws Exception {
+    public static UserZipFile makeNewUser(String name, int flags) throws Exception {
         // make up a random user
         MakeUserZipFileTool make = new MakeUserZipFileTool();
         // create an appropriate temp file
         File temp = TempFileUtil.createTemporaryFile();
         try {
-            make.setName("new user");
+            make.setName(name);
             make.setPassphrase("");
             make.setValidDays(2);
             make.setSaveFile(temp);
@@ -174,7 +174,7 @@ public class DevUtil {
     }
 
     public static UserZipFile makeNewUserWithRandomFlags() throws Exception {
-        UserZipFile user = makeNewUser(User.ALL_PRIVILEGES);
+        UserZipFile user = makeNewUser(RandomUtil.getString(10), User.ALL_PRIVILEGES);
         int userFlags = User.VERSION_ONE;
         if (RandomUtil.getBoolean()) {
             userFlags = userFlags | User.CAN_DELETE_DATA;

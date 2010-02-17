@@ -54,14 +54,16 @@ public class RegisterServerItem extends ServerItem {
         }
 
         // parse info
-        boolean ssl = IOUtil.parseSecure(url);
-        String host = IOUtil.parseHost(url);
-        int port = IOUtil.parsePort(url);
+        final boolean ssl = IOUtil.parseSecure(url);
+        final String host = IOUtil.parseHost(url);
+        final int port = IOUtil.parsePort(url);
 
         // is this different than what we know already?
         boolean goOn = false;
         // new host
-        if (!NetworkUtil.getStatus().contains(host)) {
+        if (NetworkUtil.isBannedServer(host)) {
+            goOn = false;
+        } else if (!NetworkUtil.getStatus().contains(host)) {
             goOn = true;
         } // check the row
         else {
@@ -74,18 +76,26 @@ public class RegisterServerItem extends ServerItem {
 
         // different -- verify the modification
         if (goOn) {
-            // need to verify the suggestion -- the registration may be malicious
-            try {
-                // make sure the flagging offline locally is unset
-                // TODO: remove when the status table row is revamped
-                if (NetworkUtil.getStatus().contains(host)) {
-                    NetworkUtil.getStatus().getRow(host).setIsFlaggedOfflineLocally(false);
+            Thread t = new Thread("Registering " + url) {
+
+                @Override
+                public void run() {
+                    // need to verify the suggestion -- the registration may be malicious
+                    try {
+                        // make sure the flagging offline locally is unset
+                        // TODO: remove when the status table row is revamped
+                        if (NetworkUtil.getStatus().contains(host)) {
+                            NetworkUtil.getStatus().getRow(host).setIsFlaggedOfflineLocally(false);
+                        }
+                        // this will also set the server in the status table
+                        ConnectionUtil.connect(host, port, ssl, false);
+                    } catch (Exception e) {
+                        ConnectionUtil.reportExceptionHost(host, e);
+                    }
                 }
-                // this will also set the server in the status table
-                ConnectionUtil.connectURL(url, false);
-            } catch (Exception e) {
-                ConnectionUtil.reportExceptionURL(url, e);
-            }
+            };
+            t.setDaemon(true);
+            t.start();
         }
 
         // write response here to so registering server does not have to wait

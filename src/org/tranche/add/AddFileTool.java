@@ -626,6 +626,9 @@ public class AddFileTool {
                 fire("Pausing");
             } else {
                 fire("Resuming");
+                synchronized (AddFileTool.this) {
+                    notifyAll();
+                }
             }
         }
         this.paused = paused;
@@ -645,10 +648,16 @@ public class AddFileTool {
     private void waitHereOnPause() {
         while (paused) {
             // break point
-            if (isStopped()) {
+            if (stopped) {
                 return;
             }
-            ThreadUtil.safeSleep(1000);
+            synchronized (AddFileTool.this) {
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
         }
     }
 
@@ -1137,7 +1146,7 @@ public class AddFileTool {
                 for (FileEncodingThread fileThread : fileThreads) {
                     fileThread.waitForFinish();
                     // check for primary flie hash
-                    boolean isSetHash = !fileThread.isStopped() && !dataOnly && fileThread.primaryFileHash != null;
+                    boolean isSetHash = !fileThread.stopped && !dataOnly && fileThread.primaryFileHash != null;
                     if (isSetHash) {
                         report.setHash(fileThread.primaryFileHash);
                     }
@@ -1377,7 +1386,7 @@ public class AddFileTool {
      */
     private void fire(AddFileToolEvent event) {
         // break point
-        if (isStopped()) {
+        if (stopped) {
             return;
         }
         waitHereOnPause();
@@ -1429,7 +1438,7 @@ public class AddFileTool {
      */
     private void fireFailure(AddFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         // break point
-        if (isStopped()) {
+        if (stopped) {
             return;
         }
         waitHereOnPause();
@@ -2026,6 +2035,7 @@ public class AddFileTool {
                 try {
                     metaDataFromNetwork = getFileTool.getMetaData();
                 } catch (Exception e) {
+                    debugErr(e);
                 }
                 if (metaDataFromNetwork == null) {
                     return;
@@ -2098,18 +2108,14 @@ public class AddFileTool {
          *
          * @return
          */
-        public final boolean isStopped() {
-            return stopped;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public final void waitForFinish() {
+        public synchronized final void waitForFinish() {
             debugOut("Waiting for file encoding thread to finish.");
             while (!started || !finished) {
-                ThreadUtil.safeSleep(500);
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
         }
 
@@ -2181,7 +2187,7 @@ public class AddFileTool {
                             synchronized (fileStack) {
                                 fileStack.addFirst(new FileToUpload(relativeName(file, subFile), subFile, fileToUpload.padding, false, false));
                             }
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
                         }
@@ -2309,7 +2315,7 @@ public class AddFileTool {
                             }
 
                             // stopped
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
 
@@ -2354,7 +2360,7 @@ public class AddFileTool {
                                 // write all of the data through the stream chain
                                 for (int bytesRead = bis.read(buffer); bytesRead != -1; bytesRead = bis.read(buffer)) {
                                     // break point
-                                    if (stopped || AddFileTool.this.isStopped()) {
+                                    if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
                                     }
                                     nos.write(buffer, 0, bytesRead);
@@ -2455,11 +2461,14 @@ public class AddFileTool {
                             debugErr(e);
                         }
                     }
-                } while (!stopped && !AddFileTool.this.isStopped());
+                } while (!stopped && !AddFileTool.this.stopped);
             } catch (Exception e) {
                 debugErr(e);
             } finally {
                 finished = true;
+                synchronized (FileEncodingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }
@@ -2497,7 +2506,7 @@ public class AddFileTool {
                 // wait until there is room
                 while (dataChunkQueue.size() >= DEFAULT_DATA_QUEUE_SIZE) {
                     // break point
-                    if (thread.isStopped() || AddFileTool.this.isStopped()) {
+                    if (thread.stopped || AddFileTool.this.stopped) {
                         return;
                     }
                     ThreadUtil.safeSleep(100);
@@ -2604,10 +2613,14 @@ public class AddFileTool {
          *
          * @return
          */
-        public final void waitForFinish() {
+        public synchronized final void waitForFinish() {
             stopWhenFinished = true;
             while (!started || !finished) {
-                ThreadUtil.safeSleep(500);
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
         }
 
@@ -2688,12 +2701,12 @@ public class AddFileTool {
                     long startTime = TimeUtil.getTrancheTimestamp();
                     do {
                         dataChunk = dataChunkQueue.poll(500, TimeUnit.MILLISECONDS);
-                    } while (dataChunk == null && !stopWhenFinished && !stopped && !AddFileTool.this.isStopped());
+                    } while (dataChunk == null && !stopWhenFinished && !stopped && !AddFileTool.this.stopped);
                     debugOut("Time spent waiting for a data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
                     debugOut("Data chunk queue size: " + dataChunkQueue.size());
 
                     // break point
-                    if (stopped || AddFileTool.this.isStopped()) {
+                    if (stopped || AddFileTool.this.stopped) {
                         break;
                     }
 
@@ -2725,7 +2738,7 @@ public class AddFileTool {
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
                             // break point
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
                             debugOut(dataChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
@@ -2741,7 +2754,7 @@ public class AddFileTool {
                                 // verify upload
                                 for (String host : thisUploadedHosts) {
                                     // break point
-                                    if (stopped || AddFileTool.this.isStopped()) {
+                                    if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
                                     }
                                     try {
@@ -2752,6 +2765,8 @@ public class AddFileTool {
                                         try {
                                             if (!IOUtil.hasData(ts, dataChunk.hash)) {
                                                 thisUploadedHosts.remove(host);
+                                            } else {
+                                                debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost());
                                             }
                                         } catch (Exception e) {
                                             thisUploadedHosts.remove(host);
@@ -2787,7 +2802,7 @@ public class AddFileTool {
                         Set<String> uploadedNonCoreHosts = new HashSet<String>();
                         for (String host : nonCoreHosts) {
                             // break point
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
                             try {
@@ -2808,6 +2823,7 @@ public class AddFileTool {
                                     }
                                     try {
                                         if (IOUtil.hasData(ts, dataChunk.hash)) {
+                                            debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost());
                                             verified = true;
                                         }
                                     } catch (Exception e) {
@@ -2831,53 +2847,63 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        if (uploadedCoreHosts.size() < ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
-                            failChunk(dataChunk, exceptions);
-                        } else {
-                            fireFinishedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash);
-                            // if this is the last data chunk, submit the meta chunk to the upload queue
-                            dataChunk.metaChunk.fileToUpload.incrementDataChunksUploaded();
-                            if (dataChunk.metaChunk.fileToUpload.getDataChunksToUpload() != 0 && dataChunk.metaChunk.fileToUpload.getDataChunksUploaded() >= dataChunk.metaChunk.fileToUpload.getDataChunksToUpload()) {
-                                debugOut("Submitting meta data chunk to queue.");
 
-                                // sleep until the file encoding thread is finished with this file (last action is to set the uploader)
-                                while (dataChunk.metaChunk.metaData.getUploaderCount() == 0 && !dataChunk.metaChunk.fileToUpload.isFailed()) {
+                        // checks
+                        int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
+                        if (uploadedCoreHosts.size() < reps) {
+                            throw new Exception("Data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
+                        }
+                        if (nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
+
+                            throw new Exception("Data upload to " + uploadedNonCoreHosts.size() + " non-core servers, but expected number is " + nonCoreHosts.size());
+                        }
+
+                        fireFinishedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash);
+                        // if this is the last data chunk, submit the meta chunk to the upload queue
+                        dataChunk.metaChunk.fileToUpload.incrementDataChunksUploaded();
+                        if (dataChunk.metaChunk.fileToUpload.getDataChunksToUpload() != 0 && dataChunk.metaChunk.fileToUpload.getDataChunksUploaded() >= dataChunk.metaChunk.fileToUpload.getDataChunksToUpload()) {
+                            debugOut("Submitting meta data chunk to queue.");
+
+                            // sleep until the file encoding thread is finished with this file (last action is to set the uploader)
+                            while (dataChunk.metaChunk.metaData.getUploaderCount() == 0 && !dataChunk.metaChunk.fileToUpload.isFailed()) {
+                                // break point
+                                if (stopped || AddFileTool.this.stopped) {
+                                    break DOWHILE;
+                                }
+                                debugOut("Waiting for file upload thread to finish with meta data.");
+                                ThreadUtil.safeSleep(100);
+                            }
+
+                            debugOut("Time spent waiting for the file encoding thread to finish with this file: " + (TimeUtil.getTrancheTimestamp() - startTime));
+                            // add the chunks uploaded
+                            dataChunk.metaChunk.metaData.setParts(dataChunk.metaChunk.chunkHashes);
+                            // queue the meta data chunk
+                            if (!dataOnly) {
+                                long startTime2 = TimeUtil.getTrancheTimestamp();
+                                // wait until there is room
+                                while (metaChunkQueue.size() >= DEFAULT_META_DATA_QUEUE_SIZE) {
                                     // break point
-                                    if (stopped || AddFileTool.this.isStopped()) {
+                                    if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
                                     }
-                                    debugOut("Waiting for file upload thread to finish with meta data.");
+                                    debugOut("Waiting for room in meta data queue.");
                                     ThreadUtil.safeSleep(100);
                                 }
-
-                                debugOut("Time spent waiting for the file encoding thread to finish with this file: " + (TimeUtil.getTrancheTimestamp() - startTime));
-                                // add the chunks uploaded
-                                dataChunk.metaChunk.metaData.setParts(dataChunk.metaChunk.chunkHashes);
-                                // queue the meta data chunk
-                                if (!dataOnly) {
-                                    long startTime2 = TimeUtil.getTrancheTimestamp();
-                                    // wait until there is room
-                                    while (metaChunkQueue.size() >= DEFAULT_META_DATA_QUEUE_SIZE) {
-                                        // break point
-                                        if (stopped || AddFileTool.this.isStopped()) {
-                                            break DOWHILE;
-                                        }
-                                        debugOut("Waiting for room in meta data queue.");
-                                        ThreadUtil.safeSleep(100);
-                                    }
-                                    metaChunkQueue.put(dataChunk.metaChunk);
-                                    debugOut("Time spent waiting to submit to the meta data queue: " + (TimeUtil.getTrancheTimestamp() - startTime2));
-                                }
+                                metaChunkQueue.put(dataChunk.metaChunk);
+                                debugOut("Time spent waiting to submit to the meta data queue: " + (TimeUtil.getTrancheTimestamp() - startTime2));
                             }
                         }
                     } catch (Exception e) {
                         failChunk(dataChunk, e);
                     }
-                } while (!(dataChunk == null && dataChunkQueue.isEmpty() && stopWhenFinished) && !stopped && !AddFileTool.this.isStopped());
+                } while (!(dataChunk == null && dataChunkQueue.isEmpty() && stopWhenFinished) && !stopped && !AddFileTool.this.stopped);
             } catch (Exception e) {
                 debugErr(e);
             } finally {
                 finished = true;
+                synchronized (DataUploadingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }
@@ -2911,10 +2937,14 @@ public class AddFileTool {
          *
          * @return
          */
-        public final void waitForFinish() {
+        public synchronized final void waitForFinish() {
             stopWhenFinished = true;
             while (!started || !finished) {
-                ThreadUtil.safeSleep(500);
+                try {
+                    wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
         }
 
@@ -2995,10 +3025,10 @@ public class AddFileTool {
                     // get the next data chunk
                     do {
                         metaChunk = metaChunkQueue.poll(500, TimeUnit.MILLISECONDS);
-                    } while (metaChunk == null && !stopWhenFinished && !stopped && !AddFileTool.this.isStopped());
+                    } while (metaChunk == null && !stopWhenFinished && !stopped && !AddFileTool.this.stopped);
 
                     // break point
-                    if (stopped || AddFileTool.this.isStopped()) {
+                    if (stopped || AddFileTool.this.stopped) {
                         break DOWHILE;
                     }
 
@@ -3024,7 +3054,7 @@ public class AddFileTool {
                             }
                             if (!allDataThreadsDone) {
                                 // break point
-                                if (stopped || AddFileTool.this.isStopped()) {
+                                if (stopped || AddFileTool.this.stopped) {
                                     break DOWHILE;
                                 }
                                 // sleep for data to upload
@@ -3064,7 +3094,7 @@ public class AddFileTool {
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
                             // break point
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
                             debugOut(metaChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
@@ -3080,7 +3110,7 @@ public class AddFileTool {
                                 // verify upload
                                 for (String host : thisUploadedHosts) {
                                     // break point
-                                    if (stopped || AddFileTool.this.isStopped()) {
+                                    if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
                                     }
                                     try {
@@ -3091,6 +3121,8 @@ public class AddFileTool {
                                         try {
                                             if (!IOUtil.hasMetaData(ts, metaChunk.hash)) {
                                                 thisUploadedHosts.remove(host);
+                                            } else {
+                                                debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
                                             }
                                         } catch (Exception e) {
                                             thisUploadedHosts.remove(host);
@@ -3126,7 +3158,7 @@ public class AddFileTool {
                         Set<String> uploadedNonCoreHosts = new HashSet<String>();
                         for (String host : nonCoreHosts) {
                             // break point
-                            if (stopped || AddFileTool.this.isStopped()) {
+                            if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
                             try {
@@ -3139,7 +3171,7 @@ public class AddFileTool {
                                     }
                                 }
                                 // break point
-                                if (stopped || AddFileTool.this.isStopped()) {
+                                if (stopped || AddFileTool.this.stopped) {
                                     break DOWHILE;
                                 }
                                 // verify upload
@@ -3151,6 +3183,7 @@ public class AddFileTool {
                                     }
                                     try {
                                         if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
+                                            debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
                                             verified = true;
                                         }
                                     } catch (Exception e) {
@@ -3174,20 +3207,29 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        if (uploadedCoreHosts.size() < ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
-                            failChunk(metaChunk, exceptions);
-                        } else {
-                            fireFinishedMetaData(metaChunk.metaData, metaChunk.hash);
-                            fireFinishedFile(metaChunk.fileToUpload.getFile(), metaChunk.fileToUpload.relativeName, metaChunk.hash);
+
+                        // checks
+                        int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
+                        if (uploadedCoreHosts.size() < reps) {
+                            throw new Exception("Meta data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
                         }
+                        if (nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
+                            throw new Exception("Meta data upload to " + uploadedNonCoreHosts.size() + " non-core servers, but expected number is " + nonCoreHosts.size());
+                        }
+
+                        fireFinishedMetaData(metaChunk.metaData, metaChunk.hash);
+                        fireFinishedFile(metaChunk.fileToUpload.getFile(), metaChunk.fileToUpload.relativeName, metaChunk.hash);
                     } catch (Exception e) {
                         failChunk(metaChunk, e);
                     }
-                } while (!(metaChunk == null && metaChunkQueue.isEmpty() && stopWhenFinished) && !stopped && !AddFileTool.this.isStopped());
+                } while (!(metaChunk == null && metaChunkQueue.isEmpty() && stopWhenFinished) && !stopped && !AddFileTool.this.stopped);
             } catch (Exception e) {
                 debugErr(e);
             } finally {
                 finished = true;
+                synchronized (MetaDataUploadingThread.this) {
+                    notifyAll();
+                }
             }
         }
     }

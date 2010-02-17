@@ -19,7 +19,7 @@ import org.tranche.hash.BigHash;
 
 /**
  *
- * @author James A Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class CouldNotFindMetaDataException extends Exception {
 

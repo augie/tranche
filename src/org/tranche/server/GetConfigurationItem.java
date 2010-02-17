@@ -60,7 +60,7 @@ public class GetConfigurationItem extends ServerItem {
         // execute it
         Configuration config = server.getTrancheServer().getConfiguration(sig, nonce);
         // add the number of currently connected users
-        config.setValue(ConfigKeys.CURRENTLY_CONNECTED_USERS, Integer.toString(server.getConnectedUsers()));
+        config.setValue(ConfigKeys.CURRENTLY_CONNECTED_USERS, Integer.toString(server.getConnectedClients()));
         ByteArrayOutputStream baos = null;
         try {
             baos = new ByteArrayOutputStream();

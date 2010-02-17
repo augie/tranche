@@ -58,6 +58,7 @@ import org.tranche.server.DeleteMetaDataItem;
 import org.tranche.server.GetActivityLogEntriesCountItem;
 import org.tranche.server.GetActivityLogEntriesItem;
 import org.tranche.server.GetConfigurationItem;
+import org.tranche.server.GetConfigurationNoSigItem;
 import org.tranche.server.GetDataHashesItem;
 import org.tranche.server.GetDataItem;
 import org.tranche.server.GetMetaDataHashesItem;
@@ -750,6 +751,48 @@ public class RemoteTrancheServer extends TrancheServer {
                 }
             }
         }
+    }
+
+    /**
+     * <p>Gets the configuration from the remote tranche server.</p>
+     * @return
+     * @throws java.lang.Exception
+     */
+    public Configuration getConfiguration() throws Exception {
+        Configuration response = null;
+        for (int k = 0; k < getMaxTries(); k++) {
+            try {
+                // buffer the bytes
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                GetConfigurationNoSigItem.writeRequest(true, baos);
+                // write the id
+                long id = RemoteTrancheServer.getNextId();
+                // make the output
+                OutGoingBytes ogb = new OutGoingBytes(id, baos.toByteArray(), OutGoingBytes.GET_CONFIGURATION);
+                // make the callback
+                GetBytesCallback gbc = new GetBytesCallback(id, this, "Getting configuration.");
+                // add the callback to the queue
+                addCallback(id, gbc);
+                // add the bytes to send
+                addToQueue(ogb);
+                // notify the listeners
+                fireCreatedBytesToUpload(id, ogb.bytes.length);
+                byte[] config = gbc.getBytes();
+                // return the configuration
+                response = ConfigurationUtil.read(new ByteArrayInputStream(config));
+                break;
+            } catch (Exception e) {
+                ConnectionUtil.reportExceptionHost(host, e);
+                if (e instanceof TimeoutException || (e instanceof IOException && !(e instanceof UnresponsiveServerException))) {
+                    if (k == getMaxTries() - 1) {
+                        throw e;
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return response;
     }
 
     /**

@@ -18,7 +18,6 @@ package org.tranche.add;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
-import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
@@ -44,19 +43,19 @@ import org.tranche.flatfile.DataDirectoryConfiguration;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.get.CommandLineGetFileToolListener;
 import org.tranche.get.GetFileTool;
+import org.tranche.get.GetFileToolReport;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.license.License;
 import org.tranche.meta.MetaData;
-import org.tranche.project.ProjectFile;
-import org.tranche.util.DevUtil;
-import org.tranche.get.GetFileToolReport;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTableRow;
+import org.tranche.project.ProjectFile;
 import org.tranche.project.ProjectFilePart;
 import org.tranche.security.SecurityUtil;
+import org.tranche.util.DevUtil;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.MakeUserZipFileTool;
@@ -95,6 +94,31 @@ public class AddFileToolTest extends TrancheTestCase {
         AddFileTool.setDebug(false);
         GetFileTool.setDebug(false);
         ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, ConfigureTranche.DEFAULT_REPLICATIONS);
+    }
+
+    /**
+     * 
+     * @throws Exception
+     */
+    public void testNotEnoughServers() throws Exception {
+        TestUtil.printTitle("AddFileToolTest:testNotEnoughServers()");
+
+        // high reps
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, "2");
+
+        AddFileToolReport uploadReport = null;
+        File upload = null;
+        try {
+            upload = TempFileUtil.createTempFileWithName("name.file");
+            DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB * 2);
+            uploadReport = testFailure(upload, "title", "description", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey());
+        } finally {
+            IOUtil.safeDelete(upload);
+        }
+
+        assertTrue(uploadReport.isFailed());
+        assertTrue(uploadReport.isFinished());
+        assertNull(uploadReport.getHash());
     }
 
     /**
@@ -757,11 +781,6 @@ public class AddFileToolTest extends TrancheTestCase {
             // upload
             AddFileToolReport uploadReport = aft.execute();
             assertTrue("Should have failed.", uploadReport.isFailed());
-
-            for (PropagationExceptionWrapper pfe : uploadReport.getFailureExceptions()) {
-                assertTrue("Should have something to do with being out of space, instead: " + pfe.exception.getMessage(), pfe.exception.getMessage().toLowerCase().contains("out of space"));
-            }
-
         } finally {
             testNetwork.stop();
 
@@ -1650,7 +1669,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
         String HOST1 = "server1.com";
         TestNetwork testNetwork = new TestNetwork();
-        UserZipFile user = DevUtil.makeNewUser(User.CAN_GET_CONFIGURATION);
+        UserZipFile user = DevUtil.makeNewUser(RandomUtil.getString(10), User.CAN_GET_CONFIGURATION);
         HashSet<User> userSet = new HashSet<User>();
         userSet.add(user);
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, userSet));
@@ -1672,10 +1691,6 @@ public class AddFileToolTest extends TrancheTestCase {
             assertTrue(uploadReport.isFailed());
             assertTrue(uploadReport.isFinished());
             assertNull(uploadReport.getHash());
-            // one file will fail
-            assertEquals(1, uploadReport.getFailureExceptions().size());
-            Iterator<PropagationExceptionWrapper> iterator = uploadReport.getFailureExceptions().iterator();
-            assertTrue(iterator.next().exception instanceof GeneralSecurityException);
         } finally {
             testNetwork.stop();
         }
@@ -1970,7 +1985,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.getStatus().setRows(rows);
+                NetworkUtil.updateRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 
@@ -2014,7 +2029,7 @@ public class AddFileToolTest extends TrancheTestCase {
                 row.update(config);
                 Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
                 rows.add(row);
-                NetworkUtil.getStatus().setRows(rows);
+                NetworkUtil.updateRows(rows);
                 Set<String> hosts = new HashSet<String>();
                 hosts.add(HOST1);
 
@@ -2206,11 +2221,11 @@ public class AddFileToolTest extends TrancheTestCase {
         testDirectory(5, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false);
     }
 
-//    public void testDirectoryBig() throws Exception {
-//        TestUtil.printTitle("AddFileToolTest:testDirectoryBig()");
-//        testDirectory(100, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false);
-//    }
-//
+    public void testDirectoryBig() throws Exception {
+        TestUtil.printTitle("AddFileToolTest:testDirectoryBig()");
+        testDirectory(50, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false);
+    }
+
     public void testDirectoryEncrypted() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testDirectoryEncrypted()");
         testDirectory(5, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, "passphrase", true, false);

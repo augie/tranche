@@ -17,8 +17,6 @@ package org.tranche.logs.activity;
 
 import java.util.Random;
 import org.tranche.security.Signature;
-import org.tranche.logs.activity.ActivityLogEntry;
-import org.tranche.logs.activity.SignatureIndexEntry;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.TrancheTestCase;
@@ -36,6 +34,7 @@ public class ActivityLogUtilTest extends TrancheTestCase {
         Activity.SET_DATA,
         Activity.SET_META_DATA
     };
+    final public static int avgSignatureSizeInBytes = 780;
 
     /**
      * <p>Make sure all action being logged have unique values. Pretty simple.</p>
@@ -118,20 +117,10 @@ public class ActivityLogUtilTest extends TrancheTestCase {
         assertFalse("Should not be equal", entry1Verify.equals(entry2Verify));
     }
 
-    public void testToAndFromSignatureByteArray() throws Exception {
-        Signature sig = DevUtil.getBogusSignature();
-        byte[] sigBytes = ActivityLogUtil.toSignatureByteArray(sig);
-        Signature sigVerify = ActivityLogUtil.fromSignatureByteArray(sigBytes);
-        assertEquals("Should verify", sig, sigVerify);
-    }
-
     public static Activity getRandomActivity() throws Exception {
         return new Activity(getRandomActivityByte(), DevUtil.getBogusSignature(), DevUtil.getRandomBigHash());
     }
 
-//    public static Activity getRandomActivity(boolean isPast) throws Exception {
-//        return new Activity(getRandomTimestamp(isPast), getRandomActivityByte(), DevUtil.getBogusSignature(), DevUtil.getRandomBigHash());
-//    }
     public static ActivityLogEntry getRandomActivityLogEntry() {
         return new ActivityLogEntry(getRandomTimestamp(), getRandomActivityByte(), getRandomSignatureIndex(), DevUtil.getRandomBigHash());
     }
@@ -177,7 +166,6 @@ public class ActivityLogUtilTest extends TrancheTestCase {
         Random r = new Random();
         return r.nextInt(maxSignatureIndex);
     }
-    final public static int avgSignatureSizeInBytes = 780;
 
     public static long getRandomSignatureOffset(int index) {
         Random r = new Random();

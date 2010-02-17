@@ -19,7 +19,7 @@ import junit.framework.TestCase;
 
 /**
  *
- * @author James A Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class TrancheTestCase extends TestCase {
 

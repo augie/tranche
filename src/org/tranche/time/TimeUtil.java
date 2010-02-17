@@ -42,6 +42,9 @@ public final class TimeUtil {
         public void run() {
             while (true) {
                 try {
+                    if (TestUtil.isTesting()) {
+                        return;
+                    }
                     long timeBetweenChangeChecks = ConfigureTranche.getLong(ConfigureTranche.PROP_TIME_CHANGE_CHECK_INTERVAL);
                     debugOut("Time betwen change checks: " + timeBetweenChangeChecks);
                     long timeAcceptableDeviation = ConfigureTranche.getLong(ConfigureTranche.PROP_TIME_CHANGE_CHECK_DEVIATION);

@@ -450,7 +450,7 @@ public class ConnectionUtil {
         }
         newRow.setIsOnline(false);
         newRow.setIsFlaggedOfflineLocally(true);
-        NetworkUtil.getStatus().setRow(newRow);
+        NetworkUtil.updateRow(newRow);
     }
 
     /**

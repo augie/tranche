@@ -23,6 +23,11 @@ import java.security.cert.X509Certificate;
  */
 public class UserCertificateUtil {
 
+    /**
+     * 
+     * @param certificate
+     * @return
+     */
     public static final String readUserName(X509Certificate certificate) {
         try {
             String[] parts = certificate.getSubjectDN().getName().split(", *");
@@ -35,7 +40,12 @@ public class UserCertificateUtil {
         }
         return null;
     }
-    
+
+    /**
+     *
+     * @param certificate
+     * @return
+     */
     public static final String readIssuerName(X509Certificate certificate) {
         try {
             String[] parts = certificate.getIssuerDN().getName().split(", *");

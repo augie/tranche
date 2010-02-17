@@ -4,7 +4,7 @@ import org.tranche.gui.GenericFrame;
 
 /**
  *
- * @author James A Hill
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class GetFileToolReportFrame extends GenericFrame {
 

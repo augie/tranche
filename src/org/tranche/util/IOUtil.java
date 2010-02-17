@@ -35,6 +35,7 @@ import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.PrivateKey;
@@ -293,6 +294,32 @@ public class IOUtil {
             }
             try {
                 server.join();
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param socket
+     */
+    public static final void safeClose(Socket socket) {
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param serverSocket
+     */
+    public static final void safeClose(ServerSocket serverSocket) {
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
             } catch (Exception e) {
             }
         }
