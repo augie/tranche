@@ -1,4 +1,4 @@
-<project name="Tranche Distributed Repository" default="dist.quick" basedir="./">
+<project name="Tranche Distributed Repository" default="dist" basedir="./">
     <description>This is the Ant build script for the Tranche Distributed Repository.</description>
 
     <!-- Print out current date/time for log -->
@@ -57,6 +57,16 @@
     <property name="dir.gui" location="build/gui"/>
     <property name="build.gui.jar" location="${build.tools}/tranche-gui.jar"/>
 
+    <!-- test parameters -->
+    <property name="build.test" location="b-test"/>
+    <property name="build.test.results" location="${build.test}/junit"/>
+    <property name="test.includes" value="**/*Test.java"/>
+    <property name="name.test" value="junit"/>
+    <property name="dist.test" location="${dist}/${name.test}"/>
+    <property name="name.clover" value="clover"/>
+    <property name="dist.clover" location="${dist}/${name.clover}"/>
+    <property name="dist.test.zip" location="${dist}/tranche-tests-b${buildNumber}.zip"/>
+
     <!-- path required for runtime compiling-->
     <path id="path.rt.compile">
         <fileset dir="${lib}" includes="*.jar"/>
@@ -68,13 +78,6 @@
         <fileset dir="${lib.gui}" includes="*.jar"/>
         <pathelement path="${dist.jar}"/>
     </path>
-
-    <!-- JUnit parameters -->
-    <property name="build.test" location="b-test"/>
-    <property name="build.test.results" location="${build.test}/junit"/>
-    <property name="test.includes" value="**/*Test.java"/>
-    <property name="dist.test" location="${dist}/junit"/>
-    <property name="dist.clover" location="${dist}/clover"/>
 
     <!-- path required for building the test code-->
     <path id="path.test.compile">
@@ -91,7 +94,7 @@
         <pathelement path="./clover.license"/>
     </path>
 
-    <target name="dist.quick" description="Builds the code, signs JARs, and compiles JavaDocs." >
+    <target name="dist" description="Builds the code, signs JARs, and compiles JavaDocs." >
         <antcall target="rt.compile.gui"/>
         <antcall target="dist.tools"/>
         <antcall target="sign-jars"/>
@@ -114,26 +117,12 @@
         </zip>
     </target>
 
-    <target name="dist.full" description="Builds the code, runs the JUnit tests, signs JARs, and compiles JavaDocs." >
+    <target name="dist.test" description="Builds the code and runs the JUnit tests.">
         <antcall target="rt.compile.gui" />
-        <antcall target="dist.tools" />
-        <antcall target="javadoc" />
-        <antcall target="javadoc.gui" />
         <antcall target="clover" />
-        <antcall target="sign-jars" />
-        <zip destfile="${dist.lib.zip}" basedir="${dist.lib}" />
-        <zip destfile="${dist.lib.gui.zip}" basedir="${dist.lib.gui}" />
-        <zip destfile="${dist.javadoc.zip}" basedir="${dist.javadoc}" />
-        <zip destfile="${dist.javadoc.gui.zip}" basedir="${dist.javadoc.gui}" />
-        <zip destfile="${dist.zip}">
-            <fileset file="${dist.jar}"/>
-            <zipfileset dir="${dist.lib}" prefix="${name.lib}"/>
-            <zipfileset dir="${dist.javadoc}" prefix="${name.javadoc}"/>
-        </zip>
-        <zip destfile="${dist.gui.zip}">
-            <fileset file="${dist.jar.gui}"/>
-            <zipfileset dir="${dist.lib.gui}" prefix="${name.lib.gui}"/>
-            <zipfileset dir="${dist.javadoc.gui}" prefix="${name.javadoc.gui}"/>
+        <zip destfile="${dist.test.zip}">
+            <zipfileset dir="${dist.test}" prefix="${name.test}"/>
+            <zipfileset dir="${dist.clover}" prefix="${name.clover}"/>
         </zip>
     </target>
 
