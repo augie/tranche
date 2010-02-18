@@ -16,6 +16,7 @@
 package org.tranche.network;
 
 import org.tranche.util.RandomUtil;
+import org.tranche.util.TestUtil;
 
 /**
  *
@@ -36,6 +37,8 @@ public class StatusTableRowRangeTest extends NetworkPackageTestCase {
     }
 
     public void testCreate() throws Exception {
+        TestUtil.printTitle("StatusTableRowRangeTest:testCreate()");
+        
         // vars
         String str1 = RandomUtil.getString(10);
         String str2 = RandomUtil.getString(10);

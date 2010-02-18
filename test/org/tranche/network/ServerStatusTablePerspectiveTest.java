@@ -16,6 +16,7 @@
 package org.tranche.network;
 
 import org.tranche.exceptions.TodoException;
+import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -24,7 +25,20 @@ import org.tranche.util.TrancheTestCase;
  */
 public class ServerStatusTablePerspectiveTest extends TrancheTestCase {
 
+    @Override()
+    protected void setUp() throws Exception {
+        super.setUp();
+        ServerStatusTablePerspective.setDebug(true);
+    }
+
+    @Override()
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        ServerStatusTablePerspective.setDebug(false);
+    }
+
     public void testTodo() throws Exception {
+        TestUtil.printTitle("ServerStatusTablePerspectiveTest:testTodo()");
         throw new TodoException();
     }
 }

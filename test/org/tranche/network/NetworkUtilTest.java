@@ -26,6 +26,18 @@ import org.tranche.util.TestUtil;
  */
 public class NetworkUtilTest extends NetworkPackageTestCase {
 
+    @Override()
+    protected void setUp() throws Exception {
+        super.setUp();
+        NetworkUtil.setDebug(true);
+    }
+
+    @Override()
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        NetworkUtil.setDebug(false);
+    }
+
     public void testStartupServerURLs() throws Exception {
         TestUtil.printTitle("NetworkUtilTest:testStartupServerURLs()");
 

@@ -82,13 +82,7 @@ public class Server extends Thread {
      * @throws java.lang.Exception All exceptions are thrown.
      */
     public Server(TrancheServer dfs, int port) throws Exception {
-        // set the variables of inters
-        this.ts = dfs;
-        this.port = port;
-        this.ssl = ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL);
-        setName("Tranche Server: " + this.port + ", ssl: " + this.ssl);
-
-        init();
+        this(dfs, port, ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
     }
 
     /**
@@ -316,7 +310,6 @@ public class Server extends Thread {
      * @return The IP address or host name, as found in internet interface.
      */
     public String getHostName() {
-
         // Check if testing and, if so, if redirected
         if (TestUtil.isTestingManualNetworkStatusTable()) {
             Map<String, String> hostToURLMapCopy = TestUtil.getServerToHostTestMap();
@@ -328,10 +321,7 @@ public class Server extends Thread {
             // See if our URL matches if in map
             for (String nextHost : hostToURLMapCopy.keySet()) {
                 String nextURL = hostToURLMapCopy.get(nextHost);
-
-                boolean equals = nextURL != null && (nextURL.equals(thisURL) || nextURL.equals(localHostURL));
-
-                if (equals) {
+                if (nextURL != null && (nextURL.equals(thisURL) || nextURL.equals(localHostURL))) {
                     return nextHost;
                 }
             }

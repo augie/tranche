@@ -33,7 +33,6 @@ import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TestUtilListener;
-import org.tranche.util.ThreadUtil;
 
 /**
  * <p>Manages the representation of the Tranche network.</p>
@@ -282,7 +281,13 @@ public class NetworkUtil {
         lazyLoad();
         // make sure the network is finished loading
         while (!finishedLoadingNetwork) {
-            ThreadUtil.safeSleep(250);
+            synchronized (NetworkUtil.class) {
+                try {
+                    NetworkUtil.class.wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
         }
         debugOut("Finished waiting for startup.");
     }
@@ -382,6 +387,9 @@ public class NetworkUtil {
                 } finally {
                     // made attempt, wake up waiting threads
                     finishedLoadingNetwork = true;
+                    synchronized (NetworkUtil.class) {
+                        NetworkUtil.class.notifyAll();
+                    }
                     debugOut("Finished loading the network.");
                 }
             }
@@ -390,7 +398,7 @@ public class NetworkUtil {
         t.start();
     }
 
-     /**
+    /**
      * <p>Updates the master status table with the given rows except when trying to update the local server row.</p>
      * <p>If the local server row needs to be updated use NetworkUtil.getLocalServerRow().update(NetworkUtil.getLocalServer()) method.</p>
      * @param row A status row

@@ -18,6 +18,7 @@ package org.tranche.network;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import org.tranche.ConfigureTranche;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.server.Server;
 import org.tranche.util.IOUtil;
@@ -46,7 +47,7 @@ public class ServerStatusUpdateProcessTest extends NetworkPackageTestCase {
 
     public void testCalculateNonCoreServersToUpdate() throws Exception {
         TestUtil.printTitle("ServerStatusUpdateProcessTest:testCalculateNonCoreServersToUpdate()");
-        
+
         FlatFileTrancheServer ffts = null;
         File dir = null;
         Server s = null;
@@ -83,51 +84,48 @@ public class ServerStatusUpdateProcessTest extends NetworkPackageTestCase {
             NetworkUtil.getStatus().clear();
         }
     }
- //CAUSES A FREEZE, NOT SURE WHY
-//    public void testCalculateAllCoreStatusTableRowRanges() throws Exception {
-//        TestUtil.printTitle("ServerStatusUpdateProcessTest:testCalculateAllCoreStatusTableRowRanges()");
-//
-//        // set up -- makes the test verifiable
-//        int save = ServerStatusUpdateProcess.getUpdateGroupSize();
-//        ServerStatusUpdateProcess.setUpdateGroupSize(1);
-//
-//        FlatFileTrancheServer ffts = null;
-//        File dir = null;
-//        Server s = null;
-//        try {
-//            // fake network
-//            Set<StatusTableRow> unsortedRows = new HashSet<StatusTableRow>();
-//            Set<String> startupServerURLs = new HashSet<String> ();
-//            for (int i = 0; i < 5 + RandomUtil.getInt(10); i++) {
-//                StatusTableRow row = NetworkRandomUtil.createRandomStatusTableRow();
-//                row.setIsOnline(true);
-//                startupServerURLs.add(row.getURL());
-//                unsortedRows.add(row);
-//            }
-//            NetworkUtil.setStartupServerURLs(startupServerURLs);
-//            NetworkUtil.updateRows(unsortedRows);
-//
-//            // local server
-//            dir = TempFileUtil.createTemporaryDirectory("testServer");
-//            ffts = new FlatFileTrancheServer(dir);
-//            s = new Server(ffts, RandomUtil.getInt(65535), RandomUtil.getBoolean());
-//            s.start();
-//
-//            // wait for startup
-//            ThreadUtil.safeSleep(5000);
-//
-//            // adjust
-//            ServerStatusUpdateProcess.adjustStatusTableRowRanges();
-//
-//            // verify -- should include local server
-//            assertEquals(NetworkUtil.getStatus().getRows().size(), ServerStatusUpdateProcess.getStatusTableRowRanges().size());
-//        } finally {
-//            s.setRun(false);
-//            IOUtil.safeClose(s);
-//            IOUtil.safeClose(ffts);
-//            IOUtil.recursiveDeleteWithWarning(dir);
-//            ServerStatusUpdateProcess.setUpdateGroupSize(save);
-//            NetworkUtil.getStatus().clear();
-//        }
-//    }
+
+    public void testCalculateAllCoreStatusTableRowRanges() throws Exception {
+        TestUtil.printTitle("ServerStatusUpdateProcessTest:testCalculateAllCoreStatusTableRowRanges()");
+
+        // set up -- makes the test verifiable
+        ConfigureTranche.set(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING, "1");
+
+        FlatFileTrancheServer ffts = null;
+        File dir = null;
+        Server s = null;
+        try {
+            // fake network
+            Set<StatusTableRow> unsortedRows = new HashSet<StatusTableRow>();
+            Set<String> startupServerURLs = new HashSet<String>();
+            for (int i = 0; i < 5 + RandomUtil.getInt(10); i++) {
+                StatusTableRow row = NetworkRandomUtil.createRandomStatusTableRow();
+                row.setIsOnline(true);
+                startupServerURLs.add(row.getURL());
+                unsortedRows.add(row);
+            }
+            NetworkUtil.setStartupServerURLs(startupServerURLs);
+            NetworkUtil.updateRows(unsortedRows);
+
+            // local server
+            dir = TempFileUtil.createTemporaryDirectory("testServer");
+            ffts = new FlatFileTrancheServer(dir);
+            s = new Server(ffts, RandomUtil.getInt(65535), RandomUtil.getBoolean());
+            s.start();
+
+            // wait for startup
+            ThreadUtil.safeSleep(5000);
+
+            // adjust
+            ServerStatusUpdateProcess.adjustStatusTableRowRanges();
+
+            // verify -- should include local server
+            assertEquals(NetworkUtil.getStatus().getRows().size(), ServerStatusUpdateProcess.getStatusTableRowRanges().size());
+        } finally {
+            s.setRun(false);
+            IOUtil.safeClose(s);
+            IOUtil.safeClose(ffts);
+            IOUtil.recursiveDeleteWithWarning(dir);
+        }
+    }
 }

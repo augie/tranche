@@ -37,7 +37,6 @@ public class NetworkPackageTestCase extends TrancheTestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
         NetworkUtil.setDebug(false);
-        NetworkUtil.setDebug(false);
         ConnectionUtil.setDebug(false);
     }
 

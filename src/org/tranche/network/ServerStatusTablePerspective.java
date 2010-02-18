@@ -17,6 +17,7 @@ package org.tranche.network;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.tranche.util.DebugUtil;
 
 /**
  * <p>Encapsulates information for ServerStatusUpdateProcess so can view from perspective on any server--not just the localhost server.</p>
@@ -24,6 +25,7 @@ import java.util.Set;
  */
 public class ServerStatusTablePerspective {
 
+    private static boolean debug = false;
     /**
      * <p>The host name (or IP address) for the server from which we wish to gather the status table info. (I.e. from this server's perspective.)</p>
      */
@@ -101,7 +103,7 @@ public class ServerStatusTablePerspective {
                 }
             }
         }
-        
+
         // Non-core servers
         synchronized (nonCoreServers) {
             if (nonCoreServers.size() == 0) {
@@ -115,5 +117,41 @@ public class ServerStatusTablePerspective {
         }
 
         return buf.toString();
+    }
+
+    /**
+     * <p>Sets the flag for whether the output and error information should be written.</p>
+     * @param debug The flag for whether the output and error information should be written.</p>
+     */
+    public static final void setDebug(boolean debug) {
+        ServerStatusTablePerspective.debug = debug;
+    }
+
+    /**
+     * <p>Returns whether the output and error information is being written.</p>
+     * @return Whether the output and error information is being written.
+     */
+    public static final boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     *
+     * @param line
+     */
+    private static final void debugOut(String line) {
+        if (debug) {
+            DebugUtil.printOut(ServerStatusTablePerspective.class.getName() + "> " + line);
+        }
+    }
+
+    /**
+     *
+     * @param e
+     */
+    private static final void debugErr(Exception e) {
+        if (debug) {
+            DebugUtil.reportException(e);
+        }
     }
 }
