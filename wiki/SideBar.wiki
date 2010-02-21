@@ -1,5 +1,6 @@
   * [FAQ]
   * [UserGuide User Guide]
+  * [CommandLineTools Command Line Tools Guide]
   * [AdminGuide Admin Guide]
   * [DeveloperGuide Developer Guide]
   * [WhitePaper White Paper]
