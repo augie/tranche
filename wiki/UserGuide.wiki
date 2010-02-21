@@ -10,4 +10,3 @@
   * [Downloading]
   * [Uploading]
   * [GUITroubleShooting Troubleshooting graphical user interface (GUI) problems]
-  * [CommandLineTools Command line tools]
