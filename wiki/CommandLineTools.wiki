@@ -1,3 +1,4 @@
+#labels Featured
 There are any number of scenarios that might require or at least suggest the use of a command-line client. Here are several:
 
   * *Automated tools*: users can use the power of their environment (shell scripts, DOS batch script) combined with other tools (like cron) to automate uploads and downloads. The output of the tools makes aggregating information (hashes, directories) simple, which can be stored in files or databases with little additional work.
