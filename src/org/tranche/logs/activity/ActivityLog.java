@@ -18,21 +18,24 @@ package org.tranche.logs.activity;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.security.cert.CertificateEncodingException;
 import java.util.LinkedList;
 import java.util.List;
+import org.tranche.ConfigureTranche;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.hash.BigHash;
 import org.tranche.security.Signature;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.PersistentFileUtil;
+import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.Text;
 
 /**
  * <p>Activity log used to log all requests that impact data held by Tranche server.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class ActivityLog {
 
@@ -41,21 +44,20 @@ public class ActivityLog {
     public static final String DEFAULT_FILE_NAME_SIGNATURES_INDEX = ".signatures-index";
     public static final String DEFAULT_FILE_NAME_SIGNATURES_ENTRIES = ".signatures-entries";
     public static final String BACKUP_SUFFIX = ".repair-backup";
-    private final File activitiesLogFile;
-    private final File signaturesIndexFile;
-    private final File signaturesFile;
-    private final File backupActivitiesLogFile;
-    private final File backupSignaturesIndexFile;
-    private final File backupSignaturesFile;
-    private RandomAccessFile activitiesLogRAF;
-    private RandomAccessFile signaturesIndexRAF;
-    private RandomAccessFile signaturesRAF;
+    private final File activitiesLogFile, signaturesIndexFile, signaturesFile, backupActivitiesLogFile, backupSignaturesIndexFile, backupSignaturesFile;
+    private RandomAccessFile activitiesLogRAF, signaturesIndexRAF, signaturesRAF;
     private final SignatureMap signatureMap;
     private boolean isClosed = false;
-    private long timeWriting;
-    private long writeCount;
-    private long timeReading;
-    private long readCount;
+    private long timeWriting, writeCount, timeReading, readCount;
+    private boolean hasBeenBackedUp = false;
+    /**
+     * <p>Needed so thread safe. Even though synchronize on individual RAF, not know which thread will get monitor next when multiple simulatenous writes.</p>
+     */
+    final Object writeLock = new Object();
+    /**
+     * <p>Only used for record keeping. Monitor is quicly returned.</p>
+     */
+    final Object countLock = new Object();
 
     /**
      * <p>Instantiate an activity log used to log all requests that impact data held by Tranche server.</p>
@@ -64,7 +66,7 @@ public class ActivityLog {
      * @throws java.io.IOException If log files do not exist and cannot be created or other I/O exception
      */
     public ActivityLog() throws IOException, Exception {
-        this(PersistentFileUtil.getPersistentDirectory());
+        this(PersistentServerFileUtil.getPersistentDirectory());
     }
 
     /**
@@ -142,6 +144,26 @@ public class ActivityLog {
         checkFilesForCorruption();
     }
 
+    public static void main(String[] args) throws Exception {
+        DebugUtil.setDebug(true);
+        setDebug(true);
+        ConfigureTranche.load(args);
+        File activities = new File("C:/Documents and Settings/James A Hill/Desktop/.activities");
+        File signatureIndex = new File("C:/Documents and Settings/James A Hill/Desktop/.signatures-index");
+        File signatures = new File("C:/Documents and Settings/James A Hill/Desktop/.signatures-entries");
+        ActivityLog log = null;
+        try {
+            log = new ActivityLog(activities, signatureIndex, signatures);
+            System.out.println(log.getActivityLogEntriesCount());
+            List<Activity> list = log.read(0, TimeUtil.getTrancheTimestamp(), 20, Activity.ANY);
+            for (Activity a : list) {
+                System.out.println(a.toString());
+            }
+        } finally {
+            log.close();
+        }
+    }
+
     /**
      * <p>Not thread safe! Make sure single thread finishes this method before start multithreaded operations on log.</p>
      * @throws java.io.IOException
@@ -161,12 +183,12 @@ public class ActivityLog {
              */
             {
                 // Step 1a. If signatures index is corrupted, remove corrupted bytes.
-                long excessSignatureIndexBytes = signaturesIndexLen % ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                long excessSignatureIndexBytes = signaturesIndexLen % SignatureIndexEntry.SIZE;
                 if (excessSignatureIndexBytes != 0) {
 
                     // Quick assertion to make excess less than full entry
-                    if (excessSignatureIndexBytes >= ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES) {
-                        throw new AssertionFailedException("excess bytes<" + excessSignatureIndexBytes + "> should be less than entry<" + ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES + ">, but aren't.");
+                    if (excessSignatureIndexBytes >= SignatureIndexEntry.SIZE) {
+                        throw new AssertionFailedException("excess bytes<" + excessSignatureIndexBytes + "> should be less than entry<" + SignatureIndexEntry.SIZE + ">, but aren't.");
                     }
 
                     System.err.println("---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -192,7 +214,7 @@ public class ActivityLog {
                             isRecoverable = true;
 
                             SignatureIndexEntry sie = new SignatureIndexEntry(0, 0l, (int) getSignaturesFile().length());
-                            byte[] sieBytes = ActivityLogUtil.toSignatureHeaderByteArray(sie);
+                            byte[] sieBytes = sie.toByteArray();
                             this.signaturesIndexRAF.seek(0);
                             this.signaturesIndexRAF.write(sieBytes);
 
@@ -204,10 +226,10 @@ public class ActivityLog {
                             //
                             // (Note that the activity log might be corrupted. This might fix, but this
                             //  will get checked later.)
-                            if (activityLogLen / ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES >= 1) {
+                            if (activityLogLen / ActivityLogEntry.SIZE >= 1) {
 
-                                final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
-                                long startingOffset = (intactEntries - 1) * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogEntry.SIZE);
+                                long startingOffset = (intactEntries - 1) * ActivityLogEntry.SIZE;
 
                                 boolean findingCorrectActivityLogEntry = true;
                                 ActivityLogEntry ale = null;
@@ -216,17 +238,17 @@ public class ActivityLog {
 
                                 while (findingCorrectActivityLogEntry) {
 
-                                    byte[] activityBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                                    byte[] activityBytes = new byte[ActivityLogEntry.SIZE];
                                     this.activitiesLogRAF.seek(startingOffset);
                                     this.activitiesLogRAF.readFully(activityBytes);
-                                    ale = ActivityLogUtil.fromActivityLogByteArray(activityBytes);
+                                    ale = new ActivityLogEntry(activityBytes);
 
                                     // If found a signature index that is less-equal to correct one, then stop
-                                    findingCorrectActivityLogEntry = ale.signatureIndex > largestIntactSignatureIndex;
+                                    findingCorrectActivityLogEntry = ale.getSignatureIndex() > largestIntactSignatureIndex;
 
                                     // Update so if loops again, next next newest entry
                                     if (findingCorrectActivityLogEntry) {
-                                        startingOffset -= ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                        startingOffset -= ActivityLogEntry.SIZE;
                                         desiredEntries--;
                                     }
                                 }
@@ -235,7 +257,7 @@ public class ActivityLog {
                                 alreadyCheckedActivityLog = true;
 
                                 // Here's where the log file should actually end
-                                long desiredActivityFileLen = desiredEntries * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                long desiredActivityFileLen = desiredEntries * ActivityLogEntry.SIZE;
                                 if (desiredActivityFileLen == activityLogLen) {
                                     // Nothing to do -- no changes need to be made. This should happen often, since a signature was 
                                     // lost, and almost certainly one activity log entry needs to be tossed
@@ -260,16 +282,16 @@ public class ActivityLog {
                         }
                     } else {
                         // Make sure the previous entry is readable
-                        final byte[] lastIntactSignatureEntry = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
-                        long lastIntactSignatureEntrySeek = signaturesIndexLen - excessSignatureIndexBytes - ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                        final byte[] lastIntactSignatureEntry = new byte[SignatureIndexEntry.SIZE];
+                        long lastIntactSignatureEntrySeek = signaturesIndexLen - excessSignatureIndexBytes - SignatureIndexEntry.SIZE;
                         this.signaturesIndexRAF.seek(lastIntactSignatureEntrySeek);
                         this.signaturesIndexRAF.readFully(lastIntactSignatureEntry);
-                        SignatureIndexEntry e = ActivityLogUtil.fromSignatureHeaderByteArray(lastIntactSignatureEntry);
-                        largestIntactSignatureIndex = e.signatureIndex;
+                        SignatureIndexEntry e = new SignatureIndexEntry(lastIntactSignatureEntry);
+                        largestIntactSignatureIndex = e.getIndex();
 
                         // If get's here, let's see whether can recover last entry. We're assuming that the 
                         // last entry was somehow corrupted in the signatures index file.
-                        long lastSignatureOffset = e.signatureOffset + e.signatureLen;
+                        long lastSignatureOffset = e.getOffset() + e.getLength();
                         int lastSignatureLen = (int) (signaturesLen - lastSignatureOffset);
 
                         // If we find that there are signature bytes after the last know signature, then the signature
@@ -288,15 +310,15 @@ public class ActivityLog {
                                 // If this throws an exception, then cannot recover
                                 new Signature(signatureBytes);
 
-                                SignatureIndexEntry sie = new SignatureIndexEntry(e.signatureIndex + 1, lastSignatureOffset, lastSignatureLen);
+                                SignatureIndexEntry sie = new SignatureIndexEntry(e.getIndex() + 1, lastSignatureOffset, lastSignatureLen);
 
-                                System.err.println("    ... information recovered, writing to end of file (index #" + String.valueOf(e.signatureIndex + 1) + ")");
+                                System.err.println("    ... information recovered, writing to end of file (index #" + String.valueOf(e.getIndex() + 1) + ")");
 
-                                this.signaturesIndexRAF.seek(lastIntactSignatureEntrySeek + ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES);
-                                byte[] sieBytes = ActivityLogUtil.toSignatureHeaderByteArray(sie);
+                                this.signaturesIndexRAF.seek(lastIntactSignatureEntrySeek + SignatureIndexEntry.SIZE);
+                                byte[] sieBytes = sie.toByteArray();
                                 this.signaturesIndexRAF.write(sieBytes);
 
-                                largestIntactSignatureIndex = sie.signatureIndex;
+                                largestIntactSignatureIndex = sie.getIndex();
                             } catch (Exception nope) {
                                 // Not recoverable
                                 recoverable = false;
@@ -308,7 +330,7 @@ public class ActivityLog {
                             System.err.println("    ... not recoverable. Going to snip last " + excessSignatureIndexBytes + " bytes from signature index (header) file.");
 
                             // Truncate after last intact entry
-                            long newSignatureIndexFileLength = lastIntactSignatureEntrySeek + ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                            long newSignatureIndexFileLength = lastIntactSignatureEntrySeek + SignatureIndexEntry.SIZE;
                             this.signaturesIndexRAF.setLength(newSignatureIndexFileLength);
 
                             // Find the activity log entry that 
@@ -321,10 +343,10 @@ public class ActivityLog {
                             //
                             // (Note that the activity log might be corrupted. This might fix, but this
                             //  will get checked later.)
-                            if (activityLogLen / ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES >= 1) {
+                            if (activityLogLen / ActivityLogEntry.SIZE >= 1) {
 
-                                final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
-                                long startingOffset = (intactEntries - 1) * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogEntry.SIZE);
+                                long startingOffset = (intactEntries - 1) * ActivityLogEntry.SIZE;
 
                                 boolean findingCorrectActivityLogEntry = true;
                                 ActivityLogEntry ale = null;
@@ -333,17 +355,17 @@ public class ActivityLog {
 
                                 while (findingCorrectActivityLogEntry) {
 
-                                    byte[] activityBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                                    byte[] activityBytes = new byte[ActivityLogEntry.SIZE];
                                     this.activitiesLogRAF.seek(startingOffset);
                                     this.activitiesLogRAF.readFully(activityBytes);
-                                    ale = ActivityLogUtil.fromActivityLogByteArray(activityBytes);
+                                    ale = new ActivityLogEntry(activityBytes);
 
                                     // If found a signature index that is less-equal to correct one, then stop
-                                    findingCorrectActivityLogEntry = ale.signatureIndex > largestIntactSignatureIndex;
+                                    findingCorrectActivityLogEntry = ale.getSignatureIndex() > largestIntactSignatureIndex;
 
                                     // Update so if loops again, next next newest entry
                                     if (findingCorrectActivityLogEntry) {
-                                        startingOffset -= ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                        startingOffset -= ActivityLogEntry.SIZE;
                                         desiredEntries--;
                                     }
                                 }
@@ -352,7 +374,7 @@ public class ActivityLog {
                                 alreadyCheckedActivityLog = true;
 
                                 // Here's where the log file should actually end
-                                long desiredActivityFileLen = desiredEntries * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                long desiredActivityFileLen = desiredEntries * ActivityLogEntry.SIZE;
                                 if (desiredActivityFileLen == activityLogLen) {
                                     // Nothing to do -- no changes need to be made. This should happen often, since a signature was 
                                     // lost, and almost certainly one activity log entry needs to be tossed
@@ -373,13 +395,13 @@ public class ActivityLog {
                     // Only bother if file has data
                     long updatedSignaturesIndexFileLen = this.signaturesIndexRAF.length();
                     if (updatedSignaturesIndexFileLen > 0) {
-                        final byte[] lastSignatureEntry = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
-                        long lastSignatureEntrySeek = signaturesIndexRAF.length() - ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                        final byte[] lastSignatureEntry = new byte[SignatureIndexEntry.SIZE];
+                        long lastSignatureEntrySeek = signaturesIndexRAF.length() - SignatureIndexEntry.SIZE;
                         this.signaturesIndexRAF.seek(lastSignatureEntrySeek);
                         this.signaturesIndexRAF.readFully(lastSignatureEntry);
-                        SignatureIndexEntry e = ActivityLogUtil.fromSignatureHeaderByteArray(lastSignatureEntry);
+                        SignatureIndexEntry e = new SignatureIndexEntry(lastSignatureEntry);
 
-                        long expectedLength = e.signatureOffset + e.signatureLen;
+                        long expectedLength = e.getOffset() + e.getLength();
                         signaturesLen = this.signaturesRAF.length();
 
                         // There's only a problem if less bytes than expect. If more, means old abandoned signature
@@ -405,7 +427,7 @@ public class ActivityLog {
                                 boolean foundFirstIntactEntry = false;
 
                                 // Already checked the last entry. Let's check next-to-last
-                                int nextEntryToCheck = (int) ((double) updatedSignaturesIndexFileLen / (double) ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES) - 2;
+                                int nextEntryToCheck = (int) ((double) updatedSignaturesIndexFileLen / (double) SignatureIndexEntry.SIZE) - 2;
                                 int entriesToSnip = 1;
                                 long lengthToSnip = -1;
 
@@ -413,18 +435,18 @@ public class ActivityLog {
 
                                 FIND_FIRST_INTACT_ENTRY:
                                 while (!foundFirstIntactEntry) {
-                                    long nextSeek = nextEntryToCheck * ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                                    long nextSeek = nextEntryToCheck * SignatureIndexEntry.SIZE;
 
                                     if (nextSeek < 0) {
                                         noSignaturesFound = true;
                                         break FIND_FIRST_INTACT_ENTRY;
                                     }
 
-                                    byte[] nextBytes = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
+                                    byte[] nextBytes = new byte[SignatureIndexEntry.SIZE];
                                     this.signaturesIndexRAF.seek(nextSeek);
                                     this.signaturesIndexRAF.readFully(nextBytes);
-                                    e = ActivityLogUtil.fromSignatureHeaderByteArray(nextBytes);
-                                    lengthToSnip = e.signatureOffset + e.signatureLen;
+                                    e = new SignatureIndexEntry(nextBytes);
+                                    lengthToSnip = e.getOffset() + e.getLength();
 
                                     foundFirstIntactEntry = (lengthToSnip) <= (signaturesLen);
 
@@ -445,27 +467,27 @@ public class ActivityLog {
                                     this.signaturesRAF.setLength(lengthToSnip);
 
                                     // Now snip the index file to match
-                                    long signatureIndexFileSnip = this.getSignaturesIndexFile().length() - entriesToSnip * ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                                    long signatureIndexFileSnip = this.getSignaturesIndexFile().length() - entriesToSnip * SignatureIndexEntry.SIZE;
                                     System.err.println("    ... snipping signature index file at " + signatureIndexFileSnip + " to match the " + entriesToSnip + " lost entr(ies)");
                                     this.signaturesIndexRAF.setLength(signatureIndexFileSnip);
 
                                     // Get the last intact signature entry. Going to use to snip activity log.
-                                    final byte[] lastIntactSignatureEntry = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
-                                    long lastIntactSignatureEntrySeek = signatureIndexFileSnip - ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                                    final byte[] lastIntactSignatureEntry = new byte[SignatureIndexEntry.SIZE];
+                                    long lastIntactSignatureEntrySeek = signatureIndexFileSnip - SignatureIndexEntry.SIZE;
                                     this.signaturesIndexRAF.seek(lastIntactSignatureEntrySeek);
                                     this.signaturesIndexRAF.readFully(lastIntactSignatureEntry);
-                                    e = ActivityLogUtil.fromSignatureHeaderByteArray(lastIntactSignatureEntry);
-                                    largestIntactSignatureIndex = e.signatureIndex;
+                                    e = new SignatureIndexEntry(lastIntactSignatureEntry);
+                                    largestIntactSignatureIndex = e.getIndex();
 
                                     // Go backwards in activity log until find the correct entry. Before starting,
                                     // make sure there's at least one entry or don't bother.
                                     //
                                     // (Note that the activity log might be corrupted. This might fix, but this
                                     //  will get checked later.)
-                                    if (activityLogLen / ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES >= 1) {
+                                    if (activityLogLen / ActivityLogEntry.SIZE >= 1) {
 
-                                        final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
-                                        long startingOffset = (intactEntries - 1) * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                        final long intactEntries = (long) Math.floor((double) activityLogLen / (double) ActivityLogEntry.SIZE);
+                                        long startingOffset = (intactEntries - 1) * ActivityLogEntry.SIZE;
 
                                         boolean findingCorrectActivityLogEntry = true;
                                         ActivityLogEntry ale = null;
@@ -474,17 +496,17 @@ public class ActivityLog {
 
                                         while (findingCorrectActivityLogEntry) {
 
-                                            byte[] activityBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                                            byte[] activityBytes = new byte[ActivityLogEntry.SIZE];
                                             this.activitiesLogRAF.seek(startingOffset);
                                             this.activitiesLogRAF.readFully(activityBytes);
-                                            ale = ActivityLogUtil.fromActivityLogByteArray(activityBytes);
+                                            ale = new ActivityLogEntry(activityBytes);
 
                                             // If found a signature index that is less-equal to correct one, then stop
-                                            findingCorrectActivityLogEntry = ale.signatureIndex > largestIntactSignatureIndex;
+                                            findingCorrectActivityLogEntry = ale.getSignatureIndex() > largestIntactSignatureIndex;
 
                                             // Update so if loops again, next next newest entry
                                             if (findingCorrectActivityLogEntry) {
-                                                startingOffset -= ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                                startingOffset -= ActivityLogEntry.SIZE;
                                                 desiredEntries--;
                                             }
                                         }
@@ -493,7 +515,7 @@ public class ActivityLog {
                                         alreadyCheckedActivityLog = true;
 
                                         // Here's where the log file should actually end
-                                        long desiredActivityFileLen = desiredEntries * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                                        long desiredActivityFileLen = desiredEntries * ActivityLogEntry.SIZE;
                                         if (desiredActivityFileLen == activityLogLen) {
                                             // Nothing to do -- no changes need to be made. This should happen often, since a signature was 
                                             // lost, and almost certainly one activity log entry needs to be tossed
@@ -516,11 +538,11 @@ public class ActivityLog {
              * Step 2: Check the activity log for corruption
              */
             if (!alreadyCheckedActivityLog) {
-                long excessActivityLogBytes = this.getActivitiesLogFile().length() % ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                long excessActivityLogBytes = this.getActivitiesLogFile().length() % ActivityLogEntry.SIZE;
                 if (excessActivityLogBytes != 0) {
 
-                    if (excessActivityLogBytes >= ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES) {
-                        throw new AssertionFailedException("excessActivityLogBytes{" + excessActivityLogBytes + "} >= ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES {" + ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES + "}");
+                    if (excessActivityLogBytes >= ActivityLogEntry.SIZE) {
+                        throw new AssertionFailedException("excessActivityLogBytes{" + excessActivityLogBytes + "} >= ActivityLogEntry.SIZE {" + ActivityLogEntry.SIZE + "}");
                     }
 
                     System.err.println("---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
@@ -561,11 +583,10 @@ public class ActivityLog {
      * @throws java.io.IOException
      */
     private void closeRAF() throws IOException {
-        this.activitiesLogRAF.close();
-        this.signaturesIndexRAF.close();
-        this.signaturesRAF.close();
+        IOUtil.safeClose(activitiesLogRAF);
+        IOUtil.safeClose(signaturesIndexRAF);
+        IOUtil.safeClose(signaturesRAF);
     }
-    private boolean hasBeenBackedUp = false;
 
     /**
      * <p>Backups up files, clobbering any existing backups.</p>
@@ -603,14 +624,6 @@ public class ActivityLog {
             openRAF();
         }
     }
-    /**
-     * <p>Needed so thread safe. Even though synchronize on individual RAF, not know which thread will get monitor next when multiple simulatenous writes.</p>
-     */
-    final Object writeLock = new Object();
-    /**
-     * <p>Only used for record keeping. Monitor is quicly returned.</p>
-     */
-    final Object countLock = new Object();
 
     /**
      * <p>Writes activity to various files.</p>
@@ -618,13 +631,13 @@ public class ActivityLog {
      * @param activity
      * @throws java.io.IOException
      */
-    public void write(Activity activity) throws IOException {
-        
+    public void write(Activity activity) throws IOException, CertificateEncodingException {
+
         final long start = TimeUtil.getTrancheTimestamp();
 
         try {
             long signatureOffset = this.signaturesRAF.length();
-            int signatureLength = activity.signatureBytes.length;
+            byte[] signatureBytes = activity.getSignature().toByteArray();
             int signatureIndex = -1;
 
             // Synchronized on write lock so thread safe (i.e., entries in activity log always in chronological order)
@@ -640,25 +653,28 @@ public class ActivityLog {
                         boolean isFirst = this.signaturesIndexRAF.length() == 0;
                         if (!isFirst) {
                             // Seek to last entry and read
-                            this.signaturesIndexRAF.seek(this.signaturesIndexRAF.length() - ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES);
-                            byte[] prevEntryBytes = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
+                            this.signaturesIndexRAF.seek(this.signaturesIndexRAF.length() - SignatureIndexEntry.SIZE);
+                            byte[] prevEntryBytes = new byte[SignatureIndexEntry.SIZE];
                             this.signaturesIndexRAF.readFully(prevEntryBytes);
 
                             // Build the entry object and grab its index. Increment to get next index
-                            SignatureIndexEntry prevEntry = ActivityLogUtil.fromSignatureHeaderByteArray(prevEntryBytes);
-                            signatureIndex = prevEntry.signatureIndex + 1;
+                            SignatureIndexEntry prevEntry = new SignatureIndexEntry(prevEntryBytes);
+                            signatureIndex = prevEntry.getIndex() + 1;
                         } else {
                             // Zero-index
                             signatureIndex = 0;
                         }
 
                         // Build the bytes
-                        SignatureIndexEntry entry = new SignatureIndexEntry(signatureIndex, signatureOffset, signatureLength);
-                        byte[] entryBytes = ActivityLogUtil.toSignatureHeaderByteArray(entry);
-
-                        // Write the entry at the end of the file
-                        this.signaturesIndexRAF.seek(this.signaturesIndexRAF.length());
-                        this.signaturesIndexRAF.write(entryBytes);
+                        SignatureIndexEntry entry = new SignatureIndexEntry(signatureIndex, signatureOffset, signatureBytes.length);
+                        try {
+                            byte[] entryBytes = entry.toByteArray();
+                            // Write the entry at the end of the file
+                            this.signaturesIndexRAF.seek(this.signaturesIndexRAF.length());
+                            this.signaturesIndexRAF.write(entryBytes);
+                        } catch (Exception e) {
+                            debugErr(e);
+                        }
                     }
 
                     /**
@@ -666,7 +682,7 @@ public class ActivityLog {
                      */
                     {
                         this.signaturesRAF.seek(signatureOffset);
-                        this.signaturesRAF.write(activity.signatureBytes);
+                        this.signaturesRAF.write(signatureBytes);
                     }
                 }
 
@@ -677,12 +693,16 @@ public class ActivityLog {
                     final long timestamp = TimeUtil.getTrancheTimestamp();
 
                     // Caller might appreciate we set the correct timestamp
-                    activity.timestamp = timestamp;
+                    activity.setTimestamp(timestamp);
 
-                    ActivityLogEntry entry = new ActivityLogEntry(timestamp, activity.action, signatureIndex, activity.hash);
-                    byte[] entryBytes = ActivityLogUtil.toActivityLogByteArray(entry);
-                    this.activitiesLogRAF.seek(this.activitiesLogRAF.length());
-                    this.activitiesLogRAF.write(entryBytes);
+                    try {
+                        ActivityLogEntry entry = new ActivityLogEntry(timestamp, activity.getAction(), signatureIndex, activity.getHash());
+                        byte[] entryBytes = entry.toByteArray();
+                        this.activitiesLogRAF.seek(this.activitiesLogRAF.length());
+                        this.activitiesLogRAF.write(entryBytes);
+                    } catch (Exception e) {
+                        debugErr(e);
+                    }
                 }
             }
         } finally {
@@ -729,30 +749,30 @@ public class ActivityLog {
         synchronized (this.activitiesLogRAF) {
 
             final long totalLen = this.activitiesLogRAF.length();
-            final int totalEntries = (int) ((double) totalLen / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
+            final int totalEntries = (int) ((double) totalLen / (double) ActivityLogEntry.SIZE);
 
             int checkIndex = (int) ((double) totalEntries / 2.0);
-            int checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+            int checkOffset = checkIndex * ActivityLogEntry.SIZE;
 
             int lower = 0;
             int higher = totalEntries - 1;
 
             while (lower <= higher) {
-                byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                byte[] entryBytes = new byte[ActivityLogEntry.SIZE];
                 this.activitiesLogRAF.seek(checkOffset);
                 this.activitiesLogRAF.readFully(entryBytes);
-                ActivityLogEntry entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                ActivityLogEntry entry = new ActivityLogEntry(entryBytes);
 
-                if (entry.timestamp == timestamp) {
+                if (entry.getTimestamp() == timestamp) {
                     // Found it
-                    if (entry.action == action && entry.hash.equals(hash)) {
+                    if (entry.getAction() == action && entry.getHash().equals(hash)) {
                         return true;
                     }
 
                     // This one isn't it. Need to work back and forward and get everything
                     // with same timestamp
                     int testIndex = checkIndex - 1;
-                    int testOffset = testIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                    int testOffset = testIndex * ActivityLogEntry.SIZE;
 
                     // First, go back
                     while (true) {
@@ -762,68 +782,68 @@ public class ActivityLog {
                             break;
                         }
 
-                        entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                        entryBytes = new byte[ActivityLogEntry.SIZE];
 
                         this.activitiesLogRAF.seek(testOffset);
                         this.activitiesLogRAF.readFully(entryBytes);
 
-                        entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                        entry = new ActivityLogEntry(entryBytes);
 
                         // Found first activity before this that is not same timestamp
-                        if (entry.timestamp != timestamp) {
+                        if (entry.getTimestamp() != timestamp) {
                             break;
                         }
 
-                        if (entry.action == action && entry.hash.equals(hash)) {
+                        if (entry.getAction() == action && entry.getHash().equals(hash)) {
                             return true;
                         }
 
                         // Move back one
                         testIndex--;
-                        testOffset = testIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                        testOffset = testIndex * ActivityLogEntry.SIZE;
                     }
 
                     testIndex = checkIndex + 1;
-                    testOffset = testIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                    testOffset = testIndex * ActivityLogEntry.SIZE;
 
                     // Next, go forward
                     while (true) {
 
                         // If cannot read in that many bytes, at end of file. Break, not found in this direction.
-                        if (testOffset + ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES > this.activitiesLogRAF.length()) {
+                        if (testOffset + ActivityLogEntry.SIZE > this.activitiesLogRAF.length()) {
                             break;
                         }
 
-                        entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                        entryBytes = new byte[ActivityLogEntry.SIZE];
                         this.activitiesLogRAF.seek(testOffset);
                         this.activitiesLogRAF.readFully(entryBytes);
-                        entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                        entry = new ActivityLogEntry(entryBytes);
 
                         // Found first activity before this that is not same timestamp
-                        if (entry.timestamp != timestamp) {
+                        if (entry.getTimestamp() != timestamp) {
                             break;
                         }
 
-                        if (entry.action == action && entry.hash.equals(hash)) {
+                        if (entry.getAction() == action && entry.getHash().equals(hash)) {
                             return true;
                         }
 
                         // Move forward one
                         testIndex++;
-                        testOffset = testIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                        testOffset = testIndex * ActivityLogEntry.SIZE;
                     }
 
                     // Checked everything with same timestamp, not there.
                     return false;
-                } else if (entry.timestamp > timestamp) {
+                } else if (entry.getTimestamp() > timestamp) {
                     higher = checkIndex - 1;
-                } else if (entry.timestamp < timestamp) {
+                } else if (entry.getTimestamp() < timestamp) {
                     lower = checkIndex + 1;
                 }
 
                 // Update index and offset
                 checkIndex = (int) ((double) (lower + higher) / 2.0);
-                checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                checkOffset = checkIndex * ActivityLogEntry.SIZE;
             }
 
             return false;
@@ -846,24 +866,24 @@ public class ActivityLog {
 
             // Read until not enough bytes left for total entry. (This indicates corruption and should have been checked)
             FIND_STARTING_INDEX:
-            while (seek + ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES <= totalLen) {
+            while (seek + ActivityLogEntry.SIZE <= totalLen) {
 
-                byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                byte[] entryBytes = new byte[ActivityLogEntry.SIZE];
                 this.activitiesLogRAF.seek(seek);
                 this.activitiesLogRAF.readFully(entryBytes);
-                ActivityLogEntry entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                ActivityLogEntry entry = new ActivityLogEntry(entryBytes);
 
-                if (entry.timestamp == timestamp && entry.action == action && entry.hash.equals(hash)) {
+                if (entry.getTimestamp() == timestamp && entry.getAction() == action && entry.getHash().equals(hash)) {
                     return true;
                 }
 
                 // Linear speed-up (remove from log(n) lookup)
-                if (entry.timestamp > timestamp) {
+                if (entry.getTimestamp() > timestamp) {
                     return false;
                 }
 
                 // Increment seek to next entry
-                seek += ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                seek += ActivityLogEntry.SIZE;
             }
 
             // Not found
@@ -878,10 +898,9 @@ public class ActivityLog {
      * @param limit Limit to number of entries to return. Should use Integer.MAX_VALUE if want all entries
      * @param mask Used to match activity bytes. If all the bits in the mask are included in the activity byte, then the activity will be included. For example, if the mask is Activity.ACTION_TYPE_SET, then all logs that have this bit set (set data and set meta data) will be included. However, if Activity.SET_DATA is the mask, then only set data actions will match (since there are two bits set in the mask, making it more restrictive). 0 is least restrictive (restricts nothing) and 0xFF is most restrictive (restricts everything but itself).
      * @return
-     * @throws java.io.IOException
      * @throws java.lang.Exception
      */
-    public List<Activity> read(long fromTimestamp, long toTimestamp, int limit, byte mask) throws IOException, Exception {
+    public List<Activity> read(long fromTimestamp, long toTimestamp, int limit, byte mask) throws Exception {
         if (fromTimestamp > toTimestamp) {
             throw new RuntimeException("Illegal parameters: starting timestamp<" + fromTimestamp + "> is greater than ending timestamp<" + toTimestamp + ">.");
         }
@@ -900,7 +919,7 @@ public class ActivityLog {
                     return activities;
                 }
 
-                long seek = indexToStart * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                long seek = indexToStart * ActivityLogEntry.SIZE;
                 final long totalLen = this.activitiesLogRAF.length();
 
                 // Read until one of three conditions met
@@ -908,32 +927,32 @@ public class ActivityLog {
                 // 2. Exceed the limit (while statement)
                 // 3. End of file (while statement)
                 READING_ACTIVITIES:
-                while (activities.size() < limit && seek + ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES <= totalLen) {
+                while (activities.size() < limit && seek + ActivityLogEntry.SIZE <= totalLen) {
 
                     this.activitiesLogRAF.seek(seek);
 
-                    byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                    byte[] entryBytes = new byte[ActivityLogEntry.SIZE];
                     this.activitiesLogRAF.readFully(entryBytes);
-                    ActivityLogEntry entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                    ActivityLogEntry entry = new ActivityLogEntry(entryBytes);
 
                     // If passed the ending timestamp, break
-                    if (entry.timestamp > toTimestamp) {
+                    if (entry.getTimestamp() > toTimestamp) {
                         break READING_ACTIVITIES;
                     }
 
-                    Signature sig = this.signatureMap.getSignature(entry.signatureIndex);
-                    Activity nextActivity = new Activity(entry.timestamp, entry.action, sig, entry.hash);
+                    Signature sig = this.signatureMap.getSignature(entry.getSignatureIndex());
+                    Activity nextActivity = new Activity(entry.getTimestamp(), entry.getAction(), sig, entry.getHash());
 
                     // Only add if passes the mask. Note a 0 is least restrictive--it matches
                     // everything. 0xFF would only match if all bits in byte were set, which 
                     // won't happen in production, so it would match nothing.
-                    boolean passesMask = mask == Activity.ANY || (nextActivity.action & mask) == mask;
+                    boolean passesMask = mask == Activity.ANY || (nextActivity.getAction() & mask) == mask;
                     if (passesMask) {
                         activities.add(nextActivity);
                     }
 
                     // Increment seek to next entry
-                    seek += ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                    seek += ActivityLogEntry.SIZE;
                 }
             }
 
@@ -974,32 +993,32 @@ public class ActivityLog {
                     return count;
                 }
 
-                long seek = indexToStart * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                long seek = indexToStart * ActivityLogEntry.SIZE;
                 final long totalLen = this.activitiesLogRAF.length();
 
                 // Read until one of conditions met
                 // 1. Pass the toTimestamp date
                 // 3. End of file (while statement)
                 READING_ACTIVITIES:
-                while (seek + ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES <= totalLen) {
+                while (seek + ActivityLogEntry.SIZE <= totalLen) {
 
                     this.activitiesLogRAF.seek(seek);
 
-                    byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                    byte[] entryBytes = new byte[ActivityLogEntry.SIZE];
                     this.activitiesLogRAF.readFully(entryBytes);
-                    ActivityLogEntry entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                    ActivityLogEntry entry = new ActivityLogEntry(entryBytes);
 
                     // If passed the ending timestamp, break
-                    if (entry.timestamp > toTimestamp) {
+                    if (entry.getTimestamp() > toTimestamp) {
                         break READING_ACTIVITIES;
                     }
 
                     // If gets here, entry was in range. Increment count.
-                    boolean matchesMask = mask == Activity.ANY || (entry.action & mask) == mask;
+                    boolean matchesMask = mask == Activity.ANY || (entry.getAction() & mask) == mask;
                     if (matchesMask) {
                         count++;                    // Increment seek to next entry
                     }
-                    seek += ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                    seek += ActivityLogEntry.SIZE;
                 }
             }
 
@@ -1026,25 +1045,25 @@ public class ActivityLog {
         synchronized (this.activitiesLogRAF) {
 
             final long totalLen = this.activitiesLogRAF.length();
-            final int totalEntries = (int) ((double) totalLen / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
+            final int totalEntries = (int) ((double) totalLen / (double) ActivityLogEntry.SIZE);
 
             int checkIndex = (int) ((double) totalEntries / 2.0);
-            int checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+            int checkOffset = checkIndex * ActivityLogEntry.SIZE;
 
             int lower = 0;
             int higher = totalEntries - 1;
 
             while (lower <= higher) {
 
-                byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                byte[] entryBytes = new byte[ActivityLogEntry.SIZE];
                 this.activitiesLogRAF.seek(checkOffset);
                 this.activitiesLogRAF.readFully(entryBytes);
-                ActivityLogEntry entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                ActivityLogEntry entry = new ActivityLogEntry(entryBytes);
 
                 /**
                  * We matched exactly! But there might be other activities matching same timestamp, so look back
                  */
-                if (entry.timestamp == startingTimestamp) {
+                if (entry.getTimestamp() == startingTimestamp) {
 
                     // Special case: if first index, this must be it!
                     if (checkIndex == 0) {
@@ -1053,17 +1072,17 @@ public class ActivityLog {
 
                     // This might not be the first timestamp that's equal. Work back until find timestamp that isn't equal
                     checkIndex--;
-                    checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                    checkOffset = checkIndex * ActivityLogEntry.SIZE;
 
                     // First, go back
                     while (true) {
-                        entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                        entryBytes = new byte[ActivityLogEntry.SIZE];
                         this.activitiesLogRAF.seek(checkOffset);
                         this.activitiesLogRAF.readFully(entryBytes);
-                        entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                        entry = new ActivityLogEntry(entryBytes);
 
                         // Found first activity before this that is not same timestamp
-                        if (entry.timestamp != startingTimestamp) {
+                        if (entry.getTimestamp() != startingTimestamp) {
                             return checkIndex + 1;
                         }
 
@@ -1074,14 +1093,14 @@ public class ActivityLog {
 
                         // Move back one
                         checkIndex--;
-                        checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                        checkOffset = checkIndex * ActivityLogEntry.SIZE;
                     }
                 } //
                 /**
                  * The timestamp we found is less than starting. However, if the next is greater, we know
                  * where to start!
                  */
-                else if (entry.timestamp < startingTimestamp) {
+                else if (entry.getTimestamp() < startingTimestamp) {
 
                     // Special case: if this is the last entry, then not found
                     if (checkIndex == totalEntries - 1) {
@@ -1089,13 +1108,13 @@ public class ActivityLog {
                     }
 
                     // Check to see whether next is greater. If so, we're set!
-                    checkOffset = (checkIndex + 1) * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
-                    entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                    checkOffset = (checkIndex + 1) * ActivityLogEntry.SIZE;
+                    entryBytes = new byte[ActivityLogEntry.SIZE];
                     this.activitiesLogRAF.seek(checkOffset);
                     this.activitiesLogRAF.readFully(entryBytes);
-                    entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                    entry = new ActivityLogEntry(entryBytes);
 
-                    if (entry.timestamp >= startingTimestamp) {
+                    if (entry.getTimestamp() >= startingTimestamp) {
                         return checkIndex + 1;
                     } else {
                         lower = checkIndex + 1;
@@ -1107,7 +1126,7 @@ public class ActivityLog {
                  * 
                  * However, if the entry before this is earlier than starting timestamp, we know what to do!
                  */
-                else if (entry.timestamp > startingTimestamp) {
+                else if (entry.getTimestamp() > startingTimestamp) {
 
                     // Special case: if this is the first entry, then found!
                     if (checkIndex == 0) {
@@ -1115,15 +1134,15 @@ public class ActivityLog {
                     }
 
                     // Check to see whether previos is less. If so, we're set!
-                    checkOffset = (checkIndex - 1) * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
-                    entryBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
+                    checkOffset = (checkIndex - 1) * ActivityLogEntry.SIZE;
+                    entryBytes = new byte[ActivityLogEntry.SIZE];
                     this.activitiesLogRAF.seek(checkOffset);
                     this.activitiesLogRAF.readFully(entryBytes);
-                    entry = ActivityLogUtil.fromActivityLogByteArray(entryBytes);
+                    entry = new ActivityLogEntry(entryBytes);
 
-                    if (entry.timestamp < startingTimestamp) {
+                    if (entry.getTimestamp() < startingTimestamp) {
                         return checkIndex;
-                    } else if (entry.timestamp == startingTimestamp) {
+                    } else if (entry.getTimestamp() == startingTimestamp) {
                         return checkIndex - 1;
                     } else {
                         higher = checkIndex - 1;
@@ -1132,7 +1151,7 @@ public class ActivityLog {
 
                 // Update index and offset
                 checkIndex = (int) ((double) (lower + higher) / 2.0);
-                checkOffset = checkIndex * ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+                checkOffset = checkIndex * ActivityLogEntry.SIZE;
             }
 
             return -1;
@@ -1232,15 +1251,15 @@ public class ActivityLog {
             SignatureIndexEntry entry = null;
             synchronized (this.signaturesIndexRAF) {
 
-                long offset = signatureIndex * ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES;
+                long offset = signatureIndex * SignatureIndexEntry.SIZE;
                 final long totalLen = this.signaturesIndexRAF.length();
 
                 // Doesn't exist
-                if (offset + ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES > totalLen) {
+                if (offset + SignatureIndexEntry.SIZE > totalLen) {
                     return null;
                 }
 
-                byte[] entryBytes = new byte[ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES];
+                byte[] entryBytes = new byte[SignatureIndexEntry.SIZE];
                 try {
                     this.signaturesIndexRAF.seek(offset);
                 } catch (IOException ioe) {
@@ -1248,7 +1267,7 @@ public class ActivityLog {
                     throw ioe;
                 }
                 this.signaturesIndexRAF.readFully(entryBytes);
-                entry = ActivityLogUtil.fromSignatureHeaderByteArray(entryBytes);
+                entry = new SignatureIndexEntry(entryBytes);
             }
 
             /**
@@ -1256,8 +1275,8 @@ public class ActivityLog {
              * exactly where it is.
              */
             synchronized (this.signaturesRAF) {
-                byte[] signatureBytes = new byte[entry.signatureLen];
-                this.signaturesRAF.seek(entry.signatureOffset);
+                byte[] signatureBytes = new byte[entry.getLength()];
+                this.signaturesRAF.seek(entry.getOffset());
                 this.signaturesRAF.readFully(signatureBytes);
                 signature = new Signature(signatureBytes);
             }
@@ -1267,7 +1286,7 @@ public class ActivityLog {
 
     public long getActivityLogEntriesCount() {
         synchronized (this.activitiesLogRAF) {
-            return (long) Math.floor((double) this.getActivitiesLogFile().length() / (double) ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES);
+            return (long) Math.floor((double) this.getActivitiesLogFile().length() / (double) ActivityLogEntry.SIZE);
         }
     }
 
@@ -1278,8 +1297,8 @@ public class ActivityLog {
      */
     public long getLastRecordedTimestamp() throws IOException {
         synchronized (this.activitiesLogRAF) {
-            byte[] activityBytes = new byte[ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES];
-            long lastEntryOffset = activitiesLogRAF.length() - ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES;
+            byte[] activityBytes = new byte[ActivityLogEntry.SIZE];
+            long lastEntryOffset = activitiesLogRAF.length() - ActivityLogEntry.SIZE;
 
             // If no entries, return -1
             if (lastEntryOffset < 0) {
@@ -1288,8 +1307,8 @@ public class ActivityLog {
 
             this.activitiesLogRAF.seek(lastEntryOffset);
             this.activitiesLogRAF.readFully(activityBytes);
-            ActivityLogEntry lastEntry = ActivityLogUtil.fromActivityLogByteArray(activityBytes);
-            return lastEntry.timestamp;
+            ActivityLogEntry lastEntry = new ActivityLogEntry(activityBytes);
+            return lastEntry.getTimestamp();
         }
     }
 

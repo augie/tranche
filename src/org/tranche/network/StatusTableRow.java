@@ -46,7 +46,7 @@ import org.tranche.security.SecurityUtil;
  * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class StatusTableRow extends Object implements Serializable {
+public class StatusTableRow implements Serializable {
 
     private static boolean debug = false;
     /**
@@ -54,9 +54,13 @@ public class StatusTableRow extends Object implements Serializable {
      */
     public static final int VERSION_ONE = 1;
     /**
+     * <p></p>
+     */
+    public static final int VERSION_TWO = 2;
+    /**
      * <p>The value for the latest version of the object.</p>
      */
-    public static final int VERSION_LATEST = VERSION_ONE;
+    public static final int VERSION_LATEST = VERSION_TWO;
     /**
      * <p>The location of the SSL bit in the set of flags.</p>
      */
@@ -98,10 +102,6 @@ public class StatusTableRow extends Object implements Serializable {
      */
     public static final Collection<HashSpan> DEFAULT_TARGET_HASH_SPANS = HashSpan.FULL_SET;
     /**
-     * <p>The maximum length of the host name.</p>
-     */
-    public static final int LENGTH_MAX_HOST = 100;
-    /**
      * <p>The maximum length of the name.</p>
      */
     public static final int LENGTH_MAX_NAME = 100;
@@ -112,15 +112,14 @@ public class StatusTableRow extends Object implements Serializable {
     private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS), targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
     private String host, name = DEFAULT_NAME, group = DEFAULT_GROUP;
     private int version = VERSION_LATEST, port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
-    private long flags = DEFAULT_FLAGS, updateTimestamp = TimeUtil.getTrancheTimestamp();
-    private boolean isFlaggedOfflineLocally = false;
+    private long flags = DEFAULT_FLAGS, updateTimestamp = 0, responseTimestamp = 0;
 
     /**
      * <p>Starts the row with a host name. All other values are the defaults.</p>
      * @param host Host name.
      */
     public StatusTableRow(String host) {
-        this.host = host;
+        setHost(host);
     }
 
     /**
@@ -147,9 +146,9 @@ public class StatusTableRow extends Object implements Serializable {
      * @param isSSL
      */
     public StatusTableRow(String host, int port, boolean isSSL) {
-        this.host = host;
-        this.port = port;
-        this.setIsSSL(isSSL);
+        setHost(host);
+        setPort(port);
+        setIsSSL(isSSL);
     }
 
     /**
@@ -160,10 +159,10 @@ public class StatusTableRow extends Object implements Serializable {
      * @param isOnline
      */
     public StatusTableRow(String host, int port, boolean isSSL, boolean isOnline) {
-        this.host = host;
-        this.port = port;
-        this.setIsSSL(isSSL);
-        this.setIsOnline(isOnline);
+        setHost(host);
+        setPort(port);
+        setIsSSL(isSSL);
+        setIsOnline(isOnline);
     }
 
     /**
@@ -208,6 +207,29 @@ public class StatusTableRow extends Object implements Serializable {
     }
 
     /**
+     *
+     * @param row
+     * @return Whether any information was changed.
+     */
+    protected boolean update(StatusTableRow row) {
+        if (row == null) {
+            return false;
+        }
+        boolean changed = false;
+        if (row.getUpdateTimestamp() > getUpdateTimestamp()) {
+            setUpdateTimestamp(row.getUpdateTimestamp());
+            changed = changed || setPort(row.getPort()) || setIsSSL(row.isSSL()) || setIsReadable(row.isReadable()) || setIsWritable(row.isWritable()) || setIsDataStore(row.isDataStore()) || setName(row.getName()) || setGroup(row.getGroup()) || setHashSpans(row.getHashSpans()) || setTargetHashSpans(row.getTargetHashSpans());
+        }
+        if (row.getResponseTimestamp() > getResponseTimestamp()) {
+            setResponseTimestamp(row.getResponseTimestamp());
+            changed = changed || setIsOnline(row.isOnline());
+        } else if (!row.isOnline()) {
+            changed = changed || setIsOnline(row.isOnline());
+        }
+        return changed;
+    }
+
+    /**
      * <p>Returns whether this row is a core server. A core server is defined a server that exists in the startup list of servers.</p>
      * @return Whether this row is a core server.
      */
@@ -245,9 +267,14 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the version.</p>
      * @param version The new version
+     * @return
      */
-    protected void setVersion(int version) {
-        this.version = version;
+    protected boolean setVersion(int version) {
+        if (this.version != version) {
+            this.version = version;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -261,29 +288,45 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the timestamp when the row's information was last updated.</p>
      * @param updateTimestamp The timestamp when the row's information was last updated.
-     */
-    private void setUpdateTimestamp(long updateTimestamp) {
-        this.updateTimestamp = updateTimestamp;
-        if (this.updateTimestamp < 0) {
-            this.updateTimestamp = 0;
-        }
-    }
-
-    /**
-     * TEMPORARY SOLUTION
-     * Need to push all servers to b166 before adding last response timestamp.
      * @return
      */
-    public boolean isFlaggedOfflineLocally() {
-        return isFlaggedOfflineLocally;
+    protected boolean setUpdateTimestamp(long updateTimestamp) {
+        if (this.updateTimestamp != updateTimestamp) {
+            this.updateTimestamp = updateTimestamp;
+            return true;
+        }
+        return false;
     }
 
     /**
      * 
-     * @param isFlaggedOfflineLocally
+     * @return
      */
-    public void setIsFlaggedOfflineLocally(boolean isFlaggedOfflineLocally) {
-        this.isFlaggedOfflineLocally = isFlaggedOfflineLocally;
+    public long getResponseTimestamp() {
+        return responseTimestamp;
+    }
+
+    /**
+     *
+     */
+    public void responseReceived() {
+        setResponseTimestamp(TimeUtil.getTrancheTimestamp());
+        if ((ONLINE_BIT & getFlags()) == 0) {
+            setIsOnline(true);
+        }
+    }
+
+    /**
+     * 
+     * @param responseTimestamp
+     * @return
+     */
+    protected boolean setResponseTimestamp(long responseTimestamp) {
+        if (this.responseTimestamp != responseTimestamp) {
+            this.responseTimestamp = responseTimestamp;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -297,9 +340,14 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the flags for the row.</p>
      * @param flags The new flags
+     * @return
      */
-    private void setFlags(long flags) {
-        this.flags = flags;
+    private boolean setFlags(long flags) {
+        if (this.flags != flags) {
+            this.flags = flags;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -313,12 +361,15 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the host name.</p>
      * @param host The new host name
+     * @return
      */
-    protected void setHost(String host) {
-        this.host = host;
-        if (this.host.length() > LENGTH_MAX_HOST) {
-            this.host = this.host.substring(0, LENGTH_MAX_HOST);
+    protected boolean setHost(String host) {
+        host = host.trim().toLowerCase();
+        if (this.host == null || !this.host.equals(host)) {
+            this.host = host;
+            return true;
         }
+        return false;
     }
 
     /**
@@ -332,12 +383,70 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the port number.</p>
      * @param port The new port number
+     * @return
      */
-    protected void setPort(int port) {
-        this.port = port;
-        if (this.port < 0) {
-            this.port = 0;
+    protected boolean setPort(int port) {
+        if (this.port != port) {
+            this.port = port;
+            return true;
         }
+        return false;
+    }
+
+    /**
+     * <p>Gets the name.</p>
+     * @return The name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * <p>Sets the name.</p>
+     * @param name The new name
+     * @return
+     */
+    protected boolean setName(String name) {
+        if (name == null) {
+            name = DEFAULT_NAME;
+        }
+        name = name.trim();
+        if (name.length() > LENGTH_MAX_NAME) {
+            name = name.substring(0, LENGTH_MAX_NAME);
+        }
+        if (this.name == null || !this.name.equals(name)) {
+            this.name = name;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * <p>Gets the group name.</p>
+     * @return The group name
+     */
+    public String getGroup() {
+        return group;
+    }
+
+    /**
+     * <p>Sets the group name.</p>
+     * @param group The new group name
+     * @return
+     */
+    protected boolean setGroup(String group) {
+        if (group == null) {
+            group = DEFAULT_GROUP;
+        }
+        group = group.trim();
+        if (group.length() > LENGTH_MAX_GROUP) {
+            group = group.substring(0, LENGTH_MAX_GROUP);
+        }
+        if (this.group == null || !this.group.equals(group)) {
+            this.group = group;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -352,58 +461,16 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>Sets whether the server communicates over SSL.</p>
      * @param ssl Whether the server communicates over SSL
      */
-    protected void setIsSSL(boolean ssl) {
-        if (ssl) {
-            setFlags(getFlags() | SSL_BIT);
-        } else {
-            setFlags(getFlags() & (DATA_STORE_BIT | ONLINE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
-        }
-    }
-
-    /**
-     * <p>Gets the name.</p>
-     * @return The name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * <p>Sets the name.</p>
-     * @param name The new name
-     */
-    protected void setName(String name) {
-        if (name == null) {
-            this.name = DEFAULT_NAME;
-        } else {
-            this.name = name;
-            if (this.name.length() > LENGTH_MAX_NAME) {
-                this.name = this.name.substring(0, LENGTH_MAX_NAME);
+    protected boolean setIsSSL(boolean ssl) {
+        if (((SSL_BIT & getFlags()) != 0) != ssl) {
+            if (ssl) {
+                setFlags(getFlags() | SSL_BIT);
+            } else {
+                setFlags(getFlags() & (DATA_STORE_BIT | ONLINE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
             }
+            return true;
         }
-    }
-
-    /**
-     * <p>Gets the group name.</p>
-     * @return The group name
-     */
-    public String getGroup() {
-        return group;
-    }
-
-    /**
-     * <p>Sets the group name.</p>
-     * @param group The new group name
-     */
-    protected void setGroup(String group) {
-        if (group == null) {
-            this.group = DEFAULT_GROUP;
-        } else {
-            this.group = group;
-            if (this.group.length() > LENGTH_MAX_GROUP) {
-                this.group = this.group.substring(0, LENGTH_MAX_GROUP);
-            }
-        }
+        return false;
     }
 
     /**
@@ -411,19 +478,24 @@ public class StatusTableRow extends Object implements Serializable {
      * @return Whether the server is online.
      */
     public boolean isOnline() {
-        return (ONLINE_BIT & getFlags()) != 0;
+        return (ONLINE_BIT & getFlags()) != 0 && !NetworkUtil.isBannedServer(host);
     }
 
     /**
      * <p>Sets whether the server is online.</p>
      * @param online Whether the server is online.
+     * @return
      */
-    protected void setIsOnline(boolean online) {
-        if (online) {
-            setFlags(getFlags() | ONLINE_BIT);
-        } else if (!ConnectionUtil.isConnected(host)) {
-            setFlags(getFlags() & (SSL_BIT | DATA_STORE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
+    protected boolean setIsOnline(boolean online) {
+        if (((ONLINE_BIT & getFlags()) != 0) != online) {
+            if (online) {
+                setFlags(getFlags() | ONLINE_BIT);
+            } else if (!ConnectionUtil.isConnected(host)) {
+                setFlags(getFlags() & (SSL_BIT | DATA_STORE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -437,13 +509,18 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets whether the server allows its data to be read.</p>
      * @param readable Whether the server allows its data to be read.
+     * @return
      */
-    protected void setIsReadable(boolean readable) {
-        if (readable) {
-            setFlags(getFlags() | CAN_READ_BIT);
-        } else {
-            setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | DATA_STORE_BIT | CAN_WRITE_BIT));
+    protected boolean setIsReadable(boolean readable) {
+        if (((CAN_READ_BIT & getFlags()) != 0) != readable) {
+            if (readable) {
+                setFlags(getFlags() | CAN_READ_BIT);
+            } else {
+                setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | DATA_STORE_BIT | CAN_WRITE_BIT));
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -458,12 +535,16 @@ public class StatusTableRow extends Object implements Serializable {
      * <p>Sets whether the server can be written to.</p>
      * @param writable Whether the server can be written to.
      */
-    protected void setIsWritable(boolean writable) {
-        if (writable) {
-            setFlags(getFlags() | CAN_WRITE_BIT);
-        } else {
-            setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | CAN_READ_BIT | DATA_STORE_BIT));
+    protected boolean setIsWritable(boolean writable) {
+        if (((CAN_WRITE_BIT & getFlags()) != 0) != writable) {
+            if (writable) {
+                setFlags(getFlags() | CAN_WRITE_BIT);
+            } else {
+                setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | CAN_READ_BIT | DATA_STORE_BIT));
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -477,13 +558,18 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets whether the server stores data.</p>
      * @param dataStore Whether the server stores data.
+     * @return
      */
-    protected void setIsDataStore(boolean dataStore) {
-        if (dataStore) {
-            setFlags(getFlags() | DATA_STORE_BIT);
-        } else {
-            setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
+    protected boolean setIsDataStore(boolean dataStore) {
+        if (((DATA_STORE_BIT & getFlags()) != 0) != dataStore) {
+            if (dataStore) {
+                setFlags(getFlags() | DATA_STORE_BIT);
+            } else {
+                setFlags(getFlags() & (SSL_BIT | ONLINE_BIT | CAN_READ_BIT | CAN_WRITE_BIT));
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -499,12 +585,17 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the hash spans.</p>
      * @param hashSpans The hash spans
+     * @return
      */
-    protected void setHashSpans(Collection<HashSpan> hashSpans) {
-        synchronized (this.hashSpans) {
-            this.hashSpans.clear();
-            this.hashSpans.addAll(hashSpans);
+    protected boolean setHashSpans(Collection<HashSpan> hashSpans) {
+        if (!HashSpanCollection.areEqual(getHashSpans(), hashSpans)) {
+            synchronized (this.hashSpans) {
+                this.hashSpans.clear();
+                this.hashSpans.addAll(hashSpans);
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -520,12 +611,17 @@ public class StatusTableRow extends Object implements Serializable {
     /**
      * <p>Sets the target hash spans.</p>
      * @param hashSpans The hash spans
+     * @return
      */
-    protected void setTargetHashSpans(Collection<HashSpan> hashSpans) {
-        synchronized (this.targetHashSpans) {
-            this.targetHashSpans.clear();
-            this.targetHashSpans.addAll(hashSpans);
+    protected boolean setTargetHashSpans(Collection<HashSpan> hashSpans) {
+        if (!HashSpanCollection.areEqual(getTargetHashSpans(), hashSpans)) {
+            synchronized (this.targetHashSpans) {
+                this.targetHashSpans.clear();
+                this.targetHashSpans.addAll(hashSpans);
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -557,6 +653,8 @@ public class StatusTableRow extends Object implements Serializable {
         RemoteUtil.writeInt(version, out);
         if (version == VERSION_ONE) {
             serializeVersionOne(out);
+        } else if (version == VERSION_TWO) {
+            serializeVersionTwo(out);
         } else {
             throw new IOException("Unrecognized version: " + version);
         }
@@ -581,16 +679,40 @@ public class StatusTableRow extends Object implements Serializable {
         }
         // For now, only support one target hash span. Might change later.
         Collection<HashSpan> targetHashSpans = getTargetHashSpans();
-        if (targetHashSpans.size() > 0) {
-            RemoteUtil.writeInt(targetHashSpans.size(), out);
-            for (HashSpan targetHashSpan : targetHashSpans) {
-                RemoteUtil.writeBigHash(targetHashSpan.getFirst(), out);
-                RemoteUtil.writeBigHash(targetHashSpan.getLast(), out);
-            }
-        } else {
-            RemoteUtil.writeInt(0, out);
+        RemoteUtil.writeInt(targetHashSpans.size(), out);
+        for (HashSpan targetHashSpan : targetHashSpans) {
+            RemoteUtil.writeBigHash(targetHashSpan.getFirst(), out);
+            RemoteUtil.writeBigHash(targetHashSpan.getLast(), out);
         }
         RemoteUtil.writeLong(updateTimestamp, out);
+    }
+
+    /**
+     * 
+     * @param out
+     * @throws IOException
+     */
+    private void serializeVersionTwo(OutputStream out) throws IOException {
+        IOUtil.writeString(host, out);
+        IOUtil.writeString(name, out);
+        IOUtil.writeString(group, out);
+        IOUtil.writeInt(port, out);
+        IOUtil.writeLong(flags, out);
+        Collection<HashSpan> hashSpans = getHashSpans();
+        IOUtil.writeInt(hashSpans.size(), out);
+        for (HashSpan hs : hashSpans) {
+            IOUtil.writeBigHash(hs.getFirst(), out);
+            IOUtil.writeBigHash(hs.getLast(), out);
+        }
+        // For now, only support one target hash span. Might change later.
+        Collection<HashSpan> targetHashSpans = getTargetHashSpans();
+        IOUtil.writeInt(targetHashSpans.size(), out);
+        for (HashSpan targetHashSpan : targetHashSpans) {
+            IOUtil.writeBigHash(targetHashSpan.getFirst(), out);
+            IOUtil.writeBigHash(targetHashSpan.getLast(), out);
+        }
+        IOUtil.writeLong(updateTimestamp, out);
+        IOUtil.writeLong(responseTimestamp, out);
     }
 
     /**
@@ -602,6 +724,8 @@ public class StatusTableRow extends Object implements Serializable {
         setVersion(RemoteUtil.readInt(in));
         if (getVersion() == VERSION_ONE) {
             deserializeVersionOne(in);
+        } else if (getVersion() == VERSION_TWO) {
+            deserializeVersionTwo(in);
         } else {
             throw new IOException("Unrecognized version: " + getVersion());
         }
@@ -644,6 +768,42 @@ public class StatusTableRow extends Object implements Serializable {
     }
 
     /**
+     * 
+     * @param in
+     * @throws IOException
+     */
+    protected void deserializeVersionTwo(InputStream in) throws IOException {
+        setHost(IOUtil.readString(in));
+        setName(IOUtil.readString(in));
+        setGroup(IOUtil.readString(in));
+        setPort(IOUtil.readInt(in));
+        setFlags(IOUtil.readLong(in));
+
+        // Set hash spans
+        Set<HashSpan> thisHashSpans = new HashSet<HashSpan>();
+        int hashSpanCount = IOUtil.readInt(in);
+        for (int i = 0; i < hashSpanCount; i++) {
+            BigHash first = IOUtil.readBigHash(in);
+            BigHash last = IOUtil.readBigHash(in);
+            thisHashSpans.add(new HashSpan(first, last));
+        }
+        setHashSpans(thisHashSpans);
+
+        // Set target hash spans
+        Set<HashSpan> thisTargetHashSpans = new HashSet();
+        int targetHashSpanCount = IOUtil.readInt(in);
+        for (int i = 0; i < targetHashSpanCount; i++) {
+            BigHash first = IOUtil.readBigHash(in);
+            BigHash last = IOUtil.readBigHash(in);
+            thisTargetHashSpans.add(new HashSpan(first, last));
+        }
+        setTargetHashSpans(thisTargetHashSpans);
+
+        setUpdateTimestamp(IOUtil.readLong(in));
+        setResponseTimestamp(IOUtil.readLong(in));
+    }
+
+    /**
      * <p>Evaluates all the attributes except the update timestamp of the given object against this one.</p>
      * @param o A StatusTableRow object
      * @return Whether all the attributes except the update timestamp of the given object are equal to this one.
@@ -658,7 +818,9 @@ public class StatusTableRow extends Object implements Serializable {
                     && port == str.getPort()
                     && flags == str.getFlags()
                     && HashSpanCollection.areEqual(getHashSpans(), str.getHashSpans())
-                    && HashSpanCollection.areEqual(getTargetHashSpans(), str.getTargetHashSpans());
+                    && HashSpanCollection.areEqual(getTargetHashSpans(), str.getTargetHashSpans())
+                    && updateTimestamp == str.getUpdateTimestamp()
+                    && responseTimestamp == str.getResponseTimestamp();
         }
         return false;
     }
@@ -701,7 +863,7 @@ public class StatusTableRow extends Object implements Serializable {
      */
     @Override
     public String toString() {
-        String out = "Host = \"" + host + "\", name = \"" + name + "\", group = \"" + group + "\", update time = \"" + updateTimestamp + "\", port = \"" + port + "\", ssl = \"" + isSSL() + "\", online = \"" + isOnline() + "\", readable = \"" + isReadable() + "\", writable = \"" + isWritable() + "\", data store = \"" + isDataStore() + "\", core = \"" + isCore() + "\", local = \"" + isLocalServer() + "\"";
+        String out = "Host = \"" + host + "\", name = \"" + name + "\", group = \"" + group + "\", update time = \"" + updateTimestamp + "\", response time = \"" + responseTimestamp + "\", port = \"" + port + "\", ssl = \"" + isSSL() + "\", online = \"" + isOnline() + "\", readable = \"" + isReadable() + "\", writable = \"" + isWritable() + "\", data store = \"" + isDataStore() + "\", core = \"" + isCore() + "\", local = \"" + isLocalServer() + "\"";
         Collection<HashSpan> hashSpans = getHashSpans();
         if (!hashSpans.isEmpty()) {
             out = out + ", " + hashSpans.size() + " hash spans = ";

@@ -26,6 +26,7 @@ import org.tranche.util.IOUtil;
  * @author Jayson Falkner - jfalkner@umich.edu
  */
 public class DeleteFileOnExitFileInputStream extends FileInputStream {
+
     // reference the underlying file
     private File file;
 
@@ -46,10 +47,8 @@ public class DeleteFileOnExitFileInputStream extends FileInputStream {
     @Override
     public void close() throws IOException {
         try {
-            // close the parent file
             super.close();
         } finally {
-            // try to delete the file
             IOUtil.safeDelete(file);
         }
     }

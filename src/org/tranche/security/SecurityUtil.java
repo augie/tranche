@@ -71,7 +71,7 @@ import org.tranche.util.TempFileUtil;
 public class SecurityUtil {
 
     private static boolean debug = false;
-    private static String adminCertificateLocation = "/org/tranche/test/admin.public.certificate",  writeCertificateLocation = "/org/tranche/test/write.public.certificate",  userCertificateLocation = "/org/tranche/test/user.public.certificate",  readCertificateLocation = "/org/tranche/test/read.public.certificate",  autocertCertificateLocation = "/org/tranche/test/autocert.public.certificate",  anonCertificateLocation = "/org/tranche/test/anonymous.public.certificate",  anonPrivateKeyLocation = "/org/tranche/test/anonymous.private.key",  emailCertificateLocation = "/org/tranche/test/email.public.certificate",  emailPrivateKeyLocation = "/org/tranche/test/email.private.key";
+    private static String adminCertificateLocation = "/org/tranche/test/admin.public.certificate", writeCertificateLocation = "/org/tranche/test/write.public.certificate", userCertificateLocation = "/org/tranche/test/user.public.certificate", readCertificateLocation = "/org/tranche/test/read.public.certificate", autocertCertificateLocation = "/org/tranche/test/autocert.public.certificate", anonCertificateLocation = "/org/tranche/test/anonymous.public.certificate", anonPrivateKeyLocation = "/org/tranche/test/anonymous.private.key", emailCertificateLocation = "/org/tranche/test/email.public.certificate", emailPrivateKeyLocation = "/org/tranche/test/email.private.key";
     private static boolean uninitialized = true;
     private static X509Certificate defaultCertificate = null;
     private static PrivateKey defaultKey = null;
@@ -79,8 +79,8 @@ public class SecurityUtil {
      * <p>Size of signature in bytes, used by buffer.</p>
      */
     public static final int SIGNATURE_BUFFER_SIZE = 10000;
-    private static X509Certificate adminCert = null,  userCert = null,  readOnlyCert = null,  writeOnlyCert = null,  autoCert = null,  anonCert = null,  emailCert = null;
-    private static PrivateKey anonKey = null,  emailKey = null;
+    private static X509Certificate adminCert = null, userCert = null, readOnlyCert = null, writeOnlyCert = null, autoCert = null, anonCert = null, emailCert = null;
+    private static PrivateKey anonKey = null, emailKey = null;
 
     /**
      * <p>Create a hash using a particular hashing algorithm.</p>
@@ -209,7 +209,7 @@ public class SecurityUtil {
      */
     public static Certificate createCertificate(String name, PublicKey pub, PrivateKey priv) throws GeneralSecurityException {
         lazyLoad();
-        
+
         // make a new certificate
         X509V1CertificateGenerator gen = new X509V1CertificateGenerator();
 
@@ -794,7 +794,13 @@ public class SecurityUtil {
      * @throws java.security.GeneralSecurityException
      */
     public static final X509Certificate getCertificate(byte[] bytes) throws IOException, GeneralSecurityException {
-        return getCertificate(new ByteArrayInputStream(bytes));
+        ByteArrayInputStream bais = null;
+        try {
+            bais = new ByteArrayInputStream(bytes);
+            return getCertificate(bais);
+        } finally {
+            IOUtil.safeClose(bais);
+        }
     }
 
     /**

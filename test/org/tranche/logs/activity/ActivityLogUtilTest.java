@@ -15,10 +15,9 @@
  */
 package org.tranche.logs.activity;
 
-import java.util.Random;
-import org.tranche.security.Signature;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -67,8 +66,8 @@ public class ActivityLogUtilTest extends TrancheTestCase {
         ActivityLogEntry activityLogEntry1 = getRandomActivityLogEntry();
         System.out.println("Log entry #1: " + activityLogEntry1);
 
-        byte[] activityLogEntry1Bytes = ActivityLogUtil.toActivityLogByteArray(activityLogEntry1);
-        ActivityLogEntry activityLogEntry1Verify = ActivityLogUtil.fromActivityLogByteArray(activityLogEntry1Bytes);
+        byte[] activityLogEntry1Bytes = activityLogEntry1.toByteArray();
+        ActivityLogEntry activityLogEntry1Verify = new ActivityLogEntry(activityLogEntry1Bytes);
 
         assertEquals("Expectin two values to be the same.", activityLogEntry1, activityLogEntry1Verify);
 
@@ -79,8 +78,8 @@ public class ActivityLogUtilTest extends TrancheTestCase {
             fail("Against staggering odds, we randomly generated the same activity twice. Go buy a lottery ticket.");
         }
 
-        byte[] activityLogEntry2Bytes = ActivityLogUtil.toActivityLogByteArray(activityLogEntry2);
-        ActivityLogEntry activityLogEntry2Verify = ActivityLogUtil.fromActivityLogByteArray(activityLogEntry2Bytes);
+        byte[] activityLogEntry2Bytes = activityLogEntry2.toByteArray();
+        ActivityLogEntry activityLogEntry2Verify = new ActivityLogEntry(activityLogEntry2Bytes);
 
         assertEquals("Expectin two values to be the same.", activityLogEntry2, activityLogEntry2Verify);
 
@@ -94,8 +93,8 @@ public class ActivityLogUtilTest extends TrancheTestCase {
         SignatureIndexEntry entry1 = getRandomSignatureIndexEntry();
         System.out.println("Signature entry #1: " + entry1);
 
-        byte[] entry1Bytes = ActivityLogUtil.toSignatureHeaderByteArray(entry1);
-        SignatureIndexEntry entry1Verify = ActivityLogUtil.fromSignatureHeaderByteArray(entry1Bytes);
+        byte[] entry1Bytes = entry1.toByteArray();
+        SignatureIndexEntry entry1Verify = new SignatureIndexEntry(entry1Bytes);
 
         assertEquals("Expecting two values to be the same.", entry1, entry1Verify);
 
@@ -106,8 +105,8 @@ public class ActivityLogUtilTest extends TrancheTestCase {
             fail("Entry 1 equals entry 2. The odds of this happening were approximately 1:20,000,000,000,000.");
         }
 
-        byte[] entry2Bytes = ActivityLogUtil.toSignatureHeaderByteArray(entry2);
-        SignatureIndexEntry entry2Verify = ActivityLogUtil.fromSignatureHeaderByteArray(entry2Bytes);
+        byte[] entry2Bytes = entry2.toByteArray();
+        SignatureIndexEntry entry2Verify = new SignatureIndexEntry(entry2Bytes);
 
         assertEquals("Expecting two values to be the same.", entry1, entry1Verify);
 
@@ -133,60 +132,53 @@ public class ActivityLogUtilTest extends TrancheTestCase {
     }
 
     public static long getRandomTimestamp() {
-        Random r = new Random();
-        return getRandomTimestamp(r.nextBoolean());
+        return getRandomTimestamp(RandomUtil.getBoolean());
     }
 
     public static long getRandomTimestamp(boolean isPast) {
-        Random r = new Random();
         final int DAY = 1000 * 60 * 60 * 24;
 
         long timestamp = TimeUtil.getTrancheTimestamp();
 
         // Past
         if (isPast) {
-            timestamp -= r.nextInt(DAY * 7);
+            timestamp -= RandomUtil.getInt(DAY * 7);
         } // Future
         else {
-            timestamp += r.nextInt(DAY * 7);
+            timestamp += RandomUtil.getInt(DAY * 7);
         }
 
         return timestamp;
     }
 
     public static byte getRandomActivityByte() {
-        Random r = new Random();
-        int index = r.nextInt(actions.length);
+        int index = RandomUtil.getInt(actions.length);
         return actions[index];
     }
 
     public static int getRandomSignatureIndex() {
         // Doesn't matter, but say we have 100K registered users
         int maxSignatureIndex = 100000;
-        Random r = new Random();
-        return r.nextInt(maxSignatureIndex);
+        return RandomUtil.getInt(maxSignatureIndex);
     }
 
     public static long getRandomSignatureOffset(int index) {
-        Random r = new Random();
-
         long offset = avgSignatureSizeInBytes * index;
 
         // Simulate variability by adding or removing some bytes (+- 2 bytes/entry)
-        if (r.nextBoolean()) {
-            return offset - r.nextInt(index) * 2;
+        if (RandomUtil.getBoolean()) {
+            return offset - RandomUtil.getInt(index) * 2;
         } else {
-            return offset + r.nextInt(index) * 2;
+            return offset + RandomUtil.getInt(index) * 2;
         }
     }
 
     public static int getRandomSignatureLength() {
-        Random r = new Random();
         // Average size +- 10 bytes
-        if (r.nextBoolean()) {
-            return avgSignatureSizeInBytes - r.nextInt(10);
+        if (RandomUtil.getBoolean()) {
+            return avgSignatureSizeInBytes - RandomUtil.getInt(10);
         } else {
-            return avgSignatureSizeInBytes + r.nextInt(10);
+            return avgSignatureSizeInBytes + RandomUtil.getInt(10);
         }
     }
 }

@@ -560,7 +560,7 @@ public class ServerStartupThread extends Thread {
                     for (Activity a : deletes) {
 
                         // First, make sure can load user
-                        User user = localServerToUpdate.getConfiguration().getRecognizedUser(a.signature.getCert());
+                        User user = localServerToUpdate.getConfiguration().getRecognizedUser(a.getSignature().getCert());
                         if (user == null) {
                             continue DELETES;
                         }
@@ -578,9 +578,9 @@ public class ServerStartupThread extends Thread {
                             //   on user+path+timestamp basis, and remove that 'signature' only.
                             // ----------------------------------------------------------------------------------------
 
-                            if (IOUtil.hasMetaData(localServerToUpdate, a.hash)) {
+                            if (IOUtil.hasMetaData(localServerToUpdate, a.getHash())) {
 
-                                localServerToUpdate.getDataBlockUtil().deleteMetaData(a.hash, "ServerStartThread found deleted meta data on " + host);
+                                localServerToUpdate.getDataBlockUtil().deleteMetaData(a.getHash(), "ServerStartThread found deleted meta data on " + host);
 
                                 // Don't log; creates an infinite cycles between servers!
 
@@ -595,9 +595,9 @@ public class ServerStartupThread extends Thread {
                                 continue DELETES;
                             }
 
-                            if (IOUtil.hasData(localServerToUpdate, a.hash)) {
+                            if (IOUtil.hasData(localServerToUpdate, a.getHash())) {
 
-                                localServerToUpdate.getDataBlockUtil().deleteData(a.hash, "ServerStartThread found deleted data on " + host);
+                                localServerToUpdate.getDataBlockUtil().deleteData(a.getHash(), "ServerStartThread found deleted data on " + host);
 
                                 // Don't log: creates an infinite cycles between servers!
 
@@ -612,7 +612,7 @@ public class ServerStartupThread extends Thread {
                     // for the next batch
                     if (nextDeleteBatch.length == maximumBatchSizeDelete) {
                         cont = true;
-                        timestampToStartAt = nextDeleteBatch[nextDeleteBatch.length - 1].timestamp;
+                        timestampToStartAt = nextDeleteBatch[nextDeleteBatch.length - 1].getTimestamp();
                     }
                 } // While potential entries remaining
 
@@ -670,7 +670,7 @@ public class ServerStartupThread extends Thread {
 
                         boolean isInHashSpan = false;
                         for (HashSpan hs : localServerToUpdate.getConfiguration().getHashSpans()) {
-                            if (hs.contains(a.hash)) {
+                            if (hs.contains(a.getHash())) {
                                 isInHashSpan = true;
                                 break;
                             }
@@ -681,7 +681,7 @@ public class ServerStartupThread extends Thread {
                         }
 
                         // First, make sure can load user
-                        User user = localServerToUpdate.getConfiguration().getRecognizedUser(a.signature.getCert());
+                        User user = localServerToUpdate.getConfiguration().getRecognizedUser(a.getSignature().getCert());
                         if (user == null) {
                             continue ADD;
                         }
@@ -695,11 +695,11 @@ public class ServerStartupThread extends Thread {
 
                             // This will happen when the chunk was deleted. Note that if it was
                             // deleted and the server has it, meant it was replaced!
-                            if (!IOUtil.hasMetaData(ts, a.hash)) {
+                            if (!IOUtil.hasMetaData(ts, a.getHash())) {
                                 continue ADD;
                             }
 
-                            PropagationReturnWrapper rw = IOUtil.getMetaData(ts, a.hash, false);
+                            PropagationReturnWrapper rw = IOUtil.getMetaData(ts, a.getHash(), false);
 
                             byte[] chunk = null;
 
@@ -717,7 +717,7 @@ public class ServerStartupThread extends Thread {
                                 continue ADD;
                             }
 
-                            boolean added = addMetaData(a.hash, chunk, localServerToUpdate, user);
+                            boolean added = addMetaData(a.getHash(), chunk, localServerToUpdate, user);
                             if (added) {
                                 if (addCount != null) {
                                     addCount[0]++;
@@ -729,7 +729,7 @@ public class ServerStartupThread extends Thread {
                                 addCount[0]++;
                             }
                         } else {
-                            if (!IOUtil.hasData(localServerToUpdate, a.hash)) {
+                            if (!IOUtil.hasData(localServerToUpdate, a.getHash())) {
 
                                 // Only delete if user has permission on this server
                                 if (!user.canSetData()) {
@@ -738,11 +738,11 @@ public class ServerStartupThread extends Thread {
 
                                 // This will happen when the chunk was deleted. Note that if it was
                                 // deleted and the server has it, meant it was replaced!
-                                if (!IOUtil.hasData(ts, a.hash)) {
+                                if (!IOUtil.hasData(ts, a.getHash())) {
                                     continue ADD;
                                 }
 
-                                PropagationReturnWrapper rw = IOUtil.getData(ts, a.hash, false);
+                                PropagationReturnWrapper rw = IOUtil.getData(ts, a.getHash(), false);
 
                                 byte[] chunk = null;
 
@@ -760,7 +760,7 @@ public class ServerStartupThread extends Thread {
                                     continue ADD;
                                 }
 
-                                localServerToUpdate.getDataBlockUtil().addData(a.hash, chunk);
+                                localServerToUpdate.getDataBlockUtil().addData(a.getHash(), chunk);
                                 addedChunks.add(a);
                                 if (addCount != null) {
                                     addCount[0]++;
@@ -839,7 +839,7 @@ public class ServerStartupThread extends Thread {
                             for (Activity delete : deletes) {
 
                                 // User must be recognized by system
-                                User user = localServerToUpdate.getConfiguration().getRecognizedUser(delete.signature.getCert());
+                                User user = localServerToUpdate.getConfiguration().getRecognizedUser(delete.getSignature().getCert());
                                 if (user == null) {
                                     continue DELETE;
                                 }
@@ -847,9 +847,9 @@ public class ServerStartupThread extends Thread {
                                 ADD:
                                 for (Activity add : addedChunks) {
                                     
-                                    boolean isAfter = (delete.timestamp > add.timestamp);
+                                    boolean isAfter = (delete.getTimestamp() > add.getTimestamp());
                                     boolean isSameType = (add.isMetaData() == delete.isMetaData());
-                                    boolean isSameChunk = isAfter && isSameType && add.hash.equals(delete.hash);
+                                    boolean isSameChunk = isAfter && isSameType && add.getHash().equals(delete.getHash());
                                     
                                     // Don't bother--only care about deletes for chunks after they were added!
                                     if (!isSameChunk) {
@@ -881,16 +881,16 @@ public class ServerStartupThread extends Thread {
 
                             // Perform deletes!
                             for (Activity a : metaDataChunksToDelete) {
-                                if (IOUtil.hasMetaData(localServerToUpdate, a.hash)) {
-                                    localServerToUpdate.getDataBlockUtil().deleteMetaData(a.hash, "Deleting a meta data chunk (startup radiation)");
+                                if (IOUtil.hasMetaData(localServerToUpdate, a.getHash())) {
+                                    localServerToUpdate.getDataBlockUtil().deleteMetaData(a.getHash(), "Deleting a meta data chunk (startup radiation)");
                                     if (deleteCount != null) {
                                         deleteCount[0]++;
                                     }
                                 }
                             }
                             for (Activity a : dataChunksToDelete) {
-                                if (IOUtil.hasData(localServerToUpdate, a.hash)) {
-                                    localServerToUpdate.getDataBlockUtil().deleteData(a.hash, "Deleting a data chunk (startup radiation)");
+                                if (IOUtil.hasData(localServerToUpdate, a.getHash())) {
+                                    localServerToUpdate.getDataBlockUtil().deleteData(a.getHash(), "Deleting a data chunk (startup radiation)");
                                     if (deleteCount != null) {
                                         deleteCount[0]++;
                                     }
@@ -904,7 +904,7 @@ public class ServerStartupThread extends Thread {
                             // for the next batch
                             if (nextDeleteBatch.length == maximumBatchSizeDelete) {
                                 contCheck = true;
-                                timestampToStartAt = nextDeleteBatch[nextDeleteBatch.length - 1].timestamp;
+                                timestampToStartAt = nextDeleteBatch[nextDeleteBatch.length - 1].getTimestamp();
                             }
                         } catch (Exception e) {
                             System.err.println(e.getClass().getSimpleName() + " occurred while checking for new chunks (attempt #" + attempt + ") : " + e.getMessage());
@@ -920,7 +920,7 @@ public class ServerStartupThread extends Thread {
                     // for the next batch
                     if (newChunksBatch.length == maximumBatchSizeSet) {
                         contAdd = true;
-                        lastCheckStart = newChunksBatch[newChunksBatch.length - 1].timestamp;
+                        lastCheckStart = newChunksBatch[newChunksBatch.length - 1].getTimestamp();
                     }
                 } // While potential entries remaining
 

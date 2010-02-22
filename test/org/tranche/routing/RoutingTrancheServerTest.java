@@ -16,7 +16,6 @@
 package org.tranche.routing;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
@@ -1315,16 +1314,13 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create five small chunks and put them on the appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
-            final int availableChunkCount = r.nextInt(10) + 1;
+            final int availableChunkCount = RandomUtil.getInt(10) + 1;
             Set<BigHash> hashes = new HashSet();
             Set<BigHash> availableHashes = new HashSet(0);
             Set<BigHash> unavailableHashes = new HashSet(0);
             for (int i = 0; i < availableChunkCount; i++) {
                 // 50K maximum
-                byte[] chunk = DevUtil.createRandomDataChunk(r.nextInt(1024 * 50) + 1);
+                byte[] chunk = DevUtil.createRandomDataChunk(RandomUtil.getInt(1024 * 50) + 1);
                 BigHash hash = new BigHash(chunk);
 
                 // Highly unlikely
@@ -1357,13 +1353,13 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
                 }
             }
 
-            final int unavailableChunkCount = r.nextInt(10) + 1;
+            final int unavailableChunkCount = RandomUtil.getInt(10) + 1;
             int count = 0;
 
             // Add certain number of chunks not available
             while (count < unavailableChunkCount) {
                 // 50K maximum
-                byte[] chunk = DevUtil.createRandomDataChunk(r.nextInt(1024 * 50) + 1);
+                byte[] chunk = DevUtil.createRandomDataChunk(RandomUtil.getInt(1024 * 50) + 1);
                 BigHash hash = new BigHash(chunk);
 
                 // Highly unlikely
@@ -1528,16 +1524,13 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create five small chunks and put them on the appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
-            final int availableChunkCount = r.nextInt(10) + 1;
+            final int availableChunkCount = RandomUtil.getInt(10) + 1;
             Set<BigHash> hashes = new HashSet();
             Set<BigHash> availableHashes = new HashSet(0);
             Set<BigHash> unavailableHashes = new HashSet(0);
             while (availableHashes.size() < availableChunkCount) {
                 // 50K maximum
-                byte[] chunk = DevUtil.createRandomDataChunk(r.nextInt(1024 * 50) + 1);
+                byte[] chunk = DevUtil.createRandomDataChunk(RandomUtil.getInt(1024 * 50) + 1);
                 BigHash hash = new BigHash(chunk);
 
                 // Highly unlikely
@@ -1600,14 +1593,14 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
                 }
             }
 
-            final int unavailableChunkCount = r.nextInt(10) + 1;
+            final int unavailableChunkCount = RandomUtil.getInt(10) + 1;
             int count = 0;
 
             // Add certain number of chunks not available
             CREATE_UNAVAILABLE_CHUNKS:
             while (count < unavailableChunkCount) {
                 // 50K maximum
-                byte[] chunk = DevUtil.createRandomDataChunk(r.nextInt(1024 * 50) + 1);
+                byte[] chunk = DevUtil.createRandomDataChunk(RandomUtil.getInt(1024 * 50) + 1);
                 BigHash hash = new BigHash(chunk);
 
                 // Highly unlikely
@@ -1783,10 +1776,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create five small chunks and put them on the appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
-            final int availableChunkCount = r.nextInt(10) + 1;
+            final int availableChunkCount = RandomUtil.getInt(10) + 1;
             Set<BigHash> hashes = new HashSet();
             Set<BigHash> availableHashes = new HashSet(0);
             Set<BigHash> unavailableHashes = new HashSet(0);
@@ -1825,7 +1815,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
                 }
             }
 
-            final int unavailableChunkCount = r.nextInt(10) + 1;
+            final int unavailableChunkCount = RandomUtil.getInt(10) + 1;
 
             // Add certain number of chunks not available
             while (unavailableHashes.size() < unavailableChunkCount) {
@@ -1990,10 +1980,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create five small chunks and put them on the appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
-            final int availableChunkCount = r.nextInt(10) + 1;
+            final int availableChunkCount = RandomUtil.getInt(10) + 1;
             Set<BigHash> hashes = new HashSet();
             Set<BigHash> availableHashes = new HashSet(0);
             Set<BigHash> unavailableHashes = new HashSet(0);
@@ -2063,7 +2050,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
                 }
             }
 
-            final int unavailableChunkCount = r.nextInt(10) + 1;
+            final int unavailableChunkCount = RandomUtil.getInt(10) + 1;
 
             // Add certain number of chunks not available
             CREATE_UNAVAILABLE_CHUNKS:
@@ -3050,17 +3037,14 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create some random chunks. Put on appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
             Set<BigHash> addedChunks = new HashSet();
 
-            final int chunksToAdd = r.nextInt(10) + 1;
-            final int chunksToNotAdd = r.nextInt(10) + 1;
+            final int chunksToAdd = RandomUtil.getInt(10) + 1;
+            final int chunksToNotAdd = RandomUtil.getInt(10) + 1;
 
             for (int i = 0; i < chunksToAdd; i++) {
 
-                byte[] chunk = DevUtil.createRandomDataChunk(r.nextInt(1024 * 16) + 1);
+                byte[] chunk = DevUtil.createRandomDataChunk(RandomUtil.getInt(1024 * 16) + 1);
                 BigHash hash = new BigHash(chunk);
 
                 // Make sure novel. Shouldn't happen.
@@ -3213,13 +3197,10 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
             // -------------------------------------------------------------------------------------------
             // Create some random chunks. Put on appropriate server
             // -------------------------------------------------------------------------------------------
-
-            Random r = new Random();
-
             Set<BigHash> addedChunks = new HashSet();
 
-            final int chunksToAdd = r.nextInt(10) + 1;
-            final int chunksToNotAdd = r.nextInt(10) + 1;
+            final int chunksToAdd = RandomUtil.getInt(10) + 1;
+            final int chunksToNotAdd = RandomUtil.getInt(10) + 1;
 
             for (int i = 0; i < chunksToAdd; i++) {
 
@@ -3417,10 +3398,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
         try {
             testNetwork.start();
             RoutingTrancheServer routingServer = testNetwork.getRoutingTrancheServer(HOST1);
-
-            Random r = new Random();
-            final int count = r.nextInt(10) + 1;
-
+            final int count = RandomUtil.getInt(10) + 1;
             byte[][] nonces = IOUtil.getNonces(routingServer, count);
 
             assertNotNull("Should not be null.", nonces);
@@ -3508,8 +3486,7 @@ public class RoutingTrancheServerTest extends TrancheTestCase {
                 assertTrue("Host should be managed.", routingServer.isManagedServer(HOST4));
             }
 
-            Random r = new Random();
-            int count = r.nextInt(10) + 1;
+            int count = RandomUtil.getInt(10) + 1;
 
             PropagationReturnWrapper returnWrapper = routingServer.getNonces(ALL_HOSTS, count);
 

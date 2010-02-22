@@ -56,11 +56,11 @@ public class SimpleLog {
      */
     public static final int ServerUtil_LOG = 4;
     private static String[] logFiles = {
-        PersistentFileUtil.getPersistentDirectory() + File.separator + "AFT.log",
-        PersistentFileUtil.getPersistentDirectory() + File.separator + "GFT.log",
-        PersistentFileUtil.getPersistentDirectory() + File.separator + "RTS.log",
-        PersistentFileUtil.getPersistentDirectory() + File.separator + "SWT.log",
-        PersistentFileUtil.getPersistentDirectory() + File.separator + "ServerUtil.log"
+        PersistentServerFileUtil.getPersistentDirectory() + File.separator + "AFT.log",
+        PersistentServerFileUtil.getPersistentDirectory() + File.separator + "GFT.log",
+        PersistentServerFileUtil.getPersistentDirectory() + File.separator + "RTS.log",
+        PersistentServerFileUtil.getPersistentDirectory() + File.separator + "SWT.log",
+        PersistentServerFileUtil.getPersistentDirectory() + File.separator + "ServerUtil.log"
     };    // a queue of messages to log
     private static ArrayBlockingQueue<LogUnit> queue = new ArrayBlockingQueue(1000);
     private static boolean run = false;

@@ -15,6 +15,7 @@
  */
 package org.tranche.logs.activity;
 
+import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -23,11 +24,23 @@ import org.tranche.util.TrancheTestCase;
  */
 public class ActivityTest extends TrancheTestCase {
 
+    @Override()
+    protected void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @Override()
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     public void testToAndFromByteArray() throws Exception {
+        TestUtil.printTitle("ActivityTest:testToAndFromByteArray()");
+        
         Activity activity1 = ActivityLogUtilTest.getRandomActivity();
 
         byte[] activity1Bytes = activity1.toByteArray();
-        Activity activity1Verify = Activity.fromByteArray(activity1Bytes);
+        Activity activity1Verify = new Activity(activity1Bytes);
         assertEquals("Activities should be equal.", activity1, activity1Verify);
 
         Activity activity2 = ActivityLogUtilTest.getRandomActivity();
@@ -35,7 +48,7 @@ public class ActivityTest extends TrancheTestCase {
         assertFalse("Randomly generated activities should not be equal. The odds are mind-bendingly low.", activity1.equals(activity2));
 
         byte[] activity2Bytes = activity2.toByteArray();
-        Activity activity2Verify = Activity.fromByteArray(activity2Bytes);
+        Activity activity2Verify = new Activity(activity2Bytes);
         assertEquals("Activities should be equal.", activity2, activity2Verify);
 
         assertFalse("The two verification activities should not be equal.", activity1Verify.equals(activity2Verify));

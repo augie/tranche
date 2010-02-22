@@ -393,8 +393,7 @@ public class RemoteUtil {
      * @return                  the input stream of buffer data
      * @throws  IOException     if an input or output exception occurs
      */
-    public static final InputStream readData(
-            InputStream is) throws IOException {
+    public static final InputStream readData(InputStream is) throws IOException {
         try {
             // get the response line
             String response = RemoteUtil.readLine(is);

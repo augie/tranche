@@ -51,7 +51,6 @@ public class ServerMonitor extends Monitor {
     private UploadPanel upload = new UploadPanel();
     private DownloadPanel download = new DownloadPanel();
     private StatusPanel status;
-    private long timeLastResponse = 0;
 
     public ServerMonitor(String host) {
         this.host = host;
@@ -175,10 +174,6 @@ public class ServerMonitor extends Monitor {
         return host;
     }
 
-    public long getLastResponseTime() {
-        return timeLastResponse;
-    }
-
     private void setStatus(String status) {
         this.status.setStatus(status);
     }
@@ -210,7 +205,6 @@ public class ServerMonitor extends Monitor {
     }
 
     private void handleServerMessageDownEvent(ServerMessageDownEvent smde) {
-        timeLastResponse = TimeUtil.getTrancheTimestamp();
         download.handleServerMessageDownEvent(smde);
         log.addMessage(smde.toString());
         if (smde.getType() == smde.TYPE_STARTED || smde.getType() == smde.TYPE_PROGRESS) {

@@ -43,7 +43,7 @@ public class UserZipFileUtil {
     static {
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
         try {
-            usersDirectory = PersistentFileUtil.getPersistentDirectory("users");
+            usersDirectory = PersistentServerFileUtil.getPersistentDirectory("users");
         } catch (Exception e) {
             e.printStackTrace();
         }

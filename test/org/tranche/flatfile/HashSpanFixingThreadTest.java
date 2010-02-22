@@ -509,8 +509,6 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
             Set<BigHash> dataHashes = new HashSet();
             Set<BigHash> metaHashes = new HashSet();
             
-            Random random = new Random();
-
             for (int i = 0; i < chunksToAdd; i++) {
 
                 // Data chunk
@@ -522,10 +520,10 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                     fail("Generated same data chunk twice or hash collision?");
                 }
 
-                int goodDataChunkRecipient = random.nextInt(3);
-                int badDataChunkRecipient = random.nextInt(3);
+                int goodDataChunkRecipient = RandomUtil.getInt(3);
+                int badDataChunkRecipient = RandomUtil.getInt(3);
                 while (badDataChunkRecipient == goodDataChunkRecipient) {
-                    badDataChunkRecipient = random.nextInt(3);
+                    badDataChunkRecipient = RandomUtil.getInt(3);
                 }
                 
                 // Set good chunk
@@ -567,10 +565,10 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                     fail("Generated same meta data chunk twice or hash collision?");
                 }
 
-                int goodMetaChunkRecipient = random.nextInt(3);
-                int badMetaChunkRecipient = random.nextInt(3);
+                int goodMetaChunkRecipient = RandomUtil.getInt(3);
+                int badMetaChunkRecipient = RandomUtil.getInt(3);
                 while (badMetaChunkRecipient == goodMetaChunkRecipient) {
-                    badMetaChunkRecipient = random.nextInt(3);
+                    badMetaChunkRecipient = RandomUtil.getInt(3);
                 }
                 
                 // Set good chunk
@@ -772,9 +770,8 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
 
             // Need to take up at least 50% for test
             long used = 0;
-            Random r = new Random();
             for (int i = 0; i < chunkCount; i++) {
-                final int size = r.nextInt(1024 * 512) + 1024 * 512;
+                final int size = RandomUtil.getInt(1024 * 512) + 1024 * 512;
                 byte[] dataChunk = DevUtil.createRandomDataChunk(size);
                 used += dataChunk.length;
                 BigHash dataHash = new BigHash(dataChunk);

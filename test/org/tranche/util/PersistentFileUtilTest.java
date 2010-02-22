@@ -25,18 +25,18 @@ public class PersistentFileUtilTest extends TrancheTestCase {
     public void testPersistentUtil() throws Exception {
 
         // Get persistent dir
-        File persistentDir = PersistentFileUtil.getPersistentDirectory();
+        File persistentDir = PersistentServerFileUtil.getPersistentDirectory();
 
         // Set directory
         File faux = new File("/faux/path/to/persistent/dir");
-        PersistentFileUtil.setPersistentDirectory(faux);
+        PersistentServerFileUtil.setPersistentDirectory(faux);
 
-        assertEquals("Just testing set.", faux, PersistentFileUtil.getPersistentDirectory());
+        assertEquals("Just testing set.", faux, PersistentServerFileUtil.getPersistentDirectory());
 
         // Set back
-        PersistentFileUtil.setPersistentDirectory(persistentDir);
+        PersistentServerFileUtil.setPersistentDirectory(persistentDir);
 
-        File persistent = PersistentFileUtil.getPersistentFile("tranche.config");
+        File persistent = PersistentServerFileUtil.getPersistentFile("tranche.config");
 
         // Persistent should be in the persistent directory
         String parent = persistent.getParent();

@@ -15,9 +15,9 @@
  */
 package org.tranche;
 
-import org.tranche.util.*;
 import org.tranche.hash.BigHash;
 import java.util.Properties;
+import org.tranche.util.Text;
 
 /**
  * <p>Represents an encoding of a chunk. A meta data will have collection of FileEncoding so that, when downloading the chunk, the tool will know how to process it to get the original bytes.</p>
@@ -172,9 +172,9 @@ public class FileEncoding {
     @Override()
     public boolean equals(Object o) {
         FileEncoding obj = ((FileEncoding) o);
-        return obj.getName().equals(getName()) &&
-             obj.getHash().equals(getHash()) &&
-             obj.getProperties().size() == getProperties().size();
+        return obj.getName().equals(getName())
+                && obj.getHash().equals(getHash())
+                && obj.getProperties().size() == getProperties().size();
     }
 
     /**

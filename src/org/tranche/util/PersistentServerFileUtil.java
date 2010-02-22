@@ -24,14 +24,14 @@ import org.tranche.flatfile.FlatFileTrancheServer;
  * @author Bryan Smith <bryanesmith at gmail.com>
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class PersistentFileUtil {
+public class PersistentServerFileUtil {
 
     private static File persistentDirectory = new File(FlatFileTrancheServer.getDefaultHomeDir());
 
     /**
      * 
      */
-    private PersistentFileUtil() {
+    private PersistentServerFileUtil() {
     }
 
     /**
@@ -47,7 +47,7 @@ public class PersistentFileUtil {
      * @param persistentDirectory
      */
     public static void setPersistentDirectory(File persistentDirectory) {
-        PersistentFileUtil.persistentDirectory = persistentDirectory;
+        PersistentServerFileUtil.persistentDirectory = persistentDirectory;
     }
 
     /**

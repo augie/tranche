@@ -82,11 +82,6 @@ public class RegisterServerItem extends ServerItem {
                 public void run() {
                     // need to verify the suggestion -- the registration may be malicious
                     try {
-                        // make sure the flagging offline locally is unset
-                        // TODO: remove when the status table row is revamped
-                        if (NetworkUtil.getStatus().contains(host)) {
-                            NetworkUtil.getStatus().getRow(host).setIsFlaggedOfflineLocally(false);
-                        }
                         // this will also set the server in the status table
                         ConnectionUtil.connect(host, port, ssl, false);
                     } catch (Exception e) {

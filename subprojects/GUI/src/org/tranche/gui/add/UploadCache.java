@@ -29,7 +29,7 @@ import org.tranche.security.SecurityUtil;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.PersistentFileUtil;
+import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.ThreadUtil;
 
@@ -53,7 +53,7 @@ public class UploadCache implements LazyLoadable {
                 public void userSignedIn(UserZipFileEvent event) {
                     try {
                         // load the uploads from the cache
-                        file = PersistentFileUtil.getPersistentFile("uploads-" + event.getUserZipFile().getUserNameFromCert());
+                        file = PersistentServerFileUtil.getPersistentFile("uploads-" + event.getUserZipFile().getUserNameFromCert());
                         debugOut("Loading upload cache: " + file.getAbsolutePath());
 
                         // read the file

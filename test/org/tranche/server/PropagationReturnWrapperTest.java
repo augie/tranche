@@ -16,9 +16,9 @@
 package org.tranche.server;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.exceptions.ServerIsNotWritableException;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
@@ -58,10 +58,7 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
      * @throws java.lang.Exception
      */
     public void testSimpleNoExceptions() throws Exception {
-        
         TestUtil.printTitle("PropagationReturnWrapperTest.testSimpleNoExceptions");
-
-        final Random random = new Random();
 
         // -----------------------------------------------------------------------------------------
         // Void
@@ -115,8 +112,8 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 1d binary array
         // -----------------------------------------------------------------------------------------
-        byte[] val1D = new byte[random.nextInt(10) + 1];
-        random.nextBytes(val1D);
+        byte[] val1D = new byte[RandomUtil.getInt(10) + 1];
+        RandomUtil.getBytes(val1D);
 
         PropagationReturnWrapper w4 = new PropagationReturnWrapper(new HashSet(), val1D);
         assertTrue("See code for more information.", !w4.isVoid());
@@ -148,9 +145,9 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 2d binary array
         // -----------------------------------------------------------------------------------------
-        byte[][] val2D = new byte[random.nextInt(10) + 1][random.nextInt(10) + 1];
+        byte[][] val2D = new byte[RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1];
         for (int i = 0; i < val2D.length; i++) {
-            random.nextBytes(val2D[i]);
+            RandomUtil.getBytes(val2D[i]);
         }
 
         PropagationReturnWrapper w5 = new PropagationReturnWrapper(new HashSet(), val2D);
@@ -181,10 +178,10 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 3d binary array
         // -----------------------------------------------------------------------------------------
-        byte[][][] val3D = new byte[random.nextInt(10) + 1][random.nextInt(10) + 1][random.nextInt(10) + 1];
+        byte[][][] val3D = new byte[RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1];
         for (int i = 0; i < val3D.length; i++) {
             for (int j = 0; j < val3D[i].length; j++) {
-                random.nextBytes(val3D[i][j]);
+               RandomUtil.getBytes(val3D[i][j]);
             }
         }
 
@@ -221,11 +218,8 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
      * <p>Test all return types when three exceptions. Byte arrays are initialized to non-empty, random dimension lengths.</p>
      * @throws java.lang.Exception
      */
-    public void testSimpleThreeExceptions() throws Exception {
-        
+    public void testSimpleThreeExceptions() throws Exception {        
         TestUtil.printTitle("PropagationReturnWrapperTest.testSimpleThreeExceptions");
-        
-        final Random random = new Random();
 
         // -----------------------------------------------------------------------------------------
         // Void
@@ -279,8 +273,8 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 1d binary array
         // -----------------------------------------------------------------------------------------
-        byte[] val1D = new byte[random.nextInt(10) + 1];
-        random.nextBytes(val1D);
+        byte[] val1D = new byte[RandomUtil.getInt(10) + 1];
+       RandomUtil.getBytes(val1D);
 
         PropagationReturnWrapper w4 = new PropagationReturnWrapper(getThreeExceptions(), val1D);
         byte[] w4Bytes = w4.toByteArray();
@@ -307,9 +301,9 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 2d binary array
         // -----------------------------------------------------------------------------------------
-        byte[][] val2D = new byte[random.nextInt(10) + 1][random.nextInt(10) + 1];
+        byte[][] val2D = new byte[RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1];
         for (int i = 0; i < val2D.length; i++) {
-            random.nextBytes(val2D[i]);
+            RandomUtil.getBytes(val2D[i]);
         }
 
         PropagationReturnWrapper w5 = new PropagationReturnWrapper(getThreeExceptions(), val2D);
@@ -340,10 +334,10 @@ public class PropagationReturnWrapperTest extends TrancheTestCase {
         // -----------------------------------------------------------------------------------------
         // 3d binary array
         // -----------------------------------------------------------------------------------------
-        byte[][][] val3D = new byte[random.nextInt(10) + 1][random.nextInt(10) + 1][random.nextInt(10) + 1];
+        byte[][][] val3D = new byte[RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1][RandomUtil.getInt(10) + 1];
         for (int i = 0; i < val3D.length; i++) {
             for (int j = 0; j < val3D[i].length; j++) {
-                random.nextBytes(val3D[i][j]);
+                RandomUtil.getBytes(val3D[i][j]);
             }
         }
 

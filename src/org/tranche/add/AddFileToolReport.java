@@ -18,6 +18,7 @@ package org.tranche.add;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,7 +31,7 @@ import org.tranche.time.TimeUtil;
  * 
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class AddFileToolReport {
+public class AddFileToolReport implements Serializable {
 
     public static final int VERSION_ONE = 1;
     public static final int VERSION_LATEST = VERSION_ONE;

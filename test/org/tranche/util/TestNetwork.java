@@ -234,7 +234,7 @@ public class TestNetwork {
         this.serverConfigs.clear();
 
         // Any configuration files?
-        File parentFile = PersistentFileUtil.getPersistentDirectory();
+        File parentFile = PersistentServerFileUtil.getPersistentDirectory();
         File configFile = new File(parentFile, "configuration");
         if (configFile.exists()) {
             IOUtil.safeDelete(configFile);

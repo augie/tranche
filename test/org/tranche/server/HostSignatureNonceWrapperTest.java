@@ -19,6 +19,7 @@ import java.util.Random;
 import org.tranche.security.Signature;
 import org.tranche.flatfile.NonceMap;
 import org.tranche.util.DevUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -38,13 +39,12 @@ public class HostSignatureNonceWrapperTest extends TrancheTestCase {
         byte[] nonce1 = new byte[NonceMap.NONCE_BYTES];
         byte[] nonce2 = new byte[NonceMap.NONCE_BYTES];
         
-        Random r = new Random();
-        r.nextBytes(nonce1);
-        r.nextBytes(nonce2);
+        RandomUtil.getBytes(nonce1);
+        RandomUtil.getBytes(nonce2);
         
         // Very unlikely.
         while (areBytesEqual(nonce1, nonce2)) {
-            r.nextBytes(nonce2);
+            RandomUtil.getBytes(nonce2);
         }
         
         Signature sig1 = DevUtil.getBogusSignature();
@@ -105,8 +105,7 @@ public class HostSignatureNonceWrapperTest extends TrancheTestCase {
         
         byte[] nonce1 = new byte[NonceMap.NONCE_BYTES];
         
-        Random r = new Random();
-        r.nextBytes(nonce1);
+        RandomUtil.getBytes(nonce1);
         
         Signature sig1 = DevUtil.getBogusSignature();
         

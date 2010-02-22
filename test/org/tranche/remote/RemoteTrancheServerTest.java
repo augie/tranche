@@ -18,7 +18,6 @@ package org.tranche.remote;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.Tertiary;
 import org.tranche.TrancheServer;
@@ -666,7 +665,7 @@ public class RemoteTrancheServerTest extends TrancheServerTest {
 
             Activity[] activities = ts1.getActivityLogEntries(Long.MIN_VALUE, Long.MAX_VALUE, 100, Activity.ANY);
             assertEquals("Should only be one.", 1, activities.length);
-            assertEquals("Should have correct hash.", hash, activities[0].hash);
+            assertEquals("Should have correct hash.", hash, activities[0].getHash());
             assertTrue("Should be data.", activities[0].isData());
             assertFalse("Should be meta data.", activities[0].isMetaData());
         } finally {
@@ -940,22 +939,20 @@ public class RemoteTrancheServerTest extends TrancheServerTest {
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
 
-        Random random = new Random();
-
         try {
 
             final boolean isMerge = false;
 
             testNetwork.start();
 
-            byte[] chunk1 = DevUtil.createRandomMetaDataChunk(random.nextInt(5) + 1, true);
+            byte[] chunk1 = DevUtil.createRandomMetaDataChunk(RandomUtil.getInt(5) + 1, true);
             BigHash hash1 = DevUtil.getRandomBigHash();
 
-            byte[] chunk2 = DevUtil.createRandomMetaDataChunk(random.nextInt(5) + 1, true);
+            byte[] chunk2 = DevUtil.createRandomMetaDataChunk(RandomUtil.getInt(5) + 1, true);
             BigHash hash2 = DevUtil.getRandomBigHash();
 
             // This last one is not a project file meta data, so should not be a project hash
-            byte[] chunk3 = DevUtil.createRandomMetaDataChunk(random.nextInt(5) + 1, false);
+            byte[] chunk3 = DevUtil.createRandomMetaDataChunk(RandomUtil.getInt(5) + 1, false);
             BigHash hash3 = DevUtil.getRandomBigHash();
 
             TrancheServer ts1 = ConnectionUtil.connectHost(HOST1, true);

@@ -987,8 +987,7 @@ public class TrancheServerTest extends TrancheTestCase {
         BigHash hash = new BigHash(chunk);
 
         // Pick a random byte to change
-        Random r = new Random();
-        final int index = r.nextInt(chunk.length);
+        final int index = RandomUtil.getInt(chunk.length);
         final byte oldByte = chunk[index];
         byte newByte = (byte) (oldByte > Byte.MIN_VALUE ? oldByte - 1 : Byte.MAX_VALUE);
         assertNotSame("Should be different bytes!", oldByte, newByte);

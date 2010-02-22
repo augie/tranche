@@ -562,7 +562,11 @@ public class ConfigureTranche {
      * @throws IOException
      */
     public static void load(String[] args) throws IOException {
-        load(args[0]);
+        if (args.length > 0) {
+            load(args[0]);
+        } else {
+            load("");
+        }
     }
 
     /**

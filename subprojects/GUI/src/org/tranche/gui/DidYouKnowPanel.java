@@ -22,7 +22,6 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -35,6 +34,7 @@ import javax.swing.SwingConstants;
  * @author James "Augie" Hill - augman85@gmail.com
  */
 import javax.swing.SwingUtilities;
+import org.tranche.util.RandomUtil;
 
 public class DidYouKnowPanel extends JPanel {
 
@@ -57,10 +57,9 @@ public class DidYouKnowPanel extends JPanel {
         messageSet.add(new DidYouKnowMessage("Tranche supports the Science Commons CC0 license for uploads."));
 
         // randomize the messages into the message list
-        Random generator = new Random();
         int originalSetSize = messageSet.size();
         for (int i = 0; i < originalSetSize; i++) {
-            messageList.add(messageSet.remove(generator.nextInt(messageSet.size())));
+            messageList.add(messageSet.remove(RandomUtil.getInt(messageSet.size())));
         }
     }
 

@@ -18,8 +18,11 @@ package org.tranche.logs.activity;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
+import java.security.cert.CertificateEncodingException;
 import org.tranche.security.Signature;
 import org.tranche.hash.BigHash;
 import org.tranche.util.IOUtil;
@@ -76,7 +79,7 @@ public class Activity implements Comparable<Activity>, Serializable {
     /**
      * <p>The timestamp that the request was received.</p>
      */
-    public long timestamp;
+    private long timestamp;
     /**
      * <p>The action byte.</p>
      * @see #DELETE_DATA
@@ -85,19 +88,15 @@ public class Activity implements Comparable<Activity>, Serializable {
      * @see #SET_META_DATA
      * @see #REPLACE_META_DATA
      */
-    public final byte action;
+    private byte action;
     /**
      * <p>Signature accompanying the logged request.</p>
      */
-    public final Signature signature;
-    /**
-     * <p>Signature (in byte array) accompanying the logged request. Includes the algorithm, the certificate and signature bytes.</p>
-     */
-    public final byte[] signatureBytes;
+    private Signature signature;
     /**
      * <p>BigHash of chunk being logged.</p>
      */
-    public final BigHash hash;
+    private BigHash hash;
 
     /**
      * <p>Used to create an Activity object that will be written to ActivityLog.</p>
@@ -125,7 +124,72 @@ public class Activity implements Comparable<Activity>, Serializable {
         this.action = action;
         this.signature = signature;
         this.hash = hash;
-        this.signatureBytes = signature.toByteArray();
+    }
+
+    /**
+     * 
+     * @param in
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public Activity(InputStream in) throws IOException, GeneralSecurityException {
+        deserialize(in);
+    }
+
+    /**
+     *
+     * @param bytes
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public Activity(byte[] bytes) throws IOException, GeneralSecurityException {
+        ByteArrayInputStream bais = null;
+        try {
+            bais = new ByteArrayInputStream(bytes);
+            deserialize(bais);
+        } finally {
+            IOUtil.safeClose(bais);
+        }
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    /**
+     * 
+     * @param timestamp
+     */
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public byte getAction() {
+        return action;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Signature getSignature() {
+        return signature;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public BigHash getHash() {
+        return hash;
     }
 
     /**
@@ -141,7 +205,7 @@ public class Activity implements Comparable<Activity>, Serializable {
      * @return
      */
     public boolean isMetaData() {
-        return isMetaData(this.action);
+        return isMetaData(action);
     }
 
     /**
@@ -149,7 +213,7 @@ public class Activity implements Comparable<Activity>, Serializable {
      * @return
      */
     public boolean isData() {
-        return isData(this.action);
+        return isData(action);
     }
 
     /**
@@ -168,6 +232,49 @@ public class Activity implements Comparable<Activity>, Serializable {
      */
     public static boolean isData(byte actionByte) {
         return (actionByte & CHUNK_DATA) == CHUNK_DATA;
+    }
+
+    /**
+     *
+     * @return
+     * @throws IOException
+     * @throws CertificateEncodingException
+     */
+    public byte[] toByteArray() throws IOException, CertificateEncodingException {
+        ByteArrayOutputStream baos = null;
+        try {
+            baos = new ByteArrayOutputStream();
+            serialize(baos);
+            return baos.toByteArray();
+        } finally {
+            IOUtil.safeClose(baos);
+        }
+    }
+
+    /**
+     *
+     * @param out
+     * @throws IOException
+     * @throws CertificateEncodingException
+     */
+    protected void serialize(OutputStream out) throws IOException, CertificateEncodingException {
+        IOUtil.writeLong(timestamp, out);
+        IOUtil.writeByte(action, out);
+        IOUtil.writeBytes(hash.toByteArray(), out);
+        signature.serialize(out);
+    }
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    protected void deserialize(InputStream in) throws IOException, GeneralSecurityException {
+        timestamp = IOUtil.readLong(in);
+        action = IOUtil.readByte(in);
+        hash = BigHash.createFromBytes(IOUtil.readBytes(BigHash.HASH_LENGTH, in));
+        signature = new Signature(in);
     }
 
     /**
@@ -209,76 +316,11 @@ public class Activity implements Comparable<Activity>, Serializable {
     }
 
     /**
-     * <p>Generates a byte array representation of Activity object.</p>
+     * 
      * @return
-     * @throws java.io.IOException
-     * @see #fromByteArray(byte[]) 
      */
-    public byte[] toByteArray() throws IOException {
-        ByteArrayOutputStream baos = null;
-        try {
-            int size = ActivityLogUtil.TIMESTAMP_SIZE_IN_BYTES + ActivityLogUtil.ACTIVITY_SIZE_IN_BYTES + BigHash.HASH_LENGTH + this.signatureBytes.length;
-            baos = new ByteArrayOutputStream(size);
-
-            // Write the timestamp
-            ByteBuffer bb = ByteBuffer.allocate(ActivityLogUtil.TIMESTAMP_SIZE_IN_BYTES);
-            bb.putLong(timestamp);
-            baos.write(bb.array());
-
-            // Write the activity byte
-            baos.write(action);
-
-            // Write the BigHash
-            baos.write(this.hash.toByteArray());
-
-            // Write the signature
-            baos.write(signatureBytes);
-
-
-            return baos.toByteArray();
-        } finally {
-            IOUtil.safeClose(baos);
-        }
-    }
-
-    /**
-     * <p>Generates an Acitivity object from its byte array representation.</p>
-     * @param bytes
-     * @return
-     * @throws java.io.IOException
-     * @throws java.lang.Exception
-     * @see #toByteArray() 
-     */
-    public static Activity fromByteArray(byte[] bytes) throws IOException, Exception {
-        ByteArrayInputStream bais = null;
-        try {
-            bais = new ByteArrayInputStream(bytes);
-
-            // Read in timestamp
-            byte[] timestampBytes = new byte[ActivityLogUtil.TIMESTAMP_SIZE_IN_BYTES];
-            ByteBuffer bb = ByteBuffer.wrap(timestampBytes);
-            IOUtil.getBytesFully(timestampBytes, bais);
-            long timestamp = bb.getLong();
-
-            // Read in activity byte. (Use minimum value so that, if error, distinguish between
-            // end of stream versus something else.)
-            byte[] activityBytes = {Byte.MIN_VALUE};
-            IOUtil.getBytesFully(activityBytes, bais);
-            byte activity = activityBytes[0];
-
-            // Read in BigHash 
-            byte[] hashBytes = new byte[BigHash.HASH_LENGTH];
-            IOUtil.getBytesFully(hashBytes, bais);
-            BigHash hash = BigHash.createFromBytes(hashBytes);
-
-            // Read in signature. Remaining bytes.
-            byte[] signaturesBytes = new byte[bytes.length - (ActivityLogUtil.TIMESTAMP_SIZE_IN_BYTES + ActivityLogUtil.ACTIVITY_SIZE_IN_BYTES + BigHash.HASH_LENGTH)];
-            IOUtil.getBytesFully(signaturesBytes, bais);
-            Signature signature = new Signature(signaturesBytes);
-
-            return new Activity(timestamp, activity, signature, hash);
-        } finally {
-            IOUtil.safeClose(bais);
-        }
+    @Override
+    public String toString() {
+        return "Activity: timestamp=" + timestamp + ", action=" + action + ", hash=" + hash + ", signature=" + signature.getUserName();
     }
 }

@@ -36,16 +36,6 @@ public class NetworkRandomUtil {
      * @throws java.lang.Exception
      */
     public static StatusTableRow createRandomStatusTableRow() throws Exception {
-        return createRandomStatusTableRow(RandomUtil.getBoolean());
-    }
-    
-    /**
-     * <p>Creates a random StatusTableRow for tests.</p>
-     * @param hasTargetHashSpan True if want a random target hash span; false otherwise
-     * @return
-     * @throws java.lang.Exception
-     */
-    public static StatusTableRow createRandomStatusTableRow(boolean hasTargetHashSpan) throws Exception {
         StatusTableRow row = new StatusTableRow(RandomUtil.getString(10));
         row.setName(RandomUtil.getString(10));
         row.setGroup(RandomUtil.getString(10));
@@ -56,14 +46,7 @@ public class NetworkRandomUtil {
         row.setIsReadable(RandomUtil.getBoolean());
         row.setIsWritable(RandomUtil.getBoolean());
         row.setHashSpans(DevUtil.createRandomHashSpanSet(10));
-        
-        // Half chance have target hash span
-        if (hasTargetHashSpan) {
-            Set<HashSpan> targetHashSpans = new HashSet();
-            targetHashSpans.add(DevUtil.createRandomHashSpan());
-            row.setTargetHashSpans(targetHashSpans);
-        }
-        
+        row.setTargetHashSpans(DevUtil.createRandomHashSpanSet(10));
         return row;
     }
 
@@ -75,20 +58,6 @@ public class NetworkRandomUtil {
      */
     public static Set<StatusTableRow> createRandomStatusTableRowSet(int maxSize) throws Exception {
         Set<StatusTableRow> rows = new HashSet<StatusTableRow>();
-        for (int i = 0; i < RandomUtil.getInt(maxSize); i++) {
-            rows.add(NetworkRandomUtil.createRandomStatusTableRow());
-        }
-        return rows;
-    }
-
-    /**
-     * 
-     * @param maxSize
-     * @return
-     * @throws java.lang.Exception
-     */
-    public static List<StatusTableRow> createRandomStatusTableRowList(int maxSize) throws Exception {
-        List<StatusTableRow> rows = new LinkedList<StatusTableRow>();
         for (int i = 0; i < RandomUtil.getInt(maxSize); i++) {
             rows.add(NetworkRandomUtil.createRandomStatusTableRow());
         }

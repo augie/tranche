@@ -18,7 +18,6 @@ package org.tranche.server;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.TrancheServer;
 import org.tranche.network.*;
@@ -27,6 +26,7 @@ import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.*;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -111,10 +111,9 @@ public class ServerStartupThreadTest extends TrancheTestCase {
              *  STEP 1: Add a bunch of chunks to servers 1, 2 and 3.
              * ------------------------------------------------------------------------------------------------------------------------------
              */
-            final Random r = new Random();
             final int initialChunksToAdd = 18;
             for (int i = 0; i < initialChunksToAdd; i++) {
-                boolean isMetaData = r.nextBoolean();
+                boolean isMetaData = RandomUtil.getBoolean();
                 if (isMetaData) {
                     byte[] chunk = DevUtil.createRandomMetaDataChunk();
                     BigHash hash = DevUtil.getRandomBigHash();
@@ -193,7 +192,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
             for (int i = 0; i < chunksToDelete; i++) {
                 // Delete something from server 2
                 {
-                    boolean isMetaData = r.nextBoolean();
+                    boolean isMetaData = RandomUtil.getBoolean();
 
                     // ---> CHANGE THESE VARS FOR WHATEVER SERVER <---
 
@@ -205,7 +204,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
                     }
 
                     if (isMetaData) {
-                        int index = r.nextInt(remainingMetaDataChunks.size());
+                        int index = RandomUtil.getInt(remainingMetaDataChunks.size());
                         BigHash hash = remainingMetaDataChunks.remove(index);
 
                         IOUtil.deleteMetaData(ffts2, DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), hash);
@@ -218,7 +217,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
                         }
                         metaDataChunksToCheckFor.remove(hash);
                     } else {
-                        int index = r.nextInt(remainingDataChunks.size());
+                        int index = RandomUtil.getInt(remainingDataChunks.size());
                         BigHash hash = remainingDataChunks.remove(index);
 
 //                        System.err.println("DEBUG> DELETING --DATA-- FROM SERVER 2: " + hash);
@@ -250,7 +249,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
             for (int i = 0; i < chunksToAdd; i++) {
                 // Add something from server 2
                 {
-                    boolean isMetaData = r.nextBoolean();
+                    boolean isMetaData = RandomUtil.getBoolean();
 
                     // ---> CHANGE THESE VARS FOR WHATEVER SERVER <---
                     TrancheServer ts = ffts2;
@@ -274,7 +273,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
 
                 // Add something from server 3
                 {
-                    boolean isMetaData = r.nextBoolean();
+                    boolean isMetaData = RandomUtil.getBoolean();
 
                     // ---> CHANGE THESE VARS FOR WHATEVER SERVER <---
                     TrancheServer ts = ffts3;

@@ -25,7 +25,7 @@ import org.tranche.gui.LazyLoadable;
 import org.tranche.gui.project.ProjectPool;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.PersistentFileUtil;
+import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.ThreadUtil;
 
 /**
@@ -44,7 +44,7 @@ public class DownloadCache implements LazyLoadable {
         public void run() {
             ProjectPool.waitForStartup();
             try {
-                file = PersistentFileUtil.getPersistentFile("downloads");
+                file = PersistentServerFileUtil.getPersistentFile("downloads");
                 
                 // -----------------------------------------------------------------
                 // Fix: used to have a downloads directory in same location,
@@ -55,7 +55,7 @@ public class DownloadCache implements LazyLoadable {
                 //      have symbolic links; permissions issues; very large).
                 // -----------------------------------------------------------------
                 if (file.exists() && file.isDirectory()) {
-                    file = PersistentFileUtil.getPersistentFile("downloads-cache");
+                    file = PersistentServerFileUtil.getPersistentFile("downloads-cache");
                 }
                 
                 debugOut("Loading download cache: " + file.getAbsolutePath());

@@ -25,6 +25,7 @@ import java.util.Set;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.span.HashSpanCollection;
+import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.RandomUtil;
 import org.tranche.util.TestUtil;
@@ -64,24 +65,6 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // verify
         assertEquals(str1, str);
     }
-    
-    public void testRecreateWithTargetHashSpan() throws Exception {
-        TestUtil.printTitle("StatusTableRowTest:testRecreateWithTargetHashSpan()");
-        
-        // create
-        StatusTableRow str1 = NetworkRandomUtil.createRandomStatusTableRow(true);
-
-        // recreate
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        str1.serialize(StatusTableRow.VERSION_LATEST, oos);
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        ObjectInputStream ois = new ObjectInputStream(bais);
-        StatusTableRow str = new StatusTableRow(ois);
-
-        // verify
-        assertEquals(str1, str);
-    }
 
     public void testHost() throws Exception {
         TestUtil.printTitle("StatusTableRowTest:testHost()");
@@ -95,6 +78,11 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // verify
         assertEquals(host, str.getHost());
 
+        // change
+        assertFalse(str.setHost(host));
+        host = "host2";
+        assertTrue(str.setHost(host));
+
         // verify
         assertEquals(host, str.getHost());
     }
@@ -107,10 +95,15 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
 
         // set
         StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
-        str.setName(name);
+        assertTrue(str.setName(name));
 
         // verify
         assertEquals(name, str.getName());
+
+        // change
+        assertFalse(str.setName(name));
+        name = "name2";
+        assertTrue(str.setName(name));
 
         // verify
         assertEquals(name, str.getName());
@@ -129,6 +122,11 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // verify
         assertEquals(group, str.getGroup());
 
+        // change
+        assertFalse(group, str.setGroup(group));
+        group = "group2";
+        assertTrue(group, str.setGroup(group));
+
         // verify
         assertEquals(group, str.getGroup());
     }
@@ -145,6 +143,58 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
 
         // verify
         assertEquals(port, str.getPort());
+
+        // change
+        assertFalse(str.setPort(port));
+        port++;
+        assertTrue(str.setPort(port));
+
+        // verify
+        assertEquals(port, str.getPort());
+    }
+
+    public void testUpdateTimestamp() throws Exception {
+        TestUtil.printTitle("StatusTableRowTest:testUpdateTimestamp()");
+
+        // variables
+        long timestamp = TimeUtil.getTrancheTimestamp();
+
+        // set
+        StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
+        str.setUpdateTimestamp(timestamp);
+
+        // verify
+        assertEquals(timestamp, str.getUpdateTimestamp());
+
+        // change
+        assertFalse(str.setUpdateTimestamp(timestamp));
+        timestamp++;
+        assertTrue(str.setUpdateTimestamp(timestamp));
+
+        // verify
+        assertEquals(timestamp, str.getUpdateTimestamp());
+    }
+
+    public void testResponseTimestamp() throws Exception {
+        TestUtil.printTitle("StatusTableRowTest:testResponseTimestamp()");
+
+        // variables
+        long timestamp = TimeUtil.getTrancheTimestamp();
+
+        // set
+        StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
+        str.setResponseTimestamp(timestamp);
+
+        // verify
+        assertEquals(timestamp, str.getResponseTimestamp());
+
+        // change
+        assertFalse(str.setResponseTimestamp(timestamp));
+        timestamp++;
+        assertTrue(str.setResponseTimestamp(timestamp));
+
+        // verify
+        assertEquals(timestamp, str.getResponseTimestamp());
     }
 
     public void testIsSSL() throws Exception {
@@ -156,6 +206,14 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // set
         StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
         str.setIsSSL(ssl);
+
+        // verify
+        assertEquals(ssl, str.isSSL());
+
+        // change
+        assertFalse(str.setIsSSL(ssl));
+        ssl = !ssl;
+        assertTrue(str.setIsSSL(ssl));
 
         // verify
         assertEquals(ssl, str.isSSL());
@@ -173,6 +231,14 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
 
         // verify
         assertEquals(online, str.isOnline());
+
+        // change
+        assertFalse(str.setIsOnline(online));
+        online = !online;
+        assertTrue(str.setIsOnline(online));
+
+        // verify
+        assertEquals(online, str.isOnline());
     }
 
     public void testIsReadable() throws Exception {
@@ -187,20 +253,36 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
 
         // verify
         assertEquals(readable, str.isReadable());
+
+        // change
+        assertFalse(str.setIsReadable(readable));
+        readable = !readable;
+        assertTrue(str.setIsReadable(readable));
+
+        // verify
+        assertEquals(readable, str.isReadable());
     }
 
     public void testIsWritable() throws Exception {
         TestUtil.printTitle("StatusTableRowTest:testIsWritable()");
 
         // variables
-        boolean writeable = true;
+        boolean writable = true;
 
         // set
         StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
-        str.setIsWritable(writeable);
+        str.setIsWritable(writable);
 
         // verify
-        assertEquals(writeable, str.isWritable());
+        assertEquals(writable, str.isWritable());
+
+        // change
+        assertFalse(str.setIsWritable(writable));
+        writable = !writable;
+        assertTrue(str.setIsWritable(writable));
+
+        // verify
+        assertEquals(writable, str.isWritable());
     }
 
     public void testIsDataStore() throws Exception {
@@ -212,6 +294,14 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // set
         StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
         str.setIsDataStore(dataStore);
+
+        // verify
+        assertEquals(dataStore, str.isDataStore());
+
+        // change
+        assertFalse(str.setIsDataStore(dataStore));
+        dataStore = !dataStore;
+        assertTrue(str.setIsDataStore(dataStore));
 
         // verify
         assertEquals(dataStore, str.isDataStore());
@@ -228,35 +318,37 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         str.setHashSpans(hashSpans);
 
         // verify
-        assertEquals(hashSpans.size(), str.getHashSpans().size());
+        assertTrue(HashSpanCollection.areEqual(hashSpans, str.getHashSpans()));
+
+        // change
+        assertFalse(str.setHashSpans(hashSpans));
+        hashSpans = DevUtil.createRandomHashSpanSet(11);
+        assertTrue(str.setHashSpans(hashSpans));
 
         // verify
-        HashSpanCollection.areEqual(hashSpans, str.getHashSpans());
+        assertTrue(HashSpanCollection.areEqual(hashSpans, str.getHashSpans()));
     }
     
-    public void testTargetHashSpan() throws Exception {
-        TestUtil.printTitle("StatusTableRowTest:testTargetHashSpan()");
+    public void testTargetHashSpans() throws Exception {
+        TestUtil.printTitle("StatusTableRowTest:testTargetHashSpans()");
 
         // variables
-        HashSpan targetHashSpan = DevUtil.createRandomHashSpan();
-        Set<HashSpan> targetHashSpans = new HashSet();
-        targetHashSpans.add(targetHashSpan);
+        Set<HashSpan> hashSpans = DevUtil.createRandomHashSpanSet(10);
 
         // set
         StatusTableRow str = new StatusTableRow(RandomUtil.getString(10));
-        
-        str.setTargetHashSpans(targetHashSpans);
+        str.setTargetHashSpans(hashSpans);
 
         // verify
-//        assertEquals(targetHashSpan, str.getTargetHashSpan());
-        assertEquals(targetHashSpans.size(), str.getTargetHashSpans().size());
-        for (HashSpan hs : targetHashSpans) {
-            assertTrue("Should contain.", str.getTargetHashSpans().contains(hs));
-        }
-        
-        for (HashSpan hs : str.getTargetHashSpans()) {
-            assertTrue("Should contain.", targetHashSpans.contains(hs));
-        }
+        assertTrue(HashSpanCollection.areEqual(hashSpans, str.getTargetHashSpans()));
+
+        // change
+        assertFalse(str.setTargetHashSpans(hashSpans));
+        hashSpans = DevUtil.createRandomHashSpanSet(11);
+        assertTrue(str.setTargetHashSpans(hashSpans));
+
+        // verify
+        assertTrue(HashSpanCollection.areEqual(hashSpans, str.getTargetHashSpans()));
     }
 
     public void testCalculateFullHashSpan() throws Exception {

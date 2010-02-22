@@ -24,7 +24,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -44,6 +43,7 @@ import org.tranche.security.Signature;
 import org.tranche.server.logs.LogEntry;
 import org.tranche.server.logs.LogWriter;
 import org.tranche.time.TimeUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.Text;
 
 /**
@@ -144,14 +144,12 @@ public class RandomLogGeneratorPanel extends JPanel {
         // Set time offset to 0. User can change.
         logTimeOffsetField.setText("0");
 
-        Random r = new Random();
-
         // Set somewhere between 1 and 25 clients
-        int randomClientCount = 1 + r.nextInt(25);
+        int randomClientCount = 1 + RandomUtil.getInt(25);
         logClientsField.setText(String.valueOf(randomClientCount));
 
         // Set somewhere between 64KB and 256KB log file
-        int randomLogSize = 64 * 1024 + r.nextInt(192 * 1024 + 1);
+        int randomLogSize = 64 * 1024 + RandomUtil.getInt(192 * 1024 + 1);
         logSizeField.setText(String.valueOf(randomLogSize));
     }
 
@@ -409,18 +407,16 @@ public class RandomLogGeneratorPanel extends JPanel {
      *
      */
     private static LogEntry generateRandomEntry(List<String> IPs, long start, long finish) throws Exception {
-
-        Random r = new Random();
         // First, get the time b/w start and finish
-        long timestamp = start + r.nextInt((int) (finish - start) + 1);
+        long timestamp = start + RandomUtil.getInt((int) (finish - start) + 1);
 
         // Pick an IP address
-        String IP = IPs.get(r.nextInt(IPs.size()));
+        String IP = IPs.get(RandomUtil.getInt(IPs.size()));
 
         // Generate a random big hash for data between 512 bytes and 16 KB
 
-        byte[] hashBytes = new byte[512 + r.nextInt(15872 + 1)];
-        r.nextBytes(hashBytes);
+        byte[] hashBytes = new byte[512 + RandomUtil.getInt(15872 + 1)];
+        RandomUtil.getBytes(hashBytes);
         BigHash hash = new BigHash(hashBytes);
 
         LogEntry entry = null;
@@ -461,17 +457,15 @@ public class RandomLogGeneratorPanel extends JPanel {
     private static int getNextAction() throws Exception {
         lazyLoadChances();
 
-        Random r = new Random();
-
         // First, one third chance of nonce (action #3)
-        if (r.nextInt(3) == 0) {
+        if (RandomUtil.getInt(3) == 0) {
             return 3;        // Generate a preference for download over upload or vice versa.
         }
         if (chanceIsDownload) {
             // Roll the die!
-            if (r.nextInt(chance) == 0) {
+            if (RandomUtil.getInt(chance) == 0) {
                 // Data or meta data?
-                if (r.nextBoolean()) {
+                if (RandomUtil.getBoolean()) {
                     return 1; // Get data
                 } else {
                     return 2; // Get meta
@@ -480,9 +474,9 @@ public class RandomLogGeneratorPanel extends JPanel {
 
         } else {
             // Roll the die!
-            if (r.nextInt(chance) == 0) {
+            if (RandomUtil.getInt(chance) == 0) {
                 // Data or meta data?
-                if (r.nextBoolean()) {
+                if (RandomUtil.getBoolean()) {
                     return 5; // Set data
                 } else {
                     return 6; // Set meta
@@ -491,21 +485,20 @@ public class RandomLogGeneratorPanel extends JPanel {
         }
 
         // Fallback on pseudo-random
-        return r.nextInt(7);
+        return RandomUtil.getInt(7);
     }
     private static int chance = Integer.MIN_VALUE;
     private static boolean chanceIsDownload = true;
 
     private static void lazyLoadChances() {
         if (chance == Integer.MIN_VALUE) {
-            Random r = new Random();
             // First, generate the chance scalar
             // Lower will be a higher chance
-            chance = 1 + r.nextInt(4);
+            chance = 1 + RandomUtil.getInt(4);
 
             // Now choose whether download or upload, giving download
             // the preference
-            if (r.nextInt(4) == 0) {
+            if (RandomUtil.getInt(4) == 0) {
                 chanceIsDownload = false;            // Cute. Let's see what we got
             }
             String partial = "1 out of " + chance + " chance preference for";
@@ -523,10 +516,8 @@ public class RandomLogGeneratorPanel extends JPanel {
      * Create a very illegitimate signature.
      */
     private static Signature getSignature() throws Exception {
-        Random r = new Random();
         byte[] bytes = new byte[256];
-        r.nextBytes(bytes);
-
+        RandomUtil.getBytes(bytes);
         return new Signature(bytes, "fake", SecurityUtil.getAdminCertificate());
     }
 
@@ -536,7 +527,6 @@ public class RandomLogGeneratorPanel extends JPanel {
     private static List<String> generateClientIPs(int clients) {
         List<String> ips = new LinkedList();
 
-        Random r = new Random();
         StringBuffer buffer;
         byte[] ipBytes;
         while (ips.size() < clients) {
@@ -545,7 +535,7 @@ public class RandomLogGeneratorPanel extends JPanel {
 
             // Get IP bytes
             ipBytes = new byte[4];
-            r.nextBytes(ipBytes);
+            RandomUtil.getBytes(ipBytes);
 
             // Generate the next IPv4 address
             for (byte i = 0; i < 4; i++) {

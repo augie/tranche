@@ -64,7 +64,7 @@ import org.tranche.time.TimeUtil;
 import org.tranche.users.User;
 import org.tranche.util.AssertionUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.PersistentFileUtil;
+import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -131,7 +131,7 @@ public class RoutingTrancheServer extends TrancheServer {
     }
 
     private void loadConfiguration() throws Exception {
-        File configFile = new File(PersistentFileUtil.getPersistentDirectory(), "configuration");
+        File configFile = new File(PersistentServerFileUtil.getPersistentDirectory(), "configuration");
         if (configFile.exists()) {
             // get the config bytes
             byte[] configBytes = IOUtil.getBytes(configFile);
@@ -300,11 +300,11 @@ public class RoutingTrancheServer extends TrancheServer {
         try {
             synchronized (this.config) {
                 // save the configuration
-                File backupConfig = new File(PersistentFileUtil.getPersistentDirectory(), "configuration.backup");
+                File backupConfig = new File(PersistentServerFileUtil.getPersistentDirectory(), "configuration.backup");
                 // delete any old backups
                 backupConfig.delete();
                 // copy the current to the backup
-                File configFile = new File(PersistentFileUtil.getPersistentDirectory(), "configuration");
+                File configFile = new File(PersistentServerFileUtil.getPersistentDirectory(), "configuration");
                 configFile.renameTo(backupConfig);
 
                 // write out the new configuration

@@ -18,6 +18,8 @@ package org.tranche.remote;
 import java.io.DataInputStream;
 import org.tranche.ConfigureTranche;
 import org.tranche.network.ConnectionUtil;
+import org.tranche.network.NetworkUtil;
+import org.tranche.network.StatusTableRow;
 import org.tranche.util.IOUtil;
 import org.tranche.time.TimeUtil;
 
@@ -99,8 +101,13 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                 RemoteTrancheServer.debugOut("Server " + IOUtil.createURL(rts) + "; Reading Bytes: finished; ID: " + id + "; Bytes: " + buffer.length);
 
                 // Update time of last server response
-                rts.setTimeLastServerResponse(TimeUtil.getTrancheTimestamp());
-                rts.setTimeLastUsed(TimeUtil.getTrancheTimestamp());
+                long ts = TimeUtil.getTrancheTimestamp();
+                rts.setTimeLastServerResponse(ts);
+                rts.setTimeLastUsed(ts);
+                StatusTableRow row = NetworkUtil.getStatus().getRow(rts.getHost());
+                if (row != null) {
+                    row.responseReceived();
+                }
 
                 // is this a keep alive signal?
                 if (buffer.length == Token.KEEP_ALIVE.length && new String(buffer).trim().equals(Token.KEEP_ALIVE_STRING.trim())) {

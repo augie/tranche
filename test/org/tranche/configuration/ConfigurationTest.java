@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.DataDirectoryConfiguration;
@@ -835,8 +834,7 @@ public class ConfigurationTest extends TrancheTestCase {
     private static Set<BigHash> addSomeDataToServer(boolean isMetaData, FlatFileTrancheServer ffserver) throws Exception {
         Set<BigHash> hashes = new HashSet();
 
-        Random r = new Random();
-        int count = 1 + r.nextInt(9);
+        int count = 1 + RandomUtil.getInt(9);
 
         byte[] data;
         BigHash hash;
@@ -844,9 +842,9 @@ public class ConfigurationTest extends TrancheTestCase {
 
             if (!isMetaData) {
                 // Build data bytes b/w 1KB and 1MB
-                int size = r.nextInt(1024 * 1024 - 1024) + 1024;
+                int size = RandomUtil.getInt(1024 * 1024 - 1024) + 1024;
                 data = new byte[size];
-                r.nextBytes(data);
+                RandomUtil.getBytes(data);
             } else {
                 // Use util method to get random MD bytes
                 data = DevUtil.createRandomMetaDataChunk();

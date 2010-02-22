@@ -44,7 +44,6 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -74,6 +73,7 @@ import org.tranche.util.OperatingSystem;
 import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.IOUtil;
+import org.tranche.util.RandomUtil;
 
 /**
  * Helpful static methods to be used in the Tranche GUI.
@@ -728,13 +728,10 @@ public class GUIUtil {
 
     public static String generateRandomPassphrase(int length) {
         char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-        Random random = new Random();
-
         String passphrase = "";
         for (int i = 0; i < length; i++) {
-            passphrase = passphrase + chars[random.nextInt(chars.length)];
+            passphrase = passphrase + chars[RandomUtil.getInt(chars.length)];
         }
-
         return passphrase;
     }
 

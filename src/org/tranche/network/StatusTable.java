@@ -133,27 +133,22 @@ public class StatusTable extends Object implements Serializable {
         Map<String, Boolean> updatedHosts = new HashMap<String, Boolean>();
         Map<String, Boolean> updatedHashSpans = new HashMap<String, Boolean>();
         for (StatusTableRow row : rows) {
-            boolean isNew = !contains(row.getHost());
             StatusTableRow existingRow = getRow(row.getHost());
-            // always defer to online
-            if (!isNew && existingRow.isOnline() != row.isOnline()) {
-                row.setIsOnline(true);
+            boolean affectsConnectivity = false;
+            boolean affectsHashSpans = false;
+            boolean isUpdated = false;
+            if (existingRow != null) {
+                affectsConnectivity = !existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline();
+                affectsHashSpans = !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans()) || !HashSpanCollection.areEqual(existingRow.getTargetHashSpans(), row.getTargetHashSpans());
+                StatusTableRow combined = existingRow.clone();
+                isUpdated = combined.update(row);
+                row = combined;
             }
-            if (NetworkUtil.isBannedServer(row.getHost()) || (!isNew && existingRow.isFlaggedOfflineLocally())) {
-                row.setIsOnline(false);
-            }
-            // the stored row is more recent than the one being given
-            if (!isNew && existingRow.getUpdateTimestamp() > row.getUpdateTimestamp()) {
-                continue;
-            }
-            boolean isUpdated = !isNew && !existingRow.equals(row);
-            boolean affectsConnectivity = isUpdated && (!existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline());
-            boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans());
             synchronized (modLock) {
                 synchronized (map) {
                     map.put(row.getHost(), row);
                 }
-                if (isNew) {
+                if (existingRow == null) {
                     int index = -1;
                     synchronized (hostList) {
                         hostList.add(row.getHost());
@@ -168,7 +163,7 @@ public class StatusTable extends Object implements Serializable {
                     }
                     addedHosts.add(row.getHost());
                     debugOut("Added server: " + row.getHost());
-                } else if (isUpdated) {
+                } else {
                     // update the list
                     int index = -1;
                     synchronized (hostList) {
@@ -182,8 +177,10 @@ public class StatusTable extends Object implements Serializable {
                         urlList.remove(index);
                         urlList.add(index, row.getURL());
                     }
-                    updatedHosts.put(row.getHost(), affectsConnectivity);
-                    updatedHashSpans.put(row.getHost(), affectsHashSpans);
+                    if (isUpdated) {
+                        updatedHosts.put(row.getHost(), affectsConnectivity);
+                        updatedHashSpans.put(row.getHost(), affectsHashSpans);
+                    }
                     debugOut("Updated server: " + row.getHost() + " (affects connectivity? " + affectsConnectivity + ", affects hash spans? " + affectsHashSpans + ")");
                 }
             }
@@ -205,27 +202,22 @@ public class StatusTable extends Object implements Serializable {
      * @param row A row
      */
     protected void setRow(StatusTableRow row) {
-        boolean isNew = !contains(row.getHost());
         StatusTableRow existingRow = getRow(row.getHost());
-        // always defer to online
-        if (!isNew && existingRow.isOnline() != row.isOnline()) {
-            row.setIsOnline(true);
+        boolean affectsConnectivity = false;
+        boolean affectsHashSpans = false;
+        boolean isUpdated = false;
+        if (existingRow != null) {
+            affectsConnectivity = !existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline();
+            affectsHashSpans = !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans()) || !HashSpanCollection.areEqual(existingRow.getTargetHashSpans(), row.getTargetHashSpans());
+            StatusTableRow combined = existingRow.clone();
+            isUpdated = combined.update(row);
+            row = combined;
         }
-        if (NetworkUtil.isBannedServer(row.getHost()) || (!isNew && existingRow.isFlaggedOfflineLocally())) {
-            row.setIsOnline(false);
-        }
-        // the stored row is more recent than the one being given
-        if (!isNew && existingRow.getUpdateTimestamp() > row.getUpdateTimestamp()) {
-            return;
-        }
-        boolean isUpdated = !isNew && !existingRow.equals(row);
-        boolean affectsConnectivity = isUpdated && (!existingRow.getURL().equals(row.getURL()) || existingRow.isOnline() != row.isOnline());
-        boolean affectsHashSpans = isUpdated && !HashSpanCollection.areEqual(existingRow.getHashSpans(), row.getHashSpans());
         synchronized (modLock) {
             synchronized (map) {
                 map.put(row.getHost(), row);
             }
-            if (isNew) {
+            if (existingRow == null) {
                 int index = -1;
                 synchronized (hostList) {
                     hostList.add(row.getHost());
@@ -239,7 +231,7 @@ public class StatusTable extends Object implements Serializable {
                     urlList.add(index, row.getURL());
                 }
                 debugOut("Added server: " + row.getHost());
-            } else if (isUpdated) {
+            } else {
                 // update the list
                 int index = -1;
                 synchronized (hostList) {
@@ -257,7 +249,7 @@ public class StatusTable extends Object implements Serializable {
             }
         }
         // fire events outside modification lock
-        if (isNew) {
+        if (existingRow == null) {
             fireRowAdded(row.getHost());
         } else if (isUpdated) {
             fireRowUpdated(row.getHost(), affectsConnectivity, affectsHashSpans);
@@ -270,13 +262,15 @@ public class StatusTable extends Object implements Serializable {
      */
     public void removeDefunctRows() {
         long threshold = ConfigureTranche.getLong(ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
-        Set<String> toRemove = new HashSet<String>();
-        for (StatusTableRow row : getRows()) {
-            if (threshold > 0 && !row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
-                toRemove.add(row.getHost());
+        if (threshold > 0) {
+            Set<String> toRemove = new HashSet<String>();
+            for (StatusTableRow row : getRows()) {
+                if (!row.isOnline() && !row.isCore() && !ConnectionUtil.isConnected(row.getHost()) && TimeUtil.getTrancheTimestamp() - row.getUpdateTimestamp() > threshold) {
+                    toRemove.add(row.getHost());
+                }
             }
+            removeRows(toRemove);
         }
-        removeRows(toRemove);
     }
 
     /**

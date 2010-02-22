@@ -108,9 +108,9 @@ public class Signature implements Serializable {
     /**
      * 
      * @return
-     * @throws Exception
+     * @throws IOException
      */
-    public byte[] toByteArray() throws Exception {
+    public byte[] toByteArray() throws IOException, CertificateEncodingException {
         ByteArrayOutputStream baos = null;
         try {
             baos = new ByteArrayOutputStream();
@@ -127,7 +127,7 @@ public class Signature implements Serializable {
      * @throws IOException
      * @throws CertificateEncodingException
      */
-    protected void serialize(OutputStream out) throws IOException, CertificateEncodingException {
+    public void serialize(OutputStream out) throws IOException, CertificateEncodingException {
         RemoteUtil.writeData(algorithm.getBytes(), out);
         RemoteUtil.writeData(cert.getEncoded(), out);
         RemoteUtil.writeData(bytes, out);
@@ -139,7 +139,7 @@ public class Signature implements Serializable {
      * @throws IOException
      * @throws GeneralSecurityException
      */
-    protected void deserialize(InputStream in) throws IOException, GeneralSecurityException {
+    public void deserialize(InputStream in) throws IOException, GeneralSecurityException {
         algorithm = new String(RemoteUtil.readDataBytes(in));
         cert = SecurityUtil.getCertificate(RemoteUtil.readDataBytes(in));
         bytes = RemoteUtil.readDataBytes(in);

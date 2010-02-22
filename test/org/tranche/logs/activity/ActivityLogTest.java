@@ -19,15 +19,14 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import org.tranche.TrancheServer;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.network.ConnectionUtil;
-import org.tranche.servers.ServerUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
+import org.tranche.util.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
@@ -56,6 +55,7 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     public void testReadAndWrite() throws Exception {
+        TestUtil.printTitle("ActivityLogTest:testReadAndWrite()");
         for (int i = 0; i < TEST_REPLICATIONS; i++) {
             System.out.println("**************************************************************************");
             System.out.println("*** testReadAndWrite #" + i + " of " + TEST_REPLICATIONS);
@@ -101,8 +101,8 @@ public class ActivityLogTest extends TrancheTestCase {
                 log.write(a);
             }
 
-            final long startingTimestamp = testAdd.get(0).timestamp;
-            final long finishingTimestamp = testAdd.get(testAdd.size() - 1).timestamp;
+            final long startingTimestamp = testAdd.get(0).getTimestamp();
+            final long finishingTimestamp = testAdd.get(testAdd.size() - 1).getTimestamp();
 
             assertEquals("Should know last recorded timestamp.", finishingTimestamp, log.getLastRecordedTimestamp());
 
@@ -117,13 +117,13 @@ public class ActivityLogTest extends TrancheTestCase {
             count = 0;
             for (Activity a : testAdd) {
                 count++;
-                assertTrue("Should find count #" + count + " of " + testAdd.size() + ".", log.contains(a.timestamp, a.action, a.hash));
+                assertTrue("Should find count #" + count + " of " + testAdd.size() + ".", log.contains(a.getTimestamp(), a.getAction(), a.getHash()));
             }
 
             count = 0;
             for (Activity a : testControl) {
                 count++;
-                assertFalse("Should not find count #" + count + " of " + testControl.size() + ".", log.contains(a.timestamp, a.action, a.hash));
+                assertFalse("Should not find count #" + count + " of " + testControl.size() + ".", log.contains(a.getTimestamp(), a.getAction(), a.getHash()));
             }
 
             /**
@@ -142,13 +142,13 @@ public class ActivityLogTest extends TrancheTestCase {
                 // Quickly check to see if any previous has same timestamp. If so,
                 // will add extra to results.
                 int j = index - 1;
-                while (j >= 0 && testAdd.get(j).timestamp == a.timestamp) {
+                while (j >= 0 && testAdd.get(j).getTimestamp() == a.getTimestamp()) {
                     expectedReads++;
                     j--;
                 }
-                readActivities = log.read(a.timestamp, Long.MAX_VALUE, Integer.MAX_VALUE, Activity.ANY);
-                assertEquals("Expecting " + expectedReads + " activities logged starting with " + a.timestamp + " (i=" + index + ").", expectedReads, readActivities.size());
-                assertEquals("Expecting " + expectedReads + " activities logged starting with " + a.timestamp + " (i=" + index + ").", expectedReads, log.getActivityCount(a.timestamp, Long.MAX_VALUE, Activity.ANY));
+                readActivities = log.read(a.getTimestamp(), Long.MAX_VALUE, Integer.MAX_VALUE, Activity.ANY);
+                assertEquals("Expecting " + expectedReads + " activities logged starting with " + a.getTimestamp() + " (i=" + index + ").", expectedReads, readActivities.size());
+                assertEquals("Expecting " + expectedReads + " activities logged starting with " + a.getTimestamp() + " (i=" + index + ").", expectedReads, log.getActivityCount(a.getTimestamp(), Long.MAX_VALUE, Activity.ANY));
             }
 
             // Now let's limit using ending timestamp
@@ -161,13 +161,13 @@ public class ActivityLogTest extends TrancheTestCase {
 
                 // Quickly check to see if next timestamp has same. If so, we'll see more
                 int j = index + 1;
-                while (j <= testAdd.size() - 1 && testAdd.get(j).timestamp == a.timestamp) {
+                while (j <= testAdd.size() - 1 && testAdd.get(j).getTimestamp() == a.getTimestamp()) {
                     expectedReads++;
                     j++;
                 }
-                readActivities = log.read(Long.MIN_VALUE, a.timestamp, Integer.MAX_VALUE, Activity.ANY);
-                assertEquals("Expecting " + expectedReads + " activities logged ending with " + a.timestamp + " (i=" + index + ").", expectedReads, readActivities.size());
-                assertEquals("Expecting " + expectedReads + " activities logged ending with " + a.timestamp + " (i=" + index + ").", expectedReads, log.getActivityCount(Long.MIN_VALUE, a.timestamp, Activity.ANY));
+                readActivities = log.read(Long.MIN_VALUE, a.getTimestamp(), Integer.MAX_VALUE, Activity.ANY);
+                assertEquals("Expecting " + expectedReads + " activities logged ending with " + a.getTimestamp() + " (i=" + index + ").", expectedReads, readActivities.size());
+                assertEquals("Expecting " + expectedReads + " activities logged ending with " + a.getTimestamp() + " (i=" + index + ").", expectedReads, log.getActivityCount(Long.MIN_VALUE, a.getTimestamp(), Activity.ANY));
             }
 
             // Let's limit based on arbitrary number
@@ -196,7 +196,7 @@ public class ActivityLogTest extends TrancheTestCase {
             int setDataCount = 0;
             int setMetaDataCount = 0;
             for (Activity activity : testAdd) {
-                switch (activity.action) {
+                switch (activity.getAction()) {
                     case Activity.DELETE_DATA:
                         deleteCount++;
                         deleteDataCount++;
@@ -218,7 +218,7 @@ public class ActivityLogTest extends TrancheTestCase {
                         metaDataCount++;
                         break;
                     default:
-                        fail("Unrecognized activity byte: " + activity.action);
+                        fail("Unrecognized activity byte: " + activity.getAction());
                 }
             }
 
@@ -248,6 +248,7 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     public void testSignatureIndexEntryCorruptedCannotRecover() throws Exception {
+        TestUtil.printTitle("ActivityLogTest:testSignatureIndexEntryCorruptedCannotRecover()");
         for (int i = 0; i < TEST_REPLICATIONS; i++) {
             System.out.println("**************************************************************************");
             System.out.println("*** testSignatureIndexEntryCorruptedCannotRecover #" + i + " of " + TEST_REPLICATIONS);
@@ -261,6 +262,7 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     public void testSignatureIndexEntryCorruptedCanRecover() throws Exception {
+        TestUtil.printTitle("ActivityLogTest:testSignatureIndexEntryCorruptedCanRecover()");
         for (int i = 0; i < TEST_REPLICATIONS; i++) {
             System.out.println("**************************************************************************");
             System.out.println("*** testSignatureIndexEntryCorruptedCanRecover #" + i + " of " + TEST_REPLICATIONS);
@@ -274,16 +276,13 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     private void testSignatureIndexEntryCorrupted(boolean isRecoverable) throws Exception {
-
-        Random r = new Random();
-
         File activityLogFile = null, signatureIndexFile = null, signaturesFile = null;
         try {
             activityLogFile = TempFileUtil.createTemporaryFile();
             signatureIndexFile = TempFileUtil.createTemporaryFile();
             signaturesFile = TempFileUtil.createTemporaryFile();
 
-            int activitySize = 1 + r.nextInt(12);
+            int activitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Using " + activitySize + " activities.");
 
@@ -299,11 +298,11 @@ public class ActivityLogTest extends TrancheTestCase {
             }
 
             // Break the signatures index file somewhere in the last entry.
-            long breakingStart = signatureIndexFile.length() - ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES + 1;
-            int breakSpace = ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES - 1;
+            long breakingStart = signatureIndexFile.length() - SignatureIndexEntry.SIZE + 1;
+            int breakSpace = SignatureIndexEntry.SIZE - 1;
 
 
-            long breakPoint = breakingStart + r.nextInt(breakSpace);
+            long breakPoint = breakingStart + RandomUtil.getInt(breakSpace);
 
             RandomAccessFile raf = null;
             try {
@@ -318,7 +317,7 @@ public class ActivityLogTest extends TrancheTestCase {
             // Recoverable unless last signature broken.
             if (!isRecoverable) {
                 // Let's break the last signature. Let's just destroy one of last ten bytes
-                long signaturesBreakPoint = signaturesFile.length() - (1 + r.nextInt(10));
+                long signaturesBreakPoint = signaturesFile.length() - (1 + RandomUtil.getInt(10));
 
                 try {
                     raf = new RandomAccessFile(signaturesFile, "rw");
@@ -337,12 +336,12 @@ public class ActivityLogTest extends TrancheTestCase {
 
                 if (!isRecoverable) {
                     expectedEntries = activitySize - 1;
-                    int foundEntries = (int) (signatureIndexFile.length() / ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES);
+                    int foundEntries = (int) (signatureIndexFile.length() / SignatureIndexEntry.SIZE);
                     assertEquals("In non-recoverable test, expecting certain number entries.", expectedEntries, foundEntries);
                     assertEquals("Expecting certain size log for unrecoverable scenario.", activitySize - 1, log.getActivityLogEntriesCount());
                 } else {
                     expectedEntries = activitySize;
-                    int foundEntries = (int) (signatureIndexFile.length() / ActivityLogUtil.TOTAL_SIGNATURE_INDEX_ENTRY_SIZE_IN_BYTES);
+                    int foundEntries = (int) (signatureIndexFile.length() / SignatureIndexEntry.SIZE);
                     assertEquals("In recoverable test, expecting certain number entries.", expectedEntries, foundEntries);
                     assertEquals("Expecting certain size log for recoverable scenario.", activitySize, log.getActivityLogEntriesCount());
                 }
@@ -351,7 +350,7 @@ public class ActivityLogTest extends TrancheTestCase {
             }
 
             // Add some more to make sure nothing was corrupted
-            int additionalActivitySize = 1 + r.nextInt(12);
+            int additionalActivitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Adding " + additionalActivitySize + " more activities.");
 
@@ -363,7 +362,7 @@ public class ActivityLogTest extends TrancheTestCase {
                 assertEquals("Expecting certain number of activity logs.", expectedEntries + additionalActivitySize, log.getActivityLogEntriesCount());
 
                 for (Activity a : additionalActivities) {
-                    assertTrue("Should contain activities.", log.contains(a.timestamp, a.action, a.hash));
+                    assertTrue("Should contain activities.", log.contains(a.getTimestamp(), a.getAction(), a.getHash()));
                 }
             } finally {
                 log.close();
@@ -389,15 +388,13 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     public void signatureBytesCorrupted() throws Exception {
-        Random r = new Random();
-
         File activityLogFile = null, signatureIndexFile = null, signaturesFile = null;
         try {
             activityLogFile = TempFileUtil.createTemporaryFile();
             signatureIndexFile = TempFileUtil.createTemporaryFile();
             signaturesFile = TempFileUtil.createTemporaryFile();
 
-            int activitySize = 1 + r.nextInt(12);
+            int activitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Using " + activitySize + " activities.");
 
@@ -411,10 +408,10 @@ public class ActivityLogTest extends TrancheTestCase {
                 log.close();
             }
 
-            final int lastSignatureLength = activities.get(activities.size() - 1).signatureBytes.length;
+            final int lastSignatureLength = activities.get(activities.size() - 1).getSignature().toByteArray().length;
 
             // Break the signatures file at some point in the last entry
-            final long snipPointFromEnd = 1 + r.nextInt(lastSignatureLength - 2);
+            final long snipPointFromEnd = 1 + RandomUtil.getInt(lastSignatureLength - 2);
 
             RandomAccessFile raf = null;
             try {
@@ -435,7 +432,7 @@ public class ActivityLogTest extends TrancheTestCase {
             }
 
             // Add some more to make sure nothing was corrupted
-            int additionalActivitySize = 1 + r.nextInt(12);
+            int additionalActivitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Adding " + additionalActivitySize + " more activities.");
 
@@ -447,7 +444,7 @@ public class ActivityLogTest extends TrancheTestCase {
                 assertEquals("Expecting certain number of activity logs.", activitySize - 1 + additionalActivitySize, log.getActivityLogEntriesCount());
 
                 for (Activity a : additionalActivities) {
-                    assertTrue("Should contain activities.", log.contains(a.timestamp, a.action, a.hash));
+                    assertTrue("Should contain activities.", log.contains(a.getTimestamp(), a.getAction(), a.getHash()));
                 }
             } finally {
                 log.close();
@@ -473,15 +470,13 @@ public class ActivityLogTest extends TrancheTestCase {
     }
 
     public void activityLogBytesCorrupted() throws Exception {
-        Random r = new Random();
-
         File activityLogFile = null, signatureIndexFile = null, signaturesFile = null;
         try {
             activityLogFile = TempFileUtil.createTemporaryFile();
             signatureIndexFile = TempFileUtil.createTemporaryFile();
             signaturesFile = TempFileUtil.createTemporaryFile();
 
-            int activitySize = 1 + r.nextInt(12);
+            int activitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Using " + activitySize + " activities.");
 
@@ -496,7 +491,7 @@ public class ActivityLogTest extends TrancheTestCase {
             }
 
             // Break the signatures file at some point in the last entry
-            final long snipPointFromEnd = 1 + r.nextInt(ActivityLogUtil.TOTAL_ACTIVITY_ENTRY_SIZE_IN_BYTES - 2);
+            final long snipPointFromEnd = 1 + RandomUtil.getInt(ActivityLogEntry.SIZE - 2);
 
             RandomAccessFile raf = null;
             try {
@@ -518,7 +513,7 @@ public class ActivityLogTest extends TrancheTestCase {
             }
 
             // Add some more to make sure nothing was corrupted
-            int additionalActivitySize = 1 + r.nextInt(12);
+            int additionalActivitySize = 1 + RandomUtil.getInt(12);
 
 //            System.out.println("DEBUG> Adding " + additionalActivitySize + " more activities.");
 
@@ -530,7 +525,7 @@ public class ActivityLogTest extends TrancheTestCase {
                 assertEquals("Expecting certain number of activity logs.", activitySize - 1 + additionalActivitySize, log.getActivityLogEntriesCount());
 
                 for (Activity a : additionalActivities) {
-                    assertTrue("Should contain activities.", log.contains(a.timestamp, a.action, a.hash));
+                    assertTrue("Should contain activities.", log.contains(a.getTimestamp(), a.getAction(), a.getHash()));
                 }
             } finally {
                 log.close();
@@ -582,7 +577,7 @@ public class ActivityLogTest extends TrancheTestCase {
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
             testNetwork.start();
-           
+
             ActivityLog log = testNetwork.getFlatFileTrancheServer(HOST1).getActivityLog();
             assertEquals("Log should be empty.", 0, log.getActivityLogEntriesCount());
 
@@ -602,11 +597,10 @@ public class ActivityLogTest extends TrancheTestCase {
             byte activity1 = Byte.MAX_VALUE, activity2 = Byte.MAX_VALUE, activity3 = Byte.MAX_VALUE;
             BigHash hash1 = null, hash2 = null, hash3 = null;
 
-            Random r = new Random();
             for (int i = 0; i < 3; i++) {
                 byte activity = Byte.MAX_VALUE;
                 BigHash hash = null;
-                int randomInt = r.nextInt(2);
+                int randomInt = RandomUtil.getInt(2);
                 switch (randomInt) {
                     case 0:
                         activity = Activity.SET_DATA;
@@ -654,13 +648,13 @@ public class ActivityLogTest extends TrancheTestCase {
             Activity[] activities = rserver.getActivityLogEntries(start, stop, Integer.MAX_VALUE, Activity.ANY);
             assertEquals("Expecting certain number of returned activites.", 3, activities.length);
 
-            assertEquals("Should know all returned activity bytes.", activity1, activities[0].action);
-            assertEquals("Should know all returned activity bytes.", activity2, activities[1].action);
-            assertEquals("Should know all returned activity bytes.", activity3, activities[2].action);
+            assertEquals("Should know all returned activity bytes.", activity1, activities[0].getAction());
+            assertEquals("Should know all returned activity bytes.", activity2, activities[1].getAction());
+            assertEquals("Should know all returned activity bytes.", activity3, activities[2].getAction());
 
-            assertEquals("Should know all returned BigHash values.", hash1, activities[0].hash);
-            assertEquals("Should know all returned BigHash values.", hash2, activities[1].hash);
-            assertEquals("Should know all returned BigHash values.", hash3, activities[2].hash);
+            assertEquals("Should know all returned BigHash values.", hash1, activities[0].getHash());
+            assertEquals("Should know all returned BigHash values.", hash2, activities[1].getHash());
+            assertEquals("Should know all returned BigHash values.", hash3, activities[2].getHash());
 
             // Let's delete the first thing!
             boolean isMetaData = Activity.isMetaData(activity1);
@@ -689,15 +683,15 @@ public class ActivityLogTest extends TrancheTestCase {
             activities = rserver.getActivityLogEntries(start, stop, Integer.MAX_VALUE, Activity.ANY);
             assertEquals("Expecting certain number of returned activites.", 4, activities.length);
 
-            assertEquals("Should know all returned activity bytes.", activity1, activities[0].action);
-            assertEquals("Should know all returned activity bytes.", activity2, activities[1].action);
-            assertEquals("Should know all returned activity bytes.", activity3, activities[2].action);
-            assertEquals("Should know all returned activity bytes.", activity4, activities[3].action);
+            assertEquals("Should know all returned activity bytes.", activity1, activities[0].getAction());
+            assertEquals("Should know all returned activity bytes.", activity2, activities[1].getAction());
+            assertEquals("Should know all returned activity bytes.", activity3, activities[2].getAction());
+            assertEquals("Should know all returned activity bytes.", activity4, activities[3].getAction());
 
-            assertEquals("Should know all returned BigHash values.", hash1, activities[0].hash);
-            assertEquals("Should know all returned BigHash values.", hash2, activities[1].hash);
-            assertEquals("Should know all returned BigHash values.", hash3, activities[2].hash);
-            assertEquals("Should know all returned BigHash values.", hash1, activities[3].hash);
+            assertEquals("Should know all returned BigHash values.", hash1, activities[0].getHash());
+            assertEquals("Should know all returned BigHash values.", hash2, activities[1].getHash());
+            assertEquals("Should know all returned BigHash values.", hash3, activities[2].getHash());
+            assertEquals("Should know all returned BigHash values.", hash1, activities[3].getHash());
 
             assertEquals("Expecting certain number of entries.", deleteDataCount, rserver.getActivityLogEntriesCount(start, stop, Activity.DELETE_DATA));
             assertEquals("Expecting certain number of entries.", deleteMetaDataCount, rserver.getActivityLogEntriesCount(start, stop, Activity.DELETE_META_DATA));

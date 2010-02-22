@@ -88,7 +88,7 @@ public class GetActivityLogEntriesItem extends ServerItem {
     public final static Activity[] readResponse(InputStream in) throws Exception {
         Activity[] activities = new Activity[RemoteUtil.readInt(in)];
         for (int i = 0; i < activities.length; i++) {
-            activities[i] = Activity.fromByteArray(RemoteUtil.readDataBytes(in));
+            activities[i] = new Activity(RemoteUtil.readDataBytes(in));
         }
         return activities;
     }

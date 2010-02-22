@@ -15,38 +15,152 @@
  */
 package org.tranche.logs.activity;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import org.tranche.util.IOUtil;
+
 /**
  * <p>Wrapper class for data that is held in the signature index file for activity log.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
+ * @author James "Augie" Hill - augman85@gmail.com
  */
-public class SignatureIndexEntry {
+public class SignatureIndexEntry implements Serializable {
 
-    public final int signatureIndex;
-    public final long signatureOffset;
-    public final int signatureLen;
+    public static final int SIZE = 4 + 4 + 8;
+    private int index, length;
+    private long offset;
 
-    public SignatureIndexEntry(final int signatureIndex, final long signatureOffset, final int signatureLen) {
-        this.signatureIndex = signatureIndex;
-        this.signatureOffset = signatureOffset;
-        this.signatureLen = signatureLen;
+    /**
+     *
+     * @param index
+     * @param offset
+     * @param length
+     */
+    public SignatureIndexEntry(int index, long offset, int length) {
+        this.index = index;
+        this.offset = offset;
+        this.length = length;
     }
-    
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     */
+    public SignatureIndexEntry(InputStream in) throws IOException {
+        deserialize(in);
+    }
+
+    /**
+     *
+     * @param bytes
+     * @throws IOException
+     */
+    public SignatureIndexEntry(byte[] bytes) throws IOException {
+        ByteArrayInputStream bais = null;
+        try {
+            bais = new ByteArrayInputStream(bytes);
+            deserialize(bais);
+        } finally {
+            IOUtil.safeClose(bais);
+        }
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int getIndex() {
+        return index;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int getLength() {
+        return length;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public long getOffset() {
+        return offset;
+    }
+
+    /**
+     * 
+     * @return
+     * @throws Exception
+     */
+    public byte[] toByteArray() throws Exception {
+        ByteArrayOutputStream baos = null;
+        try {
+            baos = new ByteArrayOutputStream();
+            serialize(baos);
+            return baos.toByteArray();
+        } finally {
+            IOUtil.safeClose(baos);
+        }
+    }
+
+    /**
+     *
+     * @param out
+     * @throws IOException
+     */
+    protected void serialize(OutputStream out) throws IOException {
+        IOUtil.writeInt(index, out);
+        IOUtil.writeLong(offset, out);
+        IOUtil.writeInt(length, out);
+    }
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     */
+    protected void deserialize(InputStream in) throws IOException {
+        index = IOUtil.readInt(in);
+        offset = IOUtil.readLong(in);
+        length = IOUtil.readInt(in);
+    }
+
+    /**
+     *
+     * @return
+     */
     @Override()
     public int hashCode() {
-        return signatureIndex;
+        return index;
     }
-    
+
+    /**
+     *
+     * @param o
+     * @return
+     */
     @Override()
     public boolean equals(Object o) {
         if (o instanceof SignatureIndexEntry) {
-            SignatureIndexEntry e = (SignatureIndexEntry)o;
-            return e.signatureIndex == this.signatureIndex && e.signatureLen == this.signatureLen && e.signatureOffset == this.signatureOffset;
+            SignatureIndexEntry e = (SignatureIndexEntry) o;
+            return e.index == index && e.length == length && e.offset == offset;
         }
         return false;
     }
-    
+
+    /**
+     * 
+     * @return
+     */
     @Override()
     public String toString() {
-        return "SignatureIndexEntry: index=" + signatureIndex + "; length=" + signatureLen + "; offset=" + signatureOffset;
+        return "SignatureIndexEntry: index=" + index + "; length=" + length + "; offset=" + offset;
     }
 }

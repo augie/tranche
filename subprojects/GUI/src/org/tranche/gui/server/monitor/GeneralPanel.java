@@ -118,8 +118,8 @@ public class GeneralPanel extends JPanel {
         right.put("Data Server", String.valueOf(row.isDataStore()));
         right.put("Online", String.valueOf(row.isOnline()));
         right.put("Connected", String.valueOf(ConnectionUtil.isConnected(row.getHost())));
-        if (monitor.getLastResponseTime() != 0) {
-            right.put("Last Response", Text.getShortPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - monitor.getLastResponseTime()) + " ago");
+        if (row.getResponseTimestamp() != 0) {
+            right.put("Last Response", Text.getShortPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - row.getResponseTimestamp()) + " ago");
         } else {
             right.put("Last Response", "");
         }

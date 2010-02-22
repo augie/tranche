@@ -36,6 +36,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.PrivateKey;
@@ -45,11 +46,13 @@ import javax.net.ServerSocketFactory;
 import org.tranche.TrancheServer;
 import org.tranche.security.Signature;
 import org.tranche.exceptions.AssertionFailedException;
+import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.project.ProjectFile;
 import org.tranche.remote.RemoteTrancheServer;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.server.Server;
+import org.tranche.streams.DeleteFileOnExitFileInputStream;
 
 /**
  * <p>Various helper methods for serializing data for storage and transfer as well as reading data from disk or network.</p>
@@ -60,6 +63,8 @@ import org.tranche.server.Server;
 public class IOUtil {
 
     private static final String EOL = "\n";
+    public static final byte BYTE_FALSE = (byte) 0;
+    public static final byte BYTE_TRUE = (byte) 1;
 
     /**
      * <p>Helper method to get all the bytes from a file using buffered IO..</p>
@@ -1229,15 +1234,142 @@ public class IOUtil {
                 }
             }
         } finally {
-            if (ss != null) {
-                try {
-                    ss.close();
-                } catch (IOException ex) {
-                    System.err.println("CANNOT CLOSE SERVER SOCKET!");
-                    ex.printStackTrace(System.err);
-                }
-            }
+            IOUtil.safeClose(ss);
         }
         return port;
+    }
+
+    public static final void writeBigHash(BigHash v, OutputStream o) throws IOException {
+        if (v == null) {
+            writeData(null, o);
+        } else {
+            writeData(v.toByteArray(), o);
+        }
+    }
+
+    public static final BigHash readBigHash(InputStream i) throws IOException {
+        byte[] bytes = readDataBytes(i);
+        if (bytes != null) {
+            return BigHash.createFromBytes(bytes);
+        }
+        return null;
+    }
+
+    public static final void writeString(String v, OutputStream o) throws IOException {
+        if (v == null) {
+            writeData(null, o);
+        } else {
+            writeData(v.getBytes(), o);
+        }
+    }
+
+    public static final String readString(InputStream i) throws IOException {
+        byte[] bytes = readDataBytes(i);
+        if (bytes != null) {
+            return new String(bytes);
+        }
+        return null;
+    }
+
+    public static final void writeBoolean(boolean v, OutputStream o) throws IOException {
+        if (v) {
+            writeByte(BYTE_TRUE, o);
+        } else {
+            writeByte(BYTE_FALSE, o);
+        }
+    }
+
+    public static final boolean readBoolean(InputStream i) throws IOException {
+        if (readByte(i) == BYTE_TRUE) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static final void writeLong(long v, OutputStream o) throws IOException {
+        byte[] bytes = new byte[8];
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+        bb.putLong(v);
+        writeBytes(bytes, o);
+    }
+
+    public static final long readLong(InputStream i) throws IOException {
+        return ByteBuffer.wrap(readBytes(8, i)).getLong();
+    }
+
+    public static final void writeInt(int v, OutputStream o) throws IOException {
+        byte[] bytes = new byte[4];
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+        bb.putInt(v);
+        writeBytes(bytes, o);
+    }
+
+    public static final int readInt(InputStream i) throws IOException {
+        return ByteBuffer.wrap(readBytes(4, i)).getInt();
+    }
+
+    public static final void writeData(byte[] v, OutputStream o) throws IOException {
+        if (v == null) {
+            writeInt(-1, o);
+        } else {
+            writeInt(v.length, o);
+            writeBytes(v, o);
+        }
+    }
+
+    public static final byte[] readDataBytes(InputStream i) throws IOException {
+        InputStream buffer = null;
+        try {
+            buffer = readData(i);
+            if (buffer == null) {
+                return null;
+            } else {
+                byte[] bytes = new byte[buffer.available()];
+                buffer.read(bytes);
+                return bytes;
+            }
+        } finally {
+            safeClose(buffer);
+        }
+    }
+
+    public static final InputStream readData(InputStream i) throws IOException {
+        int byteCount = IOUtil.readInt(i);
+        if (byteCount == -1) {
+            return null;
+        } else if (byteCount <= DataBlockUtil.ONE_MB) {
+            return new ByteArrayInputStream(readBytes(byteCount, i));
+        }
+        // make a new file
+        File temp = TempFileUtil.createTemporaryFile();
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(temp);
+            getBytes(i, fos);
+        } finally {
+            IOUtil.safeClose(fos);
+        }
+        return new DeleteFileOnExitFileInputStream(temp);
+    }
+
+    public static final void writeBytes(byte[] v, OutputStream o) throws IOException {
+        o.write(v);
+        o.flush();
+    }
+
+    public static final byte[] readBytes(int byteCount, InputStream i) throws IOException {
+        byte[] bytes = new byte[byteCount];
+        i.read(bytes);
+        return bytes;
+    }
+
+    public static final void writeByte(byte v, OutputStream o) throws IOException {
+        o.write(v);
+        o.flush();
+    }
+
+    public static final byte readByte(InputStream i) throws IOException {
+        return (byte) i.read();
     }
 }

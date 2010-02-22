@@ -323,7 +323,7 @@ public class NetworkUtil {
                         if (serversToAsk.isEmpty()) {
                             break;
                         }
-                        final Boolean[] success = {false, false, false, false};
+                        final Boolean[] success = {false, false, false, false, false, false, false, false, false, false};
                         Set<Thread> threads = new HashSet<Thread>();
                         FOR:
                         for (int i = 0; i < serversToAsk.size(); i++) {
@@ -409,7 +409,6 @@ public class NetworkUtil {
         if (NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
             return;
         }
-        debugOut(" Setting row: " + row.getHost());
         // update the master status table
         masterStatusTable.setRow(row);
     }
@@ -427,7 +426,6 @@ public class NetworkUtil {
             if (!TestUtil.isTesting() && NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
                 continue;
             }
-            debugOut(" Setting row: " + row.getHost());
             rowsToSet.add(row);
         }
         // update the master status table
