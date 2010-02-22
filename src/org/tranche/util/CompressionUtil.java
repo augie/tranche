@@ -155,7 +155,9 @@ public class CompressionUtil {
         FileOutputStream fos = null;
         ZipOutputStream zos = null;
         try {
-            zipFile = TempFileUtil.createTemporaryFile(".zip");
+//            zipFile = TempFileUtil.createTemporaryFile(".zip");
+            String name = file.getName() + ".zip";
+            zipFile = TempFileUtil.createTempFileWithName(name);
             fos = new FileOutputStream(zipFile);
             zos = new ZipOutputStream(fos);
             if (file.isDirectory()) {
