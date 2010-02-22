@@ -2,7 +2,7 @@
  *    Copyright 2005 The Regents of the University of Michigan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ * you may not use this zipFile except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -45,7 +45,7 @@ public class CompressionUtil {
 
     /**
      * 
-     * @param directory
+     * @param file
      * @return
      * @throws java.io.IOException
      */
@@ -59,7 +59,7 @@ public class CompressionUtil {
 
     /**
      * 
-     * @param directory
+     * @param file
      * @return
      * @throws java.io.IOException
      */
@@ -73,7 +73,7 @@ public class CompressionUtil {
 
     /**
      * 
-     * @param directory
+     * @param file
      * @return
      * @throws java.io.IOException
      */
@@ -102,7 +102,7 @@ public class CompressionUtil {
 
     /**
      * 
-     * @param file
+     * @param zipFile
      * @param directoryName
      * @return
      * @throws java.io.IOException
@@ -122,7 +122,7 @@ public class CompressionUtil {
                 if (te.isDirectory()) {
                     continue;
                 }
-                // make a temp file
+                // make a temp zipFile
                 File tempFile = new File(directory, te.getName());
                 FileOutputStream fos = null;
                 BufferedOutputStream bos = null;
@@ -144,35 +144,43 @@ public class CompressionUtil {
     }
 
     /**
-     * 
-     * @param directory
+     * <p>Zip compress/archive a single zipFile or directory.</p>
+     * @param file
      * @return
      * @throws java.io.IOException
      */
-    public static final File zipCompress(File directory) throws IOException {
-        File file = null;
+    public static final File zipCompress(File file) throws IOException {
+
+        File zipFile = null;
         FileOutputStream fos = null;
         ZipOutputStream zos = null;
         try {
-            file = TempFileUtil.createTemporaryFile(".zip");
-            fos = new FileOutputStream(file);
+            zipFile = TempFileUtil.createTemporaryFile(".zip");
+            fos = new FileOutputStream(zipFile);
             zos = new ZipOutputStream(fos);
-            for (File subFile : directory.listFiles()) {
-                ZipEntry ze = new ZipEntry(subFile.getName());
+            if (file.isDirectory()) {
+                for (File subFile : file.listFiles()) {
+                    ZipEntry ze = new ZipEntry(subFile.getName());
+                    zos.putNextEntry(ze);
+                    zos.write(IOUtil.getBytes(subFile));
+                    zos.flush();
+                }
+            } else {
+                ZipEntry ze = new ZipEntry(file.getName());
                 zos.putNextEntry(ze);
-                zos.write(IOUtil.getBytes(subFile));
+                zos.write(IOUtil.getBytes(file));
                 zos.flush();
             }
         } finally {
             IOUtil.safeClose(zos);
             IOUtil.safeClose(fos);
         }
-        return file;
+        return zipFile;
     }
 
     /**
      * 
-     * @param file
+     * @param zipFile
      * @return
      * @throws java.io.IOException
      */
@@ -181,36 +189,40 @@ public class CompressionUtil {
         BufferedInputStream bis = null;
         ZipInputStream zis = null;
         File directory = null;
-        try {
+        try { 
             directory = TempFileUtil.createTemporaryDirectory(directoryName);
             fis = new FileInputStream(file);
             bis = new BufferedInputStream(fis);
             zis = new ZipInputStream(bis);
             // read the entries
             for (ZipEntry ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
-                // only upload if it is a file
+                // only upload if it is a zipFile
                 if (ze.isDirectory()) {
                     continue;
                 }
-                // make a temp file
+
+                // make a temp zipFile
                 File tempFile = new File(directory, ze.getName());
                 tempFile.createNewFile();
                 FileOutputStream fos = null;
                 BufferedOutputStream bos = null;
                 try {
                     fos = new FileOutputStream(tempFile);
-                    bos = new BufferedOutputStream(fos);
+                    bos =
+                            new BufferedOutputStream(fos);
                     IOUtil.getBytes(zis, bos);
                 } finally {
                     IOUtil.safeClose(bos);
                     IOUtil.safeClose(fos);
                 }
+
             }
         } finally {
             IOUtil.safeClose(zis);
             IOUtil.safeClose(bis);
             IOUtil.safeClose(fis);
         }
+
         return directory;
     }
 
@@ -222,15 +234,17 @@ public class CompressionUtil {
      * @throws java.io.IOException
      */
     public static final byte[] gzipCompress(byte[] dataBytes, byte[] padding) throws IOException {
-        // transfer the file
+        // transfer the zipFile
         ByteArrayInputStream fis = null;
         ByteArrayOutputStream fos = null;
         GZIPOutputStream gos = null;
         try {
             // make the streams
             fis = new ByteArrayInputStream(dataBytes);
-            fos = new ByteArrayOutputStream();
-            gos = new GZIPOutputStream(fos);
+            fos =
+                    new ByteArrayOutputStream();
+            gos =
+                    new GZIPOutputStream(fos);
             // write out the content
             IOUtil.getBytes(fis, gos);
             gos.write(padding);
@@ -239,7 +253,7 @@ public class CompressionUtil {
             IOUtil.safeClose(gos);
             IOUtil.safeClose(fos);
         }
-        // return the gzip'd content
+// return the gzip'd content
         return fos.toByteArray();
     }
 
@@ -250,15 +264,17 @@ public class CompressionUtil {
      * @throws java.io.IOException
      */
     public static final byte[] gzipDecompress(byte[] dataBytes) throws IOException {
-        // transfer the file
+        // transfer the zipFile
         ByteArrayInputStream fis = null;
         ByteArrayOutputStream fos = null;
         GZIPInputStream gis = null;
         try {
             // make the streams
             fis = new ByteArrayInputStream(dataBytes);
-            fos = new ByteArrayOutputStream();
-            gis = new GZIPInputStream(fis);
+            fos =
+                    new ByteArrayOutputStream();
+            gis =
+                    new GZIPInputStream(fis);
             // write out the content
             IOUtil.getBytes(gis, fos);
         } finally {
@@ -266,28 +282,31 @@ public class CompressionUtil {
             IOUtil.safeClose(fis);
             IOUtil.safeClose(fos);
         }
-        // return the gzip'd content
+// return the gzip'd content
         return fos.toByteArray();
     }
 
     /**
-     * <p>GZIPs the input file and returns a pointer to a file that is GZIP compressed.</p>
+     * <p>GZIPs the input zipFile and returns a pointer to a zipFile that is GZIP compressed.</p>
      * @param input
      * @return
      * @throws java.io.IOException
      */
-    public static final File gzipCompress(File input) throws IOException {
-        // make a temp file
+    public static final File gzipCompress(
+            File input) throws IOException {
+        // make a temp zipFile
         File gzip = TempFileUtil.createTemporaryFile(".gzip");
-        // transfer the file
+        // transfer the zipFile
         FileInputStream fis = null;
         FileOutputStream fos = null;
         GZIPOutputStream gos = null;
         try {
             // make the streams
             fis = new FileInputStream(input);
-            fos = new FileOutputStream(gzip);
-            gos = new GZIPOutputStream(fos);
+            fos =
+                    new FileOutputStream(gzip);
+            gos =
+                    new GZIPOutputStream(fos);
             // write out the content
             IOUtil.getBytes(fis, gos);
         } finally {
@@ -295,28 +314,31 @@ public class CompressionUtil {
             IOUtil.safeClose(gos);
             IOUtil.safeClose(fos);
         }
-        // return the gzip'd content
+// return the gzip'd content
         return gzip;
     }
 
     /**
-     * <p>Decompresses the input file assuming that it is GZIP'd.</p>
+     * <p>Decompresses the input zipFile assuming that it is GZIP'd.</p>
      * @param input
      * @return
      * @throws java.io.IOException
      */
-    public static final File gzipDecompress(File input) throws IOException {
-        // make a temp file
+    public static final File gzipDecompress(
+            File input) throws IOException {
+        // make a temp zipFile
         File gzip = TempFileUtil.createTemporaryFile();
-        // transfer the file
+        // transfer the zipFile
         FileInputStream fis = null;
         FileOutputStream fos = null;
         GZIPInputStream gis = null;
         try {
             // make the streams
             fis = new FileInputStream(input);
-            fos = new FileOutputStream(gzip);
-            gis = new GZIPInputStream(fis);
+            fos =
+                    new FileOutputStream(gzip);
+            gis =
+                    new GZIPInputStream(fis);
             // write out the content
             IOUtil.getBytes(gis, fos);
         } finally {
@@ -324,27 +346,31 @@ public class CompressionUtil {
             IOUtil.safeClose(fis);
             IOUtil.safeClose(fos);
         }
+
         return gzip;
     }
 
     /**
-     * <p>bzip2 compresses the input file and returns a reference to the compressed file.</p>
+     * <p>bzip2 compresses the input zipFile and returns a reference to the compressed zipFile.</p>
      * @param input
      * @return
      * @throws java.io.IOException
      */
-    public static final File bzip2Compress(File input) throws IOException {
-        // make a temp file
+    public static final File bzip2Compress(
+            File input) throws IOException {
+        // make a temp zipFile
         File compressed = TempFileUtil.createTemporaryFile(".bzip2");
-        // transfer the file
+        // transfer the zipFile
         FileInputStream fis = null;
         FileOutputStream fos = null;
         CBZip2OutputStream gos = null;
         try {
             // make the streams
             fis = new FileInputStream(input);
-            fos = new FileOutputStream(compressed);
-            gos = new CBZip2OutputStream(fos);
+            fos =
+                    new FileOutputStream(compressed);
+            gos =
+                    new CBZip2OutputStream(fos);
             // write out the content
             IOUtil.getBytes(fis, gos);
         } finally {
@@ -352,28 +378,31 @@ public class CompressionUtil {
             IOUtil.safeClose(gos);
             IOUtil.safeClose(fos);
         }
-        // return the gzip'd content
+// return the gzip'd content
         return compressed;
     }
 
     /**
-     * <p>Decompresses the input file assuming that it is bzip2 compressed.</p>
+     * <p>Decompresses the input zipFile assuming that it is bzip2 compressed.</p>
      * @param input
      * @return
      * @throws java.io.IOException
      */
-    public static final File bzip2Decompress(File input) throws IOException {
-        // make a temp file
+    public static final File bzip2Decompress(
+            File input) throws IOException {
+        // make a temp zipFile
         File decompressed = TempFileUtil.createTemporaryFile();
-        // transfer the file
+        // transfer the zipFile
         FileInputStream fis = null;
         FileOutputStream fos = null;
         CBZip2InputStream gis = null;
         try {
             // make the streams
             fis = new FileInputStream(input);
-            fos = new FileOutputStream(decompressed);
-            gis = new CBZip2InputStream(fis);
+            fos =
+                    new FileOutputStream(decompressed);
+            gis =
+                    new CBZip2InputStream(fis);
             // write out the content
             IOUtil.getBytes(gis, fos);
         } finally {
@@ -381,18 +410,19 @@ public class CompressionUtil {
             IOUtil.safeClose(fis);
             IOUtil.safeClose(fos);
         }
-        // return the gzip'd content
+// return the gzip'd content
         return decompressed;
     }
 
     /**
-     * <p>Decompresses the input file assuming that it is LZMA compressed.</p>
+     * <p>Decompresses the input zipFile assuming that it is LZMA compressed.</p>
      * @param input
      * @return
      * @throws java.lang.Exception
      */
-    public static final File lzmaDecompress(File input) throws Exception {
-        // make a temp file
+    public static final File lzmaDecompress(
+            File input) throws Exception {
+        // make a temp zipFile
         File decompressed = TempFileUtil.createTemporaryFile();
         // decompress using LZMA
         LzmaAlone.main(new String[]{"d", input.getAbsolutePath(), decompressed.getAbsolutePath()});
@@ -406,7 +436,7 @@ public class CompressionUtil {
      * @throws java.lang.Exception
      */
     public static final byte[] lzmaDecompress(byte[] bytes) throws Exception {
-        // file for storing the encoded bytes
+        // zipFile for storing the encoded bytes
         File tempFile = TempFileUtil.createTemporaryFile();
         try {
             FileOutputStream fos = new FileOutputStream(tempFile);
@@ -415,21 +445,23 @@ public class CompressionUtil {
             } finally {
                 IOUtil.safeClose(fos);
             }
-            // get the bytes back in memory
+// get the bytes back in memory
             return IOUtil.getBytes(lzmaDecompress(tempFile));
         } finally {
             IOUtil.safeDelete(tempFile);
         }
+
     }
 
     /**
-     * <p>Compresses the input file using LZMA.</p>
+     * <p>Compresses the input zipFile using LZMA.</p>
      * @param input
      * @return
      * @throws java.lang.Exception
      */
-    public static final File lzmaCompress(File input) throws Exception {
-        // make a temp file
+    public static final File lzmaCompress(
+            File input) throws Exception {
+        // make a temp zipFile
         File compressed = TempFileUtil.createTemporaryFile(".lzma");
 
         // compress using LZMA

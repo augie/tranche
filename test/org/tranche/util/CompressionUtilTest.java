@@ -22,6 +22,7 @@ import org.tranche.flatfile.DataBlockUtil;
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - bryanesmith@gmail.com
  */
 public class CompressionUtilTest extends TrancheTestCase {
 
@@ -64,8 +65,59 @@ public class CompressionUtilTest extends TrancheTestCase {
         throw new TodoException();
     }
 
-    public void testZIP() throws Exception {
-        TestUtil.printTitle("CompressionUtil:testZIP()");
-        throw new TodoException();
+    public void testZipSingleFile() throws Exception {
+        File original = null, zipped = null, unzippedDir = null;
+
+        try {
+            original = TempFileUtil.createTemporaryFile();
+
+            final int size = 1024 * 1024 - 1024;
+
+            DevUtil.createTestFile(original, size);
+            
+            assertEquals("Expecting file of certain size.", size, original.length());
+            
+            zipped = CompressionUtil.zipCompress(original);
+            
+            AssertionUtil.assertBytesDifferent(IOUtil.getBytes(original), IOUtil.getBytes(zipped));
+            
+            unzippedDir = CompressionUtil.zipDecompress(zipped, "testZipSingleFile_unzip");
+            assertEquals("Expecting one file unzipped.", 1, unzippedDir.list().length);
+            
+            AssertionUtil.assertBytesSame(IOUtil.getBytes(original), IOUtil.getBytes(unzippedDir.listFiles()[0]));
+        } finally {
+            IOUtil.safeDelete(original);
+            IOUtil.safeDelete(zipped);
+            IOUtil.recursiveDeleteWithWarning(unzippedDir);
+        }
+    }
+
+    public void testZipDirectory() throws Exception {
+
+        File original = null, zipped = null, unzippedDir = null;
+
+        try {
+            
+            final int numFilesInProject = RandomUtil.getInt(9) + 1;
+            final int minFileSize = 1024;
+            final int maxFileSize = 1024 * 1024 - 1024;
+            original = DevUtil.createTestProject(numFilesInProject, minFileSize, maxFileSize);
+            
+            assertEquals("Expecting certain number of children.", numFilesInProject, original.list().length);
+            
+            zipped = CompressionUtil.zipCompress(original);
+            
+            assertNotNull(zipped);
+            assertTrue("Zipped file should exist.", zipped.exists());
+            
+            unzippedDir = CompressionUtil.zipDecompress(zipped, "testZipDirectory-unzip");
+            
+            AssertionUtil.assertSame(original, unzippedDir);
+            
+        } finally {
+            IOUtil.recursiveDeleteWithWarning(original);
+            IOUtil.safeDelete(zipped);
+            IOUtil.recursiveDeleteWithWarning(unzippedDir);
+        }
     }
 }

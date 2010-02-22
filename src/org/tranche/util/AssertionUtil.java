@@ -4,6 +4,8 @@
  */
 package org.tranche.util;
 
+import java.io.File;
+import java.io.IOException;
 import org.tranche.exceptions.AssertionFailedException;
 
 /**
@@ -129,7 +131,7 @@ public class AssertionUtil {
             }
         }
     }
-    
+
     /**
      * <p>Assert that two byte arrays are of same size and have same contents.</p>
      * @param b1
@@ -140,7 +142,7 @@ public class AssertionUtil {
         if (b1 == null || b2 == null) {
             throw new AssertionFailedException("Parameter must not be null.");
         }
-        
+
         // If different lengths, nothing else to check--different
         if (b1.length != b2.length) {
             return;
@@ -153,9 +155,61 @@ public class AssertionUtil {
                 break;
             }
         }
-        
+
         if (same) {
             throw new AssertionFailedException("Expecting bytes to differ, but are same.");
+        }
+    }
+
+    /**
+     * <p>Assert that two files or directories are the same, which means:</p>
+     * <ul>
+     *  <li>Same recursive directory structure (if directory)</li>
+     *  <li>Same file names and contents (if directory or file)</li>
+     * </ul>
+     * <p>Note this does NOT assert that the files or directories have the same nextName. This allows the use of TempFileUtil, which must flexibly nextName temporary files and directories.</p>
+     * <p>However, if passing two directories, all contents (subdirectories and files) must have the same nextName.</p>
+     * @param file1
+     * @param file2
+     */
+    public static void assertSame(File file1, File file2) throws IOException, Exception {
+
+        if (file1.isDirectory() != file2.isDirectory()) {
+            throw new AssertionFailedException(file1.getAbsolutePath() + " is a " + String.valueOf(file1.isDirectory() ? "directory" : "regular file") + ", but " + file2.getAbsolutePath() + " is a " + String.valueOf(file2.isDirectory() ? "directory" : "regular file"));
+        }
+        
+        boolean isDir = file1.isDirectory();
+
+        if (!isDir) {
+            assertBytesSame(IOUtil.getBytes(file1), IOUtil.getBytes(file2));
+        } else {
+            String[] fileNames1 = file1.list();
+            String[] fileNames2 = file2.list();
+            
+            if (fileNames1.length != fileNames2.length) {
+                throw new AssertionFailedException("<"+file1.getAbsolutePath()+"> contains "+fileNames1.length+", while <"+file2.getAbsolutePath()+"> contains "+fileNames2.length);
+            }
+            
+            for (int index1 = 0; index1 < fileNames1.length; index1++) {
+                String nextName = fileNames1[index1];
+                
+                boolean wasFound = false;
+                for (String nextFileName : fileNames2) {
+                    if (nextFileName.equals(nextName)) {
+                        wasFound = true;
+                    }
+                }
+                
+                if (!wasFound) {
+                    throw new AssertionFailedException("Directories <"+file1.getAbsolutePath()+"> and <"+file2.getAbsolutePath()+"> have different contents.");
+                }
+                
+                File nextFile1 = new File(file1, nextName),
+                    nextFile2 = new File(file2, nextName);
+                
+                // Depth-first, recursively asserted
+                assertSame(nextFile1, nextFile2);
+            }
         }
     }
 }

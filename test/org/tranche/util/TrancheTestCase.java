@@ -20,10 +20,19 @@ import junit.framework.TestCase;
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - bryanesmith@gmail.com
  */
 public class TrancheTestCase extends TestCase {
 
     private final static boolean isTesting = TestUtil.isTesting();
+    
+    public TrancheTestCase() {
+        
+    }
+    
+    public TrancheTestCase(String name) {
+        super(name);
+    }
 
     @Override()
     protected void setUp() throws Exception {

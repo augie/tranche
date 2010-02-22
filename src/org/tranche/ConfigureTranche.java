@@ -399,12 +399,13 @@ public class ConfigureTranche {
      * <p>The default maximum number of clients that can concurrently connect to a server.</p>
      */
     public static final String DEFAULT_SERVER_CLIENTS_MAX = "1000";
-    private static final Properties properties = new Properties(), defaultProperties = new Properties();
+    private static final Properties properties = new Properties(),  defaultProperties = new Properties();
     private static Map<String, String> attributesCache = null;
     private static final List<String> networkTimeServers = new LinkedList<String>();
     private static long lastAttributeCacheTimestampModulusValue = -1;
     private static final long attributesCacheTimestampModulus = 10000000;
-    private static boolean loaded = false, updated = false, defaultNetworkTimeServersLoaded = false;
+    private static boolean loaded = false,  updated = false,  defaultNetworkTimeServersLoaded = false;
+    
 
     static {
         // load the HTTPS protocol just once on startup
@@ -543,11 +544,13 @@ public class ConfigureTranche {
      * 
      */
     public synchronized static void waitForStartup() {
-        while (!loaded) {
-            try {
-                ConfigureTranche.class.wait();
-            } catch (Exception e) {
-                debugErr(e);
+        synchronized (ConfigureTranche.class) {
+            while (!loaded && !TestUtil.isTesting()) {
+                try {
+                    ConfigureTranche.class.wait();
+                } catch (Exception e) {
+                    debugErr(e);
+                }
             }
         }
     }
@@ -670,8 +673,11 @@ public class ConfigureTranche {
         } catch (Exception e) {
             debugErr(e);
         }
-        loaded = true;
-        ConfigureTranche.class.notifyAll();
+
+        synchronized (ConfigureTranche.class) {
+            loaded = true;
+            ConfigureTranche.class.notifyAll();
+        }
     }
 
     /**
