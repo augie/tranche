@@ -53,6 +53,7 @@ import org.tranche.project.ProjectFile;
 import org.tranche.project.ProjectFilePart;
 import org.tranche.remote.RemoteTrancheServer;
 import org.tranche.security.SecurityUtil;
+import org.tranche.security.WrongPassphraseException;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.time.TimeUtil;
@@ -974,12 +975,15 @@ public class GetFileTool {
                 }
                 validateSpecifiedUploader();
                 timeEstimator = new ContextualTimeEstimator(0, hash.getLength(), 0, 1);
-                pf = TempFileUtil.createTemporaryFile("pf" + System.currentTimeMillis());
+                pf = TempFileUtil.createTemporaryFile();
                 // download the file
                 if (passphrase != null) {
                     downloadFile(null, metaData, pf, new BigHash(passphrase.getBytes()).toByteArray());
                 } else {
                     downloadFile(null, metaData, pf, new byte[0]);
+                }
+                if (!pf.exists()) {
+                    throw new Exception("Could not download the project file.");
                 }
                 // read the file
                 projectFile = ProjectFile.createFromFile(pf);
@@ -1220,7 +1224,6 @@ public class GetFileTool {
             if (skipFile(fileHash, saveAs, padding)) {
                 fireSkippedFile(fileHash, metaData, part);
             } else {
-                debugOut("");
                 // fire started -- should be relative name in data set, not name of file
                 if (part == null) {
                     fireStartedFile(fileHash, metaData.getName());
@@ -1238,8 +1241,12 @@ public class GetFileTool {
                 // decode
                 decodeFileInMemory(part, metaData, bytes, saveAs, padding);
             }
+        } catch (WrongPassphraseException e) {
+            fireFailedFile(fileHash, e);
+            // delete what exists -- it may be invalid
+            IOUtil.safeDelete(saveAs);
+            throw e;
         } catch (Exception e) {
-            debugErr(e);
             fireFailedFile(fileHash, e);
             // delete what exists -- it may be invalid
             IOUtil.safeDelete(saveAs);
@@ -1303,8 +1310,15 @@ public class GetFileTool {
                 // delete the temp file
                 IOUtil.safeDelete(metaChunk.fileDecoding.tempFile);
             }
+        } catch (WrongPassphraseException e) {
+            fireFailedFile(fileHash, e);
+            // delete what exists -- it may be invalid
+            IOUtil.safeDelete(saveAs);
+            throw e;
         } catch (Exception e) {
             fireFailedFile(fileHash, e);
+            // delete what exists -- it may be invalid
+            IOUtil.safeDelete(saveAs);
         }
     }
 

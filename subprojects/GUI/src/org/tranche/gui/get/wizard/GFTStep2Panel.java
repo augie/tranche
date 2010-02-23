@@ -43,6 +43,8 @@ import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.GenericTextField;
 import org.tranche.gui.Styles;
 import org.tranche.gui.project.panel.ProjectPanel;
+import org.tranche.security.WrongPassphraseException;
+import org.tranche.util.DebugUtil;
 
 /**
  *
@@ -298,9 +300,11 @@ public class GFTStep2Panel extends GenericWizardPanel {
                     projectPanel.setProject(wizard.summary.getGetFileTool().getHash(), wizard.summary.getGetFileTool().getProjectFile(), wizard.summary.getGetFileTool().getMetaData());
                 } catch (CouldNotFindMetaDataException e) {
                     GenericOptionPane.showMessageDialog(wizard, e.getMessage(), "Data Set Not Found", JOptionPane.ERROR_MESSAGE);
+                } catch (WrongPassphraseException e) {
+                    GenericOptionPane.showMessageDialog(wizard, e.getMessage(), "Wrong Passphrase", JOptionPane.ERROR_MESSAGE);
                 } catch (Exception e) {
                     projectPanel.clear();
-                    GenericOptionPane.showMessageDialog(wizard, "Could not download the project file.", "Data Set Not Found", JOptionPane.ERROR_MESSAGE);
+                    GenericOptionPane.showMessageDialog(wizard, "Could not download the project file.\n\n" + e.getClass().getSimpleName() + ": " + e.getMessage(), "Data Set Not Found", JOptionPane.ERROR_MESSAGE);
                 } finally {
                     projectPanelProgressPanel.setVisible(false);
                 }

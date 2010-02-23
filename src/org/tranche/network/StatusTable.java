@@ -128,7 +128,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Does not clear the previous rows.</p>
      * @param rows A collection of rows
      */
-    protected void setRows(Collection<StatusTableRow> rows) {
+    protected synchronized void setRows(Collection<StatusTableRow> rows) {
         Set<String> addedHosts = new HashSet<String>();
         Map<String, Boolean> updatedHosts = new HashMap<String, Boolean>();
         Map<String, Boolean> updatedHashSpans = new HashMap<String, Boolean>();
@@ -201,7 +201,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>If setting many rows, use setRows(Collection<StatusTableRow>) instead.</p>
      * @param row A row
      */
-    protected void setRow(StatusTableRow row) {
+    protected synchronized void setRow(StatusTableRow row) {
         StatusTableRow existingRow = getRow(row.getHost());
         boolean affectsConnectivity = false;
         boolean affectsHashSpans = false;

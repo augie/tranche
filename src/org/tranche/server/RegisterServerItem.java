@@ -89,7 +89,6 @@ public class RegisterServerItem extends ServerItem {
                     }
                 }
             };
-            t.setDaemon(true);
             t.start();
         }
 

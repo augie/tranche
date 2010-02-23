@@ -230,7 +230,7 @@
                 <include name="org/tranche/*.java"/>
                 <include name="org/tranche/**/*.java"/>
             </fileset>
-            <doctitle><![CDATA[<h1>Tranche Distributed Repository</h1>]]></doctitle>
+            <doctitle><![CDATA[<h1>Tranche Distributed Repository (Build #${buildNumber})</h1>]]></doctitle>
             <bottom><![CDATA[<i>This code is free for use both commercially and non-commercially as stated in the <a href="https://trancheproject.org/license.jsp" target="_blank">project's license</a></i>]]></bottom>
         </javadoc>
     </target>
@@ -243,7 +243,7 @@
                 <include name="org/tranche/*.java"/>
                 <include name="org/tranche/**/*.java"/>
             </fileset>
-            <doctitle><![CDATA[<h1>Tranche Distributed Repository GUI</h1>]]></doctitle>
+            <doctitle><![CDATA[<h1>Tranche Distributed Repository GUI (Build #${buildNumber})</h1>]]></doctitle>
             <bottom><![CDATA[<i>This code is free for use both commercially and non-commercially as stated in the <a href="https://trancheproject.org/license.jsp" target="_blank">project's license</a></i>]]></bottom>
         </javadoc>
     </target>

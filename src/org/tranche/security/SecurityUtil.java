@@ -1046,7 +1046,7 @@ public class SecurityUtil {
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
-                throw new RuntimeException("Invalid CBC encoding at the end of the encrypted file! Please check that you used the correct passphrase.");
+                throw new WrongPassphraseException();
             }
             bos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
 
@@ -1124,8 +1124,7 @@ public class SecurityUtil {
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
-//                throw new RuntimeException("Invalid CBC encoding at the end of the encrypted file! Can't have "+paddingLength+" bytes of padding.");
-                throw new RuntimeException("Invalid CBC encoding at the end of the encrypted file! Please check that you used the correct passphrase.");
+                throw new WrongPassphraseException();
             }
             bos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
 
@@ -1406,7 +1405,7 @@ public class SecurityUtil {
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
-                throw new RuntimeException("Invalid CBC encoding at the end of the encrypted file! Please check that you used the correct passphrase.");
+                throw new WrongPassphraseException();
             }
             fos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
 
