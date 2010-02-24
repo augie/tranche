@@ -1023,7 +1023,7 @@ public class GetFileTool {
             File file = saveTo;
             if (saveTo.exists() && saveTo.isDirectory()) {
                 GetFileToolUtil.testDirectoryForWritability(saveTo);
-                file = new File(saveTo, metaData.getName());
+                file = new File(saveTo, metaData.getName().replaceAll("[\\:*?\"<>|]", "-"));
             }
             byte[] padding = new byte[0];
             if (passphrase != null) {
@@ -2785,16 +2785,16 @@ public class GetFileTool {
                                 return;
                             }
                             // did not exist on server/network
-                            if (dataBytesArray[i] == null) {
+                            if (dataBytesArray[i] == null || !validateChunk(chunks.get(i).hash, dataBytesArray[i])) {
                                 putBackChunk(chunks.get(i));
                                 continue;
                             }
                             // read
                             chunks.get(i).setBytes(dataBytesArray[i]);
-                            // fire event
-                            fireFinishedChunk(chunks.get(i).metaChunk.part.getHash(), chunks.get(i).hash, host);
                             // process
                             processData(chunks.get(i));
+                            // fire event
+                            fireFinishedChunk(chunks.get(i).metaChunk.part.getHash(), chunks.get(i).hash, host);
                         } catch (Exception e) {
                             debugErr(e);
                             putBackChunk(chunks.get(i));
@@ -2873,14 +2873,24 @@ public class GetFileTool {
                     if (!dataChunk.metaChunk.fileDecoding.failed) {
                         // done? decode
                         if (dataChunk.metaChunk.fileDecoding.dataChunksWrittenToRandomAccessFile == dataChunk.metaChunk.md.getParts().size()) {
-                            IOUtil.safeClose(dataChunk.metaChunk.fileDecoding.raf);
-                            decodeFileDiskBacked(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.metaChunk.fileDecoding.tempFile, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
-                            IOUtil.safeDelete(dataChunk.metaChunk.fileDecoding.tempFile);
+                            try {
+                                IOUtil.safeClose(dataChunk.metaChunk.fileDecoding.raf);
+                                decodeFileDiskBacked(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.metaChunk.fileDecoding.tempFile, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
+                                IOUtil.safeDelete(dataChunk.metaChunk.fileDecoding.tempFile);
+                            } catch (Exception e) {
+                                debugErr(e);
+                                fireFailedFile(dataChunk.metaChunk.part.getHash(), dataChunk.metaChunk.saveAs.getAbsolutePath(), e);
+                            }
                         }
                     }
                 }
             } else {
-                decodeFileInMemory(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.bytes, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
+                try {
+                    decodeFileInMemory(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.bytes, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
+                } catch (Exception e) {
+                    debugErr(e);
+                    fireFailedFile(dataChunk.metaChunk.part.getHash(), dataChunk.metaChunk.saveAs.getAbsolutePath(), e);
+                }
             }
         }
 
@@ -3264,12 +3274,12 @@ public class GetFileTool {
                             if (metaChunk.serversTried.isEmpty()) {
                                 fireStartingFile(metaChunk.part.getHash());
                                 // check for skip
-                                metaChunk.saveAs = new File(GetFileTool.this.saveTo.getAbsolutePath() + File.separator + metaChunk.part.getRelativeName());
+                                metaChunk.saveAs = new File(GetFileTool.this.saveTo.getAbsolutePath() + File.separator + metaChunk.part.getRelativeName().replaceAll("[\\:*?\"<>|]", "-"));
                                 if (skipFile(metaChunk.part.getHash(), metaChunk.saveAs, metaChunk.part.getPadding())) {
                                     fireSkippedFile(metaChunk.part.getHash(), metaChunk.md, metaChunk.part);
                                     continue;
                                 }
-                                fireStartedFile(metaChunk.part.getHash(), metaChunk.part.getRelativeName());
+                                fireStartedFile(metaChunk.part.getHash(), metaChunk.saveAs.getAbsolutePath());
                             }
                             if (!isBatch()) {
                                 // download the meta data
