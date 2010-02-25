@@ -251,6 +251,10 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
      */
     public void failedFile(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
+        
+        for (PropagationExceptionWrapper pew : exceptions) {
+            this.gftDiagnosticsLog.logException(pew.exception, event.getTimestamp(), "File (failed)");
+        }
     }
 
     /**
@@ -276,6 +280,8 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
     public void finishedDirectory(GetFileToolEvent event) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
 
+        this.message("Finished, success");
+        
         // Finalize logging.
         this.finish();
     }
@@ -287,6 +293,12 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
      */
     public void failedDirectory(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
+        
+        this.message("Finished, failure");
+        
+        for (PropagationExceptionWrapper pew : exceptions) {
+            this.gftDiagnosticsLog.logException(pew.exception, event.getTimestamp(), "Directory (failed)");
+        }
 
         // Finalize logging.
         this.finish();
@@ -336,7 +348,6 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
      * 
      */
     private enum ChunkType {
-
         Data, Meta
     }
 

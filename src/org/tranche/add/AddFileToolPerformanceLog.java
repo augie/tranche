@@ -257,6 +257,10 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
      */
     public void failedFile(AddFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
+        
+        for (PropagationExceptionWrapper pew : exceptions) {
+            this.aftDiagnosticsLog.logException(pew.exception, event.getTimestamp(), "File (failed)");
+        }
     }
 
     /**
@@ -276,6 +280,7 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
     public void finishedDirectory(AddFileToolEvent event) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
 
+        this.message("Finished, success.");
 
         // Finalize logging.
         this.finish();
@@ -288,6 +293,12 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
      */
     public void failedDirectory(AddFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         lazyAttachRemoteTrancheServerListener(event.getServer());
+        
+        this.message("Finished, failed.");
+        
+        for (PropagationExceptionWrapper pew : exceptions) {
+            this.aftDiagnosticsLog.logException(pew.exception, event.getTimestamp(), "Directory (failed)");
+        }
 
         // Finalize logging.
         this.finish();
