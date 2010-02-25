@@ -2035,7 +2035,6 @@ public class AddFileTool {
                 try {
                     metaDataFromNetwork = getFileTool.getMetaData();
                 } catch (Exception e) {
-                    debugErr(e);
                 }
                 if (metaDataFromNetwork == null) {
                     return;

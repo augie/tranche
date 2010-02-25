@@ -1008,12 +1008,10 @@ public class IOUtil {
         // if the file already exists, try deleting
         if (renameTo.exists() && !renameTo.delete()) {
             throw new RuntimeException("Can't delete " + renameTo + " before moving " + toRename);
-        } // else check for the parent directory
-        else {
-            File parent = renameTo.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
-            }
+        }
+        File parent = renameTo.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
         }
 
         // files that won't rename might just be on different disks. try copy/delete.
@@ -1025,9 +1023,8 @@ public class IOUtil {
                 fis = new FileInputStream(toRename);
                 IOUtil.getBytes(fis, fos);
                 //close down stream
-                fos.flush();
-                fos.close();
-                fis.close();
+                IOUtil.safeClose(fos);
+                IOUtil.safeClose(fis);
                 // delete the file
                 if (!toRename.delete()) {
                     toRename.deleteOnExit();
@@ -1035,10 +1032,10 @@ public class IOUtil {
             } catch (FileNotFoundException ex) {
                 throw new RuntimeException(ex);
             } catch (IOException ex) {
-                throw new RuntimeException("Can't copy file!");
+                throw new RuntimeException("Can't copy file.");
             } finally {
-                IOUtil.safeClose(fis);
                 IOUtil.safeClose(fos);
+                IOUtil.safeClose(fis);
             }
         }
         return true;

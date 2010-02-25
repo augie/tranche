@@ -1267,6 +1267,57 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.stop();
         }
     }
+    
+    public void testPublishPassphrase() throws Exception {
+        TestUtil.printTitle("GetFileToolTest:testPublishPassphrase()");
+
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+        try {
+            testNetwork.start();
+
+            // make a test project
+            File uploadDir = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.ONE_MB * 2);
+            // use a random passphrase
+            String passphrase = RandomUtil.getString(10);
+            BigHash hash = uploadTest(uploadDir, HOST1, passphrase).getHash();
+
+            GetFileTool gft = new GetFileTool();
+            gft.addServerToUse(HOST1);
+            gft.setUseUnspecifiedServers(false);
+            gft.setHash(hash);
+            MetaData md = gft.getMetaData().clone();
+            assertTrue("Expect project to be encrypted", md.isEncrypted());
+            assertFalse("Expect public passphrase to not be set.", md.isPublicPassphraseSet());
+
+            // publish the passphrase and resend to server
+            md.setPublicPassphrase(passphrase);
+            IOUtil.setMetaData(testNetwork.getFlatFileTrancheServer(HOST1), DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), false, hash, md.toByteArray());
+
+            // reset
+            gft.setHash(DevUtil.getRandomBigHash());
+            gft.setHash(hash);
+            MetaData md2 = gft.getMetaData();
+            assertTrue("Expect project to be encrypted", md2.isEncrypted());
+            assertTrue("Expect public passphrase to be set.", md.isPublicPassphraseSet());
+
+            // download the upload dir to the download dir
+            File downloadDir = TempFileUtil.createTemporaryDirectory();
+            gft.setSaveFile(downloadDir);
+            gft.getDirectory();
+
+            // validate
+            System.out.println("Printing uploaded directory structure.");
+            Text.printRecursiveDirectoryStructure(uploadDir);
+            System.out.println("");
+            System.out.println("Printing downloaded directory structure.");
+            Text.printRecursiveDirectoryStructure(downloadDir);
+            TestUtil.assertDirectoriesEquivalent(uploadDir, new File(downloadDir, uploadDir.getName()));
+        } finally {
+            testNetwork.stop();
+        }
+    }
 
     public void testReuse() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testReuse()");
@@ -1315,6 +1366,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // download the meta data
             GetFileTool gft = new GetFileTool();
+            gft.setValidate(true);
             gft.addServerToUse(HOST1);
             gft.setUseUnspecifiedServers(false);
             gft.setBatch(batch);
@@ -1326,7 +1378,9 @@ public class GetFileToolTest extends TrancheTestCase {
                 gft.setPassphrase(passphrase);
             }
             gft.setSaveFile(downloadDir);
-            gft.getDirectory();
+            GetFileToolReport gftr = gft.getDirectory();
+            assertFalse(gftr.isFailed());
+            assertTrue(gftr.isFinished());
 
             // validate
             System.out.println("Printing uploaded directory structure.");
@@ -1342,7 +1396,10 @@ public class GetFileToolTest extends TrancheTestCase {
             }
             gft.setHash(hash2);
             gft.setSaveFile(downloadDir2);
-            gft.getDirectory();
+            GetFileToolReport gftr2 = gft.getDirectory();
+
+            assertFalse(gftr2.isFailed());
+            assertTrue(gftr2.isFinished());
 
             // validate
             System.out.println("Printing uploaded directory structure.");
@@ -1351,57 +1408,6 @@ public class GetFileToolTest extends TrancheTestCase {
             System.out.println("Printing downloaded directory structure.");
             Text.printRecursiveDirectoryStructure(downloadDir2);
             TestUtil.assertDirectoriesEquivalent(upload2, new File(downloadDir2, upload2.getName()));
-        } finally {
-            testNetwork.stop();
-        }
-    }
-
-    public void testPublishPassphrase() throws Exception {
-        TestUtil.printTitle("GetFileToolTest:testPublishPassphrase()");
-
-        String HOST1 = "server1.com";
-        TestNetwork testNetwork = new TestNetwork();
-        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
-        try {
-            testNetwork.start();
-
-            // make a test project
-            File uploadDir = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.ONE_MB * 2);
-            // use a random passphrase
-            String passphrase = RandomUtil.getString(10);
-            BigHash hash = uploadTest(uploadDir, HOST1, passphrase).getHash();
-
-            GetFileTool gft = new GetFileTool();
-            gft.addServerToUse(HOST1);
-            gft.setUseUnspecifiedServers(false);
-            gft.setHash(hash);
-            MetaData md = gft.getMetaData().clone();
-            assertTrue("Expect project to be encrypted", md.isEncrypted());
-            assertFalse("Expect public passphrase to not be set.", md.isPublicPassphraseSet());
-
-            // publish the passphrase and resend to server
-            md.setPublicPassphrase(passphrase);
-            IOUtil.setMetaData(testNetwork.getFlatFileTrancheServer(HOST1), DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), false, hash, md.toByteArray());
-
-            // reset
-            gft.setHash(DevUtil.getRandomBigHash());
-            gft.setHash(hash);
-            MetaData md2 = gft.getMetaData();
-            assertTrue("Expect project to be encrypted", md2.isEncrypted());
-            assertTrue("Expect public passphrase to be set.", md.isPublicPassphraseSet());
-
-            // download the upload dir to the download dir
-            File downloadDir = TempFileUtil.createTemporaryDirectory();
-            gft.setSaveFile(downloadDir);
-            gft.getDirectory();
-
-            // validate
-            System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(uploadDir);
-            System.out.println("");
-            System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir);
-            TestUtil.assertDirectoriesEquivalent(uploadDir, new File(downloadDir, uploadDir.getName()));
         } finally {
             testNetwork.stop();
         }

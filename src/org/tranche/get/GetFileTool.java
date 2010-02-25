@@ -1304,11 +1304,11 @@ public class GetFileTool {
                     }
                 }
                 // close the RAF
-                IOUtil.safeClose(metaChunk.fileDecoding.raf);
+                IOUtil.safeClose(metaChunk.getFileDecoding().raf);
                 // decode
-                decodeFileDiskBacked(part, metaData, metaChunk.fileDecoding.tempFile, saveAs, padding);
+                decodeFileDiskBacked(part, metaData, metaChunk.getFileDecoding().tempFile, saveAs, padding);
                 // delete the temp file
-                IOUtil.safeDelete(metaChunk.fileDecoding.tempFile);
+                IOUtil.safeDelete(metaChunk.getFileDecoding().tempFile);
             }
         } catch (WrongPassphraseException e) {
             fireFailedFile(fileHash, e);
@@ -1431,8 +1431,10 @@ public class GetFileTool {
                 IOUtil.safeClose(raf);
             }
         }
+        debugOut("Validating " + saveAs.getAbsolutePath());
         // validate
         validateFile(fileHash, metaData, tempFile, padding);
+        debugOut("Copying to " + saveAs.getAbsolutePath());
         // finally, rename the decoded file to the expected one
         IOUtil.renameFallbackCopy(tempFile, saveAs);
         // set last modified timestamp
@@ -1797,15 +1799,6 @@ public class GetFileTool {
     }
 
     /**
-     * <p>Notifies listeners that a file could not be downloaded.</p>
-     * @param hash The hash of the file.
-     * @param exceptions
-     */
-    private void fireFailedFile(BigHash hash, Collection<PropagationExceptionWrapper> exceptions) {
-        fireFailure(new GetFileToolEvent(GetFileToolEvent.ACTION_FAILED, GetFileToolEvent.TYPE_FILE, hash), exceptions);
-    }
-
-    /**
      * 
      * @param hash
      * @param fileName
@@ -1814,16 +1807,6 @@ public class GetFileTool {
     private void fireFailedFile(BigHash hash, String fileName, Exception exception) {
         Set<PropagationExceptionWrapper> exceptions = new HashSet<PropagationExceptionWrapper>();
         exceptions.add(new PropagationExceptionWrapper(exception, hash));
-        fireFailure(new GetFileToolEvent(GetFileToolEvent.ACTION_FAILED, GetFileToolEvent.TYPE_FILE, fileName, hash), exceptions);
-    }
-
-    /**
-     * <p>Notifies listeners that a file could not be downloaded.</p>
-     * @param hash The hash of the file.
-     * @param fileName The relative name of the file in the data set.
-     * @param exceptions
-     */
-    private void fireFailedFile(BigHash hash, String fileName, Collection<PropagationExceptionWrapper> exceptions) {
         fireFailure(new GetFileToolEvent(GetFileToolEvent.ACTION_FAILED, GetFileToolEvent.TYPE_FILE, fileName, hash), exceptions);
     }
 
@@ -2308,7 +2291,6 @@ public class GetFileTool {
          * 
          */
         public void fail() {
-            debugOut("File decoding signalled to fail.");
             failed = true;
             IOUtil.safeClose(raf);
             IOUtil.safeDelete(tempFile);
@@ -2330,7 +2312,7 @@ public class GetFileTool {
         public void processDataChunk(DataChunk dataChunk) throws Exception {
             // failed to download part of the file, don't bother going on
             if (!failed) {
-                debugOut("Processing data chunk.");
+                debugOut("Writing to file: " + dataChunk.hash);
                 // write to the random access file?
                 raf.seek(dataChunk.offset);
                 raf.write(dataChunk.bytes);
@@ -2402,8 +2384,9 @@ public class GetFileTool {
 
         private ProjectFilePart part;
         private MetaData md;
+        private boolean isSingleFile = false;
         private final Set<String> serversTried = new HashSet<String>();
-        public final FileDecoding fileDecoding;
+        private FileDecoding fileDecoding = null;
         private File saveAs;
 
         /**
@@ -2413,23 +2396,6 @@ public class GetFileTool {
          */
         public MetaChunk(ProjectFilePart part) throws Exception {
             this.part = part;
-            // only set up a file decoding object if the file is larger than 1MB
-            if (part.getHash().getLength() > DataBlockUtil.ONE_MB) {
-                // make a temp file
-                File tempFile = createTemporaryFile(part.getRelativeName().replaceAll("[\\:*?\"<>|]", "-"), false);
-                // open the temp file for writing
-                RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
-                // set the size
-                try {
-                    raf.setLength(part.getHash().getLength());
-                } catch (IOException e) {
-                    throw new NotEnoughDiskSpaceException();
-                }
-                // creating the file decoding object
-                fileDecoding = new FileDecoding(tempFile, raf);
-            } else {
-                fileDecoding = null;
-            }
         }
 
         /**
@@ -2450,18 +2416,54 @@ public class GetFileTool {
          */
         public MetaChunk(MetaData md, boolean singleFile) throws Exception {
             this.md = md;
-            // make a temp file
-            File tempFile = createTemporaryFile(md.getName().replaceAll("[\\:*?\"<>|]", "-"), singleFile);
-            // open the temp file for writing
-            RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
-            // set the size
-            try {
-                raf.setLength(md.getHash().getLength());
-            } catch (IOException e) {
-                throw new NotEnoughDiskSpaceException();
+            this.isSingleFile = singleFile;
+        }
+
+        /**
+         * 
+         * @return
+         */
+        public boolean isFileDecodingSet() {
+            return fileDecoding != null;
+        }
+
+        /**
+         * 
+         * @return
+         * @throws Exception
+         */
+        public synchronized FileDecoding getFileDecoding() throws Exception {
+            if (fileDecoding == null) {
+                // only set up a file decoding object if the file is larger than 1MB
+                if (part != null && part.getHash().getLength() > DataBlockUtil.ONE_MB) {
+                    // make a temp file
+                    File tempFile = createTemporaryFile(part.getRelativeName().replaceAll("[\\:*?\"<>|]", "-"), false);
+                    // open the temp file for writing
+                    RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
+                    // set the size
+                    try {
+                        raf.setLength(part.getHash().getLength());
+                    } catch (IOException e) {
+                        throw new NotEnoughDiskSpaceException();
+                    }
+                    // creating the file decoding object
+                    fileDecoding = new FileDecoding(tempFile, raf);
+                } else if (md != null) {
+                    // make a temp file
+                    File tempFile = createTemporaryFile(md.getName().replaceAll("[\\:*?\"<>|]", "-"), isSingleFile);
+                    // open the temp file for writing
+                    RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
+                    // set the size
+                    try {
+                        raf.setLength(md.getHash().getLength());
+                    } catch (IOException e) {
+                        throw new NotEnoughDiskSpaceException();
+                    }
+                    // creating the file decoding object
+                    fileDecoding = new FileDecoding(tempFile, raf);
+                }
             }
-            // creating the file decoding object
-            fileDecoding = new FileDecoding(tempFile, raf);
+            return fileDecoding;
         }
 
         /**
@@ -2575,8 +2577,8 @@ public class GetFileTool {
                             continue;
                         }
                         // write to the file
-                        synchronized (dataChunk.metaChunk.fileDecoding) {
-                            dataChunk.metaChunk.fileDecoding.processDataChunk(dataChunk);
+                        synchronized (dataChunk.metaChunk.getFileDecoding()) {
+                            dataChunk.metaChunk.getFileDecoding().processDataChunk(dataChunk);
                         }
                     } catch (Exception e) {
                         debugErr(e);
@@ -2644,11 +2646,13 @@ public class GetFileTool {
         /**
          *
          */
-        public synchronized void waitForFinish() {
+        public void waitForFinish() {
             stopWhenFinished = true;
             while (!started || !finished) {
                 try {
-                    wait();
+                    synchronized (DirectoryDataDownloadingThread.this) {
+                        wait();
+                    }
                 } catch (Exception e) {
                     debugErr(e);
                 }
@@ -2670,13 +2674,18 @@ public class GetFileTool {
          * @param e
          */
         private void fireFailedChunk(DataChunk dataChunk, Exception e) {
+            debugErr(e);
             if (dataChunk == null) {
                 debugOut("Data chunk is null?");
             } else {
                 GetFileTool.this.fireFailedChunk(dataChunk.metaChunk.part.getHash(), dataChunk.hash, e);
                 // fail the file
-                if (dataChunk.metaChunk.fileDecoding != null) {
-                    dataChunk.metaChunk.fileDecoding.fail();
+                try {
+                    if (dataChunk.metaChunk.isFileDecodingSet()) {
+                        dataChunk.metaChunk.getFileDecoding().fail();
+                    }
+                } catch (Exception ee) {
+                    debugErr(ee);
                 }
                 fireFailedFile(dataChunk.metaChunk.part.getHash(), new Exception("Could not find part of the file."));
             }
@@ -2867,20 +2876,23 @@ public class GetFileTool {
             debugOut("Processing data chunk " + dataChunk.hash);
             // writing to a random access file?
             if (dataChunk.metaChunk.part.getHash().getLength() > DataBlockUtil.ONE_MB) {
-                synchronized (dataChunk.metaChunk.fileDecoding) {
-                    dataChunk.metaChunk.fileDecoding.processDataChunk(dataChunk);
+                debugOut("Waiting for synchronization on file decoding while processing " + dataChunk.hash);
+                synchronized (dataChunk.metaChunk.getFileDecoding()) {
+                    dataChunk.metaChunk.getFileDecoding().processDataChunk(dataChunk);
                     // not failed
-                    if (!dataChunk.metaChunk.fileDecoding.failed) {
+                    if (!dataChunk.metaChunk.getFileDecoding().failed) {
                         // done? decode
-                        if (dataChunk.metaChunk.fileDecoding.dataChunksWrittenToRandomAccessFile == dataChunk.metaChunk.md.getParts().size()) {
+                        if (dataChunk.metaChunk.getFileDecoding().dataChunksWrittenToRandomAccessFile == dataChunk.metaChunk.md.getParts().size()) {
                             try {
-                                IOUtil.safeClose(dataChunk.metaChunk.fileDecoding.raf);
-                                decodeFileDiskBacked(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.metaChunk.fileDecoding.tempFile, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
-                                IOUtil.safeDelete(dataChunk.metaChunk.fileDecoding.tempFile);
+                                IOUtil.safeClose(dataChunk.metaChunk.getFileDecoding().raf);
+                                decodeFileDiskBacked(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.metaChunk.getFileDecoding().tempFile, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
+                                IOUtil.safeDelete(dataChunk.metaChunk.getFileDecoding().tempFile);
                             } catch (Exception e) {
                                 debugErr(e);
                                 fireFailedFile(dataChunk.metaChunk.part.getHash(), dataChunk.metaChunk.saveAs.getAbsolutePath(), e);
                             }
+                        } else {
+                            debugOut("File not ready to be decoded after processing data chunk " + dataChunk.hash + " (" + dataChunk.metaChunk.getFileDecoding().dataChunksWrittenToRandomAccessFile + " / " + dataChunk.metaChunk.md.getParts().size() + ")");
                         }
                     }
                 }
@@ -2933,7 +2945,7 @@ public class GetFileTool {
                     }
 
                     // if this file failed to download
-                    if (dataChunk.metaChunk.fileDecoding != null && dataChunk.metaChunk.fileDecoding.isFailed()) {
+                    if (dataChunk.metaChunk.isFileDecodingSet() && dataChunk.metaChunk.getFileDecoding().isFailed()) {
                         // do not bother to download this chunk
                         continue;
                     }
@@ -3019,10 +3031,12 @@ public class GetFileTool {
          *
          * @return
          */
-        public synchronized void waitForFinish() {
+        public void waitForFinish() {
             while (!started || !finished) {
                 try {
-                    wait();
+                    synchronized(DirectoryMetaDataDownloadingThread.this) {
+                        wait();
+                    }
                 } catch (Exception e) {
                     debugErr(e);
                 }
@@ -3075,14 +3089,19 @@ public class GetFileTool {
          * @param e
          */
         private void fireFailedChunk(MetaChunk chunk, Exception e) {
+            debugErr(e);
             if (chunk == null) {
                 debugOut("Meta chunk is null?");
             } else {
                 GetFileTool.this.fireFailedMetaData(chunk.part.getHash(), e);
                 fireFailedFile(chunk.part.getHash(), new Exception("Could not find the meta data of the file."));
                 // fail the file
-                if (chunk.fileDecoding != null) {
-                    chunk.fileDecoding.fail();
+                try {
+                    if (chunk.isFileDecodingSet()) {
+                        chunk.getFileDecoding().fail();
+                    }
+                } catch (Exception ee) {
+                    debugErr(ee);
                 }
             }
             if (!GetFileTool.this.isContinueOnFailure()) {

@@ -437,7 +437,7 @@ public final class BigHash implements Comparable<BigHash> {
     public final String toString() {
         return toBase64String();
     }
-    
+
     /**
      * Return a Base64 encoded representation of the BigHash as a string.
      * @return
@@ -445,7 +445,7 @@ public final class BigHash implements Comparable<BigHash> {
     public final String toBase64String() {
         return Base64.encodeBytes(bytes, offset, HASH_LENGTH, Base64.DONT_BREAK_LINES);
     }
-    
+
     /**
      * Return a Base16 encoded representation of the BigHash as a string.
      * @return
@@ -756,7 +756,6 @@ public final class BigHash implements Comparable<BigHash> {
      */
     private static final HashMap<String, String> hashRedirects = new HashMap();
 
-
     static {
         hashRedirects.put("a71802e118162da0fd9ca55a6de8c388", "AWXqKEC1LvBfHARUYaPnVjZLTzKqzA6cVMOb8AMY2BV/Vy+FXMz9hFaYu5vYzcQrhqoGlxLkvkg4tVikTePo84Pr8E4AAAAAAAWROQ==");
         hashRedirects.put("741378e339eaf3d99b190cc13069f178", "CdYB8G4DZ5iGnd5egGe/YA/QW89VPNKMcm3bc1gLZ60xab1ehEYuDSkm5bQ+bA8dhvT7x2UY7zH6VJaJPHjLkUGaru4AAAAAAAVmTQ==");
@@ -772,10 +771,10 @@ public final class BigHash implements Comparable<BigHash> {
         hashRedirects.put("pimW6PSkwbsDAeIhC5rl5ycX2hqksjqI+7CNMXDNgVaWtMBx9r7hqkq6ifWSPZkszBao3Yg5NcU/5dH8qrhoo1JPicAAAAAAAJ4PaQ==", "P3d2NELmQoSua7TiJHDf96FSwYSrqcxv3t5Ul6M+y8mcnly0akuiALzjtlSgESnITvCzL9vZ1H2u3qR6mOdPBsmU4lwAAAAAAJ4P8Q==");
         hashRedirects.put("wj1xQ7zQcSXO6e06gPxPQyJGBB0xI1eATfNFsxFRwk40F+p4U8TnQXWlqSKXIbFdqe5Nfsv7DrP4slJdgSSe82nt8gYAAAAAAKoakg==", "+sm+alrjwSnZfc3njj+5eVX61EAADKMctQm+I/LlQ1NqnJ6+ndrGGjC18nZdSdmpi/gUGSqI5I9gAeAEFuHPz6/ADY4AAAAAAKobGg==");
         hashRedirects.put("6FqkyAzUBo2lm2aXR1rgO5CP9ISwAnugdm5Tmoc09wDC61kCMn1Q/Rraz0P0PuuIGjHuhFyF7vPVEJ6Nhd4IfVQFkRQAAAAAAZQHFQ==", "u9c3+UEY+XwjDuEgsiL9VnSxQbpQaTduB4OYS2J9U/njxTLQeKW5VwZXaIh+NIuIXBlivmEcNRi2k1MA9V6CZzGBBJcAAAAAAZQHnQ==");
-    
+
         // Top-down Aflavus. Reuploaded on 01/27/2010, Bryan
         hashRedirects.put("PfBBXOHKrcjh9hm6pygUhqOIXvohLKq4dS8A/c5U3Qaj5HfAhG+M9YjN3hZVIJuNmKlwfkFgXKsV4sNEYvJjQ8cLP+4AAAAAAAAD+Q==", "1N/JJSgBp/o4loXOhaTRdx3KD+DMGIxLoQjzaVqfu3wBOfh+lbb2lO5PbO8+7rSpXRdbY+Y66lIo9XUaM4sBYXxZZ9oAAAAAAAACyg==");
-    
+
         // CPTAC study 3
         hashRedirects.put("awK+SLwnGYqiJODu5nIO0xA1RzRRRI8K6buVjR8ZuamY344hLSjojGlM+kf/fAUSVOzJBiSt/kwJjJY4MORM0MpeEL8AAAAAAAACjg==", "R2XTcq0/SmwpnD4ZrHE14RiRHvmYN6RmYTL1BlEtNrRrNH6WQVulz4DEUQ8nYqThTkhqMYv6fkqSAcE0DDuPaHYrjkgAAAAAAAAC9g==");
     }
@@ -791,7 +790,6 @@ public final class BigHash implements Comparable<BigHash> {
     // Again, the table below is not needed for new uploads. Only files that are
     // more than 2GB in size and that were uploaded prior to 5/1/2008
     private static final HashMap<BigHash, Long> rolloverLengthFixes = new HashMap();
-
 
     static {
         rolloverLengthFixes.put(BigHash.createHashFromString("d21awe+G3mopUFp/Slm6aivjpYIM7cipDSHpeDWEUHSrdHVTYDfEs8Ma540qiTvVnCPPIVk8Syc56e7UtOJR9sm8sjoAAAAAER43Ww=="), Long.parseLong("4582160219"));
