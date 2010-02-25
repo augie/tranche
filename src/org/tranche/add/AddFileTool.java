@@ -107,6 +107,7 @@ public class AddFileTool {
     public static boolean DEFAULT_SHOW_SUMMARY = false;
     public static boolean DEFAULT_SHOW_META_DATA_IF_ENCRYPTED = false;
     public static boolean DEFAULT_EMAIL_ON_FAILURE = false;
+    public static boolean DEFAULT_USE_PERFORMANCE_LOG = false;
     /**
      * Startup runtime parameters
      */
@@ -124,17 +125,17 @@ public class AddFileTool {
      * User parameters
      */
     private File file = START_VALUE_FILE;
-    private boolean compress = DEFAULT_COMPRESS, dataOnly = DEFAULT_DATA_ONLY, explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD, showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, emailOnFailure = DEFAULT_EMAIL_ON_FAILURE;
+    private boolean compress = DEFAULT_COMPRESS,  dataOnly = DEFAULT_DATA_ONLY,  explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD,  showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS,  emailOnFailure = DEFAULT_EMAIL_ON_FAILURE;
     private License license;
     private X509Certificate userCertificate;
     private PrivateKey userPrivateKey;
-    private String title = START_VALUE_TITLE, description = START_VALUE_DESCRIPTION, passphrase;
+    private String title = START_VALUE_TITLE,  description = START_VALUE_DESCRIPTION,  passphrase;
     private final List<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
-    private final Set<String> emailConfirmationSet = new HashSet<String>(), serverHostUseSet = new HashSet<String>(), serverHostStickySet = new HashSet<String>();
+    private final Set<String> emailConfirmationSet = new HashSet<String>(),  serverHostUseSet = new HashSet<String>(),  serverHostStickySet = new HashSet<String>();
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -146,7 +147,7 @@ public class AddFileTool {
      */
     private boolean projectFileAddedToStack = false;
     private ProjectFile projectFile = START_VALUE_PROJECT_FILE;
-    private int threadCount = DEFAULT_THREADS, fileCount = START_VALUE_FILE_COUNT;
+    private int threadCount = DEFAULT_THREADS,  fileCount = START_VALUE_FILE_COUNT;
     private long size = START_VALUE_SIZE;
     byte[] padding = START_VALUE_PADDING;
     private boolean locked = false;
@@ -1485,107 +1486,111 @@ public class AddFileTool {
      * <p>Print out command-line usage.</p>
      */
     private static void printUsage() {
-        System.out.println();
-        System.out.println("USAGE");
-        System.out.println("    [FLAGS / PARAMETERS] <FILE/DIRECTORY TO UPLOAD>");
-        System.out.println();
-        System.out.println("DESCRIPTION");
-        System.out.println("    Upload the file or directory at <FILE/DIRECTORY TO UPLOAD>.");
-        System.out.println();
-        System.out.println("MEMORY ALLOCATION");
-        System.out.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
-        System.out.println();
-        System.out.println("USER FILE AND SECURITY");
-        System.out.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
-        System.out.println();
-        System.out.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
-        System.out.println();
-        System.out.println("LICENSE AGGREEMENT");
-        System.out.println("    A license agreement can be uploaded with your files. Uploading without a license puts the files into the public domain. Right now, the only built-in license is the Creative Commons Zero waiver (CC0). For more information, use the --describecczero parameter.");
-        System.out.println();
-        System.out.println("    You can provide a custom license. This can be as simple as providing contact information, or as complete as a legal license provided by a lawyer, institution or third party.");
-        System.out.println();
-        System.out.println("PRINT AND EXIT FLAGS");
-        System.out.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
-        System.out.println();
-        System.out.println("    -C, --describecczero        Print the Creative Commons Zero (CC0) waiver and exit.");
-        System.out.println("    -h, --help                  Print usage and exit.");
-        System.out.println("    -V, --version               Print version number and exit.");
-        System.out.println();
-        System.out.println("REQUIRED PARAMETERS");
-        System.out.println("  LOGIN: PLEASE SELECT ONE OF THE FOLLOWING OPTIONS:");
-        System.out.println();
-        System.out.println("   OPTION 1: USER ZIP FILE");
-        System.out.println("    -z,  --userzipfile          Values: any two strings.  The location of your user zip file and the password (e.g., \"-z /path/to/Augie.zip.encrypted notmypassword\").");
-        System.out.println("   OPTION 2: HTTP LOGIN");
-        System.out.println("    -L,  --login                Values: any two strings.  The username and password for your log in (e.g., \"-L Augie notmypassword\").");
-        System.out.println();
-        System.out.println("RECOMMENDED PARAMETERS");
-        System.out.println("    These parameters make your files more useful by providing information for users who are browsing.");
-        System.out.println();
-        System.out.println("    -d, --description           Values: any string.       Brief description of upload.");
-        System.out.println("    -D, --descriptionfile       Values: any string.       Brief description of upload (in a plain-text file, specify path to file).");
-        System.out.println("    -t, --title                 Values: any string.       Brief title.");
-        System.out.println("    -T, --titlefile             Values: any string.       Brief title (in a plain-text file, specify path to file).");
-        System.out.println();
-        System.out.println("OPTIONAL OUTOUT & RUNTIME PARAMETERS");
-        System.out.println("    By default, only the hash for the upload is printed to standard output, and errors printed to standard err. These options modify this behavior.");
-        System.out.println();
-        System.out.println("    -a, --allhashes             Values: none.             Print out hashes for each file to standard out. Will be printed as /path/to/file\tfile_hash, with each file output on a separate line. Easily parsed: for each line, split on whitespace and verify two columns and that second is a hash. More on this feature in section HASHES OUTPUT.");
-        System.out.println("    -E, --email                 Values: email address.    Send a confirmation email when upload is finished. For more than one email, use multiple separate flags, e.g., -E jane@domain.org -E john@domain.org");
-        System.out.println("    -g, --debug                 Values: none.             Prints out useful debugging information.");
-        System.out.println("    -S, --showsummary           Values: none.             Prints out a summary of time and speed to standard error upon completion of a project upload.");
-        System.out.println("    -v, --verbose               Values: none.             Print out progress information for all files. Intended for human agents, and not automated tool. Will produce a lot of standard output, not easily parsed.");
-        System.out.println();
-        System.out.println("OPTIONAL PARAMETERS");
-        System.out.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
-        System.out.println();
-        System.out.println("    -A, --annotation            Values: any two strings.  Adds an annotation to the meta data. (e.g., '-A \"My Name\" Augie').");
-        System.out.println("    -c, --agreecczero           Values: none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
-        System.out.println("    -e, --passphrase            Values: any string.       Used to encrypt the upload. Data will only be available to users with this password.");
-        System.out.println("    -f, --useunspecified        Values: true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
-        System.out.println("    -I, --sticky                Values: any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
-        System.out.println("    -l, --customlicense         Values: any string.       Provide custom custom license information.");
-        System.out.println("    -m, --tempdir               Values: any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
-        System.out.println("    -M, --customlicensefile     Values: any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
-        System.out.println("    -N, --threads               Values: number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
-        System.out.println("    -O, --compress              Values: true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
-        System.out.println("    -R, --server                Values: any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
-        System.out.println("    -w, --showencinfo           Values: true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
-        System.out.println("    -x, --explode               Values: true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
-        System.out.println("    -y, --dataonly              Values: true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
-        System.out.println();
-        System.out.println("HASHES OUTPUT");
-        System.out.println("    The flag \"--allhashes\" or \"-a\" will print out all file hashes to standard output (stdout). Each uploaded file will result in a single line printed in the following format:");
-        System.out.println();
-        System.out.println("        /path/to/file\tfiles_hash");
-        System.out.println();
-        System.out.println("    Should you be uploading a directory, the final hash (which is used to download the entire upload) is also printed to standard output as the very last line of output. To help with parsing, the following line will appear after all file hash entries and before the final hash:");
-        System.out.println();
-        System.out.println("        --- Upload Completed ---");
-        System.out.println();
-        System.out.println("    If the \"all hashes\" feature is enabled, the output will have the following form:");
-        System.out.println();
-        System.out.println("        /path/to/file[1]\tfile[1]_hash");
-        System.out.println("        /path/to/file[2]\tfile[2]_hash");
-        System.out.println("        ...");
-        System.out.println("        /path/to/file[N-1]\tfile[N-1]_hash");
-        System.out.println("        /path/to/file[N]\tfile[N]_hash");
-        System.out.println("        --- Upload Completed ---");
-        System.out.println("        hash");
-        System.out.println();
-        System.out.println("    If the \"all hashes\" feature is disabled, the only output will be the upload hash on a single line.");
-        System.out.println();
-        System.out.println("RETURN CODES");
-        System.out.println("    0: Program exited normally (e.g., upload succeeded, help displayed, etc.)");
-        System.out.println("    1: Unknown error.");
-        System.out.println("    2: Missing required argument(s).");
-        System.out.println("    3: Problem with argument(s).");
-        System.out.println("    4: File to upload not found.");
-        System.out.println("    5: Connection issues.");
-        System.out.println("    6: Could not open user file.");
-        System.out.println("    7: User file expired.");
-        System.out.println("    8: User login failed.");
+        System.err.println();
+        System.err.println("USAGE");
+        System.err.println("    [FLAGS / PARAMETERS] <FILE/DIRECTORY TO UPLOAD>");
+        System.err.println();
+        System.err.println("DESCRIPTION");
+        System.err.println("    Upload the file or directory at <FILE/DIRECTORY TO UPLOAD>.");
+        System.err.println();
+        System.err.println("MEMORY ALLOCATION");
+        System.err.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
+        System.err.println();
+        System.err.println("USER FILE AND SECURITY");
+        System.err.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
+        System.err.println();
+        System.err.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
+        System.err.println();
+        System.err.println("LICENSE AGGREEMENT");
+        System.err.println("    A license agreement can be uploaded with your files. Uploading without a license puts the files into the public domain. Right now, the only built-in license is the Creative Commons Zero waiver (CC0). For more information, use the --describecczero parameter.");
+        System.err.println();
+        System.err.println("    You can provide a custom license. This can be as simple as providing contact information, or as complete as a legal license provided by a lawyer, institution or third party.");
+        System.err.println();
+        System.err.println("PRINT AND EXIT FLAGS");
+        System.err.println("    Use one of these to print some information and exit. Usage: java -jar <JAR> [PRINT AND EXIT FLAG]");
+        System.err.println();
+        System.err.println("    -C, --describecczero        Print the Creative Commons Zero (CC0) waiver and exit.");
+        System.err.println("    -h, --help                  Print usage and exit.");
+        System.err.println("    -V, --version               Print version number and exit.");
+        System.err.println();
+        System.err.println("REQUIRED PARAMETERS");
+        System.err.println("  LOGIN: PLEASE SELECT ONE OF THE FOLLOWING OPTIONS:");
+        System.err.println();
+        System.err.println("   OPTION 1: USER ZIP FILE");
+        System.err.println("    -z,  --userzipfile          Values: any two strings.  The location of your user zip file and the password (e.g., \"-z /path/to/Augie.zip.encrypted notmypassword\").");
+        System.err.println("   OPTION 2: HTTP LOGIN");
+        System.err.println("    -L,  --login                Values: any two strings.  The username and password for your log in (e.g., \"-L Augie notmypassword\").");
+        System.err.println();
+        System.err.println("RECOMMENDED PARAMETERS");
+        System.err.println("    These parameters make your files more useful by providing information for users who are browsing.");
+        System.err.println();
+        System.err.println("    -d, --description           Values: any string.       Brief description of upload.");
+        System.err.println("    -D, --descriptionfile       Values: any string.       Brief description of upload (in a plain-text file, specify path to file).");
+        System.err.println("    -t, --title                 Values: any string.       Brief title.");
+        System.err.println("    -T, --titlefile             Values: any string.       Brief title (in a plain-text file, specify path to file).");
+        System.err.println();
+        System.err.println("OPTIONAL OUTOUT & RUNTIME PARAMETERS");
+        System.err.println("    By default, only the hash for the upload is printed to standard output, and errors printed to standard err. These options modify this behavior.");
+        System.err.println();
+        System.err.println("    -a, --allhashes             Values: none.             Print out hashes for each file to standard out. Will be printed as /path/to/file\tfile_hash, with each file output on a separate line. Easily parsed: for each line, split on whitespace and verify two columns and that second is a hash. More on this feature in section HASHES OUTPUT.");
+        System.err.println("    -E, --email                 Values: email address.    Send a confirmation email when upload is finished. For more than one email, use multiple separate flags, e.g., -E jane@domain.org -E john@domain.org");
+        System.err.println("    -g, --debug                 Values: none.             Prints out useful debugging information.");
+        System.err.println("    -S, --showsummary           Values: none.             Prints out a summary of time and speed to standard error upon completion of a project upload.");
+        System.err.println("    -v, --verbose               Values: none.             Print out progress information for all files. Intended for human agents, and not automated tool. Will produce a lot of standard output, not easily parsed.");
+        System.err.println();
+        System.err.println("OPTIONAL PARAMETERS");
+        System.err.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
+        System.err.println();
+        System.err.println("    -A, --annotation            Values: any two strings.  Adds an annotation to the meta data. (e.g., '-A \"My Name\" Augie').");
+        System.err.println("    -c, --agreecczero           Values: none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
+        System.err.println("    -e, --passphrase            Values: any string.       Used to encrypt the upload. Data will only be available to users with this password.");
+        System.err.println("    -f, --useunspecified        Values: true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
+        System.err.println("    -I, --sticky                Values: any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
+        System.err.println("    -l, --customlicense         Values: any string.       Provide custom custom license information.");
+        System.err.println("    -m, --tempdir               Values: any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
+        System.err.println("    -M, --customlicensefile     Values: any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
+        System.err.println("    -N, --threads               Values: number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
+        System.err.println("    -O, --compress              Values: true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
+        System.err.println("    -R, --server                Values: any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
+        System.err.println("    -w, --showencinfo           Values: true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
+        System.err.println("    -x, --explode               Values: true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
+        System.err.println("    -y, --dataonly              Values: true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
+        System.err.println();
+        System.err.println("TROUBLESHOOTING PARAMETERS");
+        System.err.println("    -F, --performance           Value: true/false.        Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
+        System.err.println();
+        System.err.println("HASHES OUTPUT");
+        System.err.println("    The flag \"--allhashes\" or \"-a\" will print out all file hashes to standard output (stdout). Each uploaded file will result in a single line printed in the following format:");
+        System.err.println();
+        System.err.println("        /path/to/file\tfiles_hash");
+        System.err.println();
+        System.err.println("    Should you be uploading a directory, the final hash (which is used to download the entire upload) is also printed to standard output as the very last line of output. To help with parsing, the following line will appear after all file hash entries and before the final hash:");
+        System.err.println();
+        System.err.println("        --- Upload Completed ---");
+        System.err.println();
+        System.err.println("    If the \"all hashes\" feature is enabled, the output will have the following form:");
+        System.err.println();
+        System.err.println("        /path/to/file[1]\tfile[1]_hash");
+        System.err.println("        /path/to/file[2]\tfile[2]_hash");
+        System.err.println("        ...");
+        System.err.println("        /path/to/file[N-1]\tfile[N-1]_hash");
+        System.err.println("        /path/to/file[N]\tfile[N]_hash");
+        System.err.println("        --- Upload Completed ---");
+        System.err.println("        hash");
+        System.err.println();
+        System.err.println("    If the \"all hashes\" feature is disabled, the only output will be the upload hash on a single line.");
+        System.err.println();
+        System.err.println("RETURN CODES");
+        System.err.println("    0: Program exited normally (e.g., upload succeeded, help displayed, etc.)");
+        System.err.println("    1: Unknown error.");
+        System.err.println("    2: Missing required argument(s).");
+        System.err.println("    3: Problem with argument(s).");
+        System.err.println("    4: File to upload not found.");
+        System.err.println("    5: Connection issues.");
+        System.err.println("    6: Could not open user file.");
+        System.err.println("    7: User file expired.");
+        System.err.println("    8: User login failed.");
+        System.err.println();
     }
 
     /**
@@ -1651,9 +1656,12 @@ public class AddFileTool {
 
             AddFileTool aft = new AddFileTool();
             boolean showSummary = DEFAULT_SHOW_SUMMARY;
+            boolean isPerformanceLogging = DEFAULT_USE_PERFORMANCE_LOG;
             try {
                 for (int i = 1; i < args.length - 1; i += 2) {
+                    
                     String arg = args[i];
+                    
                     if (arg.equals("-g") || arg.equals("--debug")) {
                         i--;
                     } else if (arg.equals("-S") || arg.equals("--showsummary")) {
@@ -1702,12 +1710,15 @@ public class AddFileTool {
                         System.err.println("WARNING: The use of -P, --password has been deprecated. Use -L, --login instead.");
                     } else if (arg.equals("-L") || arg.equals("--login")) {
                         try {
-                            UserZipFile user = UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]);
+                            String name = args[i + 1];
+                            String password = args[i + 2];
+                            UserZipFile user = UserZipFileUtil.getUserZipFile(name, password);
                             i++;
                             aft.setUserCertificate(user.getCertificate());
                             aft.setUserPrivateKey(user.getPrivateKey());
                         } catch (Exception e) {
-                            System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                            System.err.println("Check login information, "+e.getClass().getSimpleName() + ": " + e.getMessage());
+                            e.printStackTrace(System.err);
                             LogUtil.logError(e);
                             if (!TestUtil.isTesting()) {
                                 System.exit(8);
@@ -1799,16 +1810,24 @@ public class AddFileTool {
                         System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
                     } else if (arg.equals("-X") || arg.equals("--proxyport")) {
                         System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
+                    } else if (arg.equals("-F") || arg.equals("--performance")) {
+                        isPerformanceLogging = Boolean.parseBoolean(args[i + 1]);
                     }
                 }
             } catch (Exception e) {
-                System.err.println("ERROR: " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
                     System.exit(3);
                 } else {
                     throw e;
                 }
+            }
+
+            if (isPerformanceLogging) {
+                File logFile = TempFileUtil.createTempFileWithName("aft-performance-command-line-" + Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp()) + ".log");
+                AddFileToolPerformanceLog log = new AddFileToolPerformanceLog(logFile);
+                aft.addListener(log);
             }
 
             // perform upload
@@ -1836,6 +1855,8 @@ public class AddFileTool {
                     if (e instanceof FileNotFoundException) {
                         System.exit(4);
                     } else {
+                        System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                        e.printStackTrace(System.err);
                         System.exit(1);
                     }
                 } else {
@@ -1852,6 +1873,8 @@ public class AddFileTool {
         } catch (Exception e) {
             debugErr(e);
             if (!TestUtil.isTesting()) {
+                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                e.printStackTrace(System.err);
                 System.exit(1);
             } else {
                 throw e;
@@ -2032,6 +2055,7 @@ public class AddFileTool {
                 MetaData metaDataFromNetwork = null;
                 GetFileTool getFileTool = new GetFileTool();
                 getFileTool.setHash(hash);
+                getFileTool.setSuppressFailedChunkOutput(true);
                 try {
                     metaDataFromNetwork = getFileTool.getMetaData();
                 } catch (Exception e) {
@@ -2078,7 +2102,7 @@ public class AddFileTool {
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
         private int emptyCount = 0;
-        private boolean started = false, finished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         private final LinkedList<FileToUpload> fileStack;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         public BigHash primaryFileHash;
@@ -2586,7 +2610,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
@@ -2912,7 +2936,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
         public MetaDataUploadingThread(Set<FileEncodingThread> fileThreads, Set<DataUploadingThread> dataThreads, Set<MetaDataUploadingThread> metaThreads, PriorityBlockingQueue<MetaChunk> metaChunkQueue) {

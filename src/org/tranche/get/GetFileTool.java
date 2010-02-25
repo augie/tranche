@@ -90,6 +90,7 @@ public class GetFileTool {
     public static boolean DEFAULT_SHOW_SUMMARY = false;
     public static boolean DEFAULT_CONTINUE_ON_FAILURE = true;
     public static int DEFAULT_DATA_QUEUE_SIZE = 100;
+    public static boolean DEFAULT_USE_PERFORMANCE_LOG = false;
     // we don't want to use up too much memory with big meta data - so need to keep track of total size of the data
     //  this meta data references
     // limit of size on disk == 13 MB of meta data in memory, or roughly 175 GB of data references
@@ -106,10 +107,10 @@ public class GetFileTool {
     /**
      * User parameters
      */
-    private boolean batch = DEFAULT_BATCH, validate = DEFAULT_VALIDATE, continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS;
+    private boolean batch = DEFAULT_BATCH,  validate = DEFAULT_VALIDATE,  continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS;
     private BigHash hash;
     private File saveTo;
-    private String uploaderName = DEFAULT_UPLOADER_NAME, uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH, passphrase, regEx = DEFAULT_REG_EX;
+    private String uploaderName = DEFAULT_UPLOADER_NAME,  uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH,  passphrase,  regEx = DEFAULT_REG_EX;
     private Long uploadTimestamp = DEFAULT_UPLOAD_TIMESTAMP;
     private final Set<String> serverHostUseSet = new HashSet<String>();
     private final Set<String> externalServerURLs = new HashSet();
@@ -117,7 +118,7 @@ public class GetFileTool {
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -2013,6 +2014,9 @@ public class GetFileTool {
         System.out.println("    -m, --tempdir               Value: any string.     Path to use for temporary directory instead of default. Default is based on different heuristics for OS and filesystem permissions. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
         System.out.println("    -t, --threads               Value: any number.     The maximum number of threads to use. Increasing may require more memory, and may result in increased CPU usage, increased bandwidth, increased disk accesses and faster downloads. Default value is " + DEFAULT_THREADS + ".");
         System.out.println();
+        System.out.println("TROUBLESHOOTING PARAMETERS");
+        System.out.println("    -F, --performance           Value: true/false.     Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
+        System.out.println();
         System.out.println("RETURN CODES");
         System.out.println("    0: Exited normally");
         System.out.println("    1: Unknown error");
@@ -2020,6 +2024,7 @@ public class GetFileTool {
         System.out.println("    3: Failed to download.");
         System.out.println("    4: Problem with an argument.");
         System.out.println("    5: Passphrase either wrong or missing.");
+        System.out.println("    6: Missing some parameters");
         System.out.println();
     }
 
@@ -2065,7 +2070,8 @@ public class GetFileTool {
             try {
                 ConfigureTranche.load(args);
             } catch (Exception e) {
-                System.err.println("ERROR: " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
+                e.printStackTrace(System.err);
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
@@ -2073,9 +2079,22 @@ public class GetFileTool {
                     return;
                 }
             }
+            
+            // Make sure at least three arguments: <config> hash /path/to/save
+            if (args.length < 3) {
+                System.err.println("Missing required parameters.");
+                printUsage();
+                
+                if (!TestUtil.isTesting()) {
+                    System.exit(6);
+                } else {
+                    return;
+                }
+            }
 
             GetFileTool gft = new GetFileTool();
             boolean showSummary = DEFAULT_SHOW_SUMMARY;
+            boolean isPerformanceLogging = DEFAULT_USE_PERFORMANCE_LOG;
             try {
                 for (int i = 1; i < args.length - 2; i += 2) {
                     String arg = args[i];
@@ -2137,7 +2156,15 @@ public class GetFileTool {
                         System.err.println("WARNING: The use of -H, --proxyhost has been deprecated.");
                     } else if (arg.equals("-X") || arg.equals("--proxyport")) {
                         System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
+                    } else if (arg.equals("-F") || arg.equals("--performance")) {
+                        isPerformanceLogging = Boolean.parseBoolean(args[i + 1]);
                     }
+                }
+
+                if (isPerformanceLogging) {
+                    File logFile = TempFileUtil.createTempFileWithName("gft-performance-command-line-"+Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp())+".log");
+                    GetFileToolPerformanceLog log = new GetFileToolPerformanceLog(logFile);
+                    gft.addListener(log);
                 }
 
                 // Set hash
@@ -2145,7 +2172,8 @@ public class GetFileTool {
                 // set the save location
                 gft.setSaveFile(new File(args[args.length - 1]));
             } catch (Exception e) {
-                System.err.println("ERROR: " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
+                e.printStackTrace(System.err);
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
                     System.exit(4);
@@ -2226,6 +2254,22 @@ public class GetFileTool {
                 System.exit(1);
             } else {
                 throw e;
+            }
+        }
+    }
+    
+    /**
+     * <p>By default, GetFileTool has a listener attached to print out information about failed chunks.</p>
+     * <p>To suppress, set to true. Can undo later by setting to false.</p>
+     * @param isSuppress If true, removes the failed chunk listener. If true, attaches the failed chunk listener unless already attached.
+     */
+    public void setSuppressFailedChunkOutput(boolean isSuppress) {
+        if (isSuppress) {
+            this.listeners.remove(this.failedChunksListener);
+        } else {
+            // Add it if not added yet/removed
+            if (this.listeners.contains(this.failedChunksListener)) {
+                this.listeners.add(this.failedChunksListener);
             }
         }
     }
@@ -2504,7 +2548,7 @@ public class GetFileTool {
     private class FileDataDownloadingThread extends Thread {
 
         private final LinkedList<DataChunk> dataList;
-        private boolean started = false, finished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         private List<PropagationExceptionWrapper> exceptions = new LinkedList<PropagationExceptionWrapper>();
         private Set<FileDataDownloadingThread> dataThreads;
 
@@ -2604,7 +2648,7 @@ public class GetFileTool {
     private class DirectoryDataDownloadingThread extends Thread {
 
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         // batch data structures
         private final Map<String, DataChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -2992,7 +3036,7 @@ public class GetFileTool {
 
         private final LinkedList<MetaChunk> metaChunks;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false, finished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         // batch data structures
         private final Map<String, MetaChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -3034,7 +3078,7 @@ public class GetFileTool {
         public void waitForFinish() {
             while (!started || !finished) {
                 try {
-                    synchronized(DirectoryMetaDataDownloadingThread.this) {
+                    synchronized (DirectoryMetaDataDownloadingThread.this) {
                         wait();
                     }
                 } catch (Exception e) {

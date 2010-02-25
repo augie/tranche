@@ -149,6 +149,7 @@ public class GetFileToolWizard extends GenericWizard {
         protected GenericCheckBoxMenuItem validateMenuItem = new GenericCheckBoxMenuItem("Validate", GetFileTool.DEFAULT_VALIDATE);
         protected GenericCheckBoxMenuItem continueOnFailureCheckBoxItem = new GenericCheckBoxMenuItem("Continue On Failure", GetFileTool.DEFAULT_CONTINUE_ON_FAILURE);
         protected GenericCheckBoxMenuItem useUnspecifiedServersCheckBoxItem = new GenericCheckBoxMenuItem("Use Unspecified Servers", GetFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS);
+        protected GenericCheckBoxMenuItem usePerformanceLoggingCheckBoxItem = new GenericCheckBoxMenuItem("Use Performance Log", GetFileTool.DEFAULT_USE_PERFORMANCE_LOG);
         private GenericMenuItem preferencesMenuItem = new GenericMenuItem("Preferences");
         private GenericMenuItem monitorMenuItem = new GenericMenuItem("Monitor");
         private GenericMenuItem hashHelperMenuItem = new GenericMenuItem("Tranche Hash Helper");
@@ -183,6 +184,8 @@ public class GetFileToolWizard extends GenericWizard {
                 parametersMenu.add(continueOnFailureCheckBoxItem);
                 useUnspecifiedServersCheckBoxItem.setMnemonic('u');
                 parametersMenu.add(useUnspecifiedServersCheckBoxItem);
+                usePerformanceLoggingCheckBoxItem.setMnemonic('l');
+                parametersMenu.add(usePerformanceLoggingCheckBoxItem);
             }
             parametersMenu.setMnemonic('p');
             optionsMenu.add(parametersMenu);

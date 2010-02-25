@@ -19,6 +19,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,6 +30,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import org.tranche.add.AddFileTool;
+import org.tranche.add.AddFileToolListener;
+import org.tranche.add.AddFileToolPerformanceLog;
 import org.tranche.gui.AnnotationFrame;
 import org.tranche.gui.ConfigureTrancheGUI;
 import org.tranche.gui.ErrorFrame;
@@ -46,10 +49,13 @@ import org.tranche.gui.add.UploadSummary;
 import org.tranche.gui.server.ServersFrame;
 import org.tranche.gui.wizard.GenericWizard;
 import org.tranche.gui.wizard.GenericWizardStep;
+import org.tranche.time.TimeUtil;
 import org.tranche.users.InvalidSignInException;
 import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
 import org.tranche.util.DebugUtil;
+import org.tranche.util.TempFileUtil;
+import org.tranche.util.Text;
 
 /**
  *
@@ -61,7 +67,7 @@ public class AddFileToolWizard extends GenericWizard {
     private static boolean debug = false;
     private AddFileToolWizardMenuBar menuBar = new AddFileToolWizardMenuBar();
     protected AnnotationFrame annotationFrame = new AnnotationFrame();
-    protected ServersFrame serversFrame, stickyServersFrame;
+    protected ServersFrame serversFrame,  stickyServersFrame;
     protected ErrorFrame ef = new ErrorFrame();
     protected UploadSummary summary = new UploadSummary(new AddFileTool());
     protected AFTStep1Panel step1Panel = new AFTStep1Panel(this);
@@ -145,6 +151,7 @@ public class AddFileToolWizard extends GenericWizard {
         public GenericCheckBoxMenuItem explodeCheckBoxItem = new GenericCheckBoxMenuItem("Explode", AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD);
         public GenericCheckBoxMenuItem sendEmailOnFailureCheckBoxItem = new GenericCheckBoxMenuItem("Send Email On Failure", AddFileTool.DEFAULT_EMAIL_ON_FAILURE);
         public GenericCheckBoxMenuItem useUnspecifiedServersCheckBoxItem = new GenericCheckBoxMenuItem("Use Unspecified Servers", AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS);
+        public GenericCheckBoxMenuItem usePerformanceLogCheckBoxItem = new GenericCheckBoxMenuItem("Use Performance Log", AddFileTool.DEFAULT_USE_PERFORMANCE_LOG);
         public GenericMenuItem preferencesMenuItem = new GenericMenuItem("Preferences");
         private GenericMenuItem monitorMenuItem = new GenericMenuItem("Monitor");
         public GenericMenuItem helpWebpageMenuItem = new GenericMenuItem("Help Page");
@@ -256,6 +263,54 @@ public class AddFileToolWizard extends GenericWizard {
                             summary.getAddFileTool().setUseUnspecifiedServers(useUnspecifiedServersCheckBoxItem.isSelected());
                         }
                     });
+
+                    usePerformanceLogCheckBoxItem.setMnemonic('l');
+                    uploadParametersMenu.add(usePerformanceLogCheckBoxItem);
+                    usePerformanceLogCheckBoxItem.addActionListener(new ActionListener() {
+
+                        public void actionPerformed(ActionEvent event) {
+                            final boolean isUse = usePerformanceLogCheckBoxItem.isSelected();
+                            boolean containsPerformanceLog = false;
+
+                            // If already have one, don't attach another
+                            for (AddFileToolListener aftl : summary.getAddFileTool().getListeners()) {
+                                if (aftl instanceof AddFileToolPerformanceLog) {
+                                    containsPerformanceLog = true;
+                                    break;
+                                }
+                            }
+
+                            // If use but don't have one
+                            if (isUse && !containsPerformanceLog) {
+                                try {
+                                    File logFile = TempFileUtil.createTempFileWithName("aft-performance-gui-" + Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp()) + ".log");
+                                    AddFileToolPerformanceLog log = new AddFileToolPerformanceLog(logFile);
+                                    summary.getAddFileTool().addListener(log);
+                                } catch (Exception e) {
+                                    System.err.println(e.getClass() + " occured while trying to attach performance log as listener: " + e.getMessage());
+                                    e.printStackTrace(System.err);
+                                }
+                            }
+
+                            // If have one but don't want one, remove
+                            if (!isUse && containsPerformanceLog) {
+                                // Perchance there is more than one
+                                Set<AddFileToolListener> listenersToRemove = new HashSet();
+                                
+                                // Identify the performance log(s)
+                                for (AddFileToolListener aftl : summary.getAddFileTool().getListeners()) {
+                                    if (aftl instanceof AddFileToolPerformanceLog) {
+                                        listenersToRemove.add(aftl);
+                                    }
+                                }
+                                
+                                // Remove the performance log(s)
+                                for (AddFileToolListener aftl : listenersToRemove) {
+                                    summary.getAddFileTool().removeListener(aftl);
+                                }
+                            }
+                        }
+                    });
                 }
                 uploadParametersMenu.setMnemonic('l');
                 optionsMenu.add(uploadParametersMenu);
@@ -348,16 +403,16 @@ public class AddFileToolWizard extends GenericWizard {
         AddFileToolWizard aftw = new AddFileToolWizard();
         GUIUtil.centerOnScreen(aftw);
         aftw.setVisible(true);
-        
+
         // read in arguments
-        Set<Exception> exceptions = new HashSet<Exception> ();
+        Set<Exception> exceptions = new HashSet<Exception>();
         for (int i = 1; i < args.length; i += 2) {
             try {
                 if (args[i].equals("-t") || args[i].equals("--title")) {
                     aftw.step1Panel.title.setText(args[i + 1]);
                 } else if (args[i].equals("-d") || args[i].equals("--description")) {
                     aftw.step1Panel.description.setText(args[i + 1]);
-                }  else if (args[i].equals("-L") || args[i].equals("--login")) {
+                } else if (args[i].equals("-L") || args[i].equals("--login")) {
                     try {
                         aftw.setUser(UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]));
                     } catch (InvalidSignInException e) {
@@ -365,7 +420,7 @@ public class AddFileToolWizard extends GenericWizard {
                     } finally {
                         i++;
                     }
-                }else if (args[i].equals("-A") || args[i].equals("--annotation")) {
+                } else if (args[i].equals("-A") || args[i].equals("--annotation")) {
                     aftw.annotationFrame.getPanel().add(args[i + 1], args[i + 2]);
                     i++;
                 }

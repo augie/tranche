@@ -22,7 +22,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.Collection;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -30,8 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import org.tranche.get.GetFileToolAdapter;
-import org.tranche.get.GetFileToolEvent;
+import org.tranche.get.GetFileToolPerformanceLog;
 import org.tranche.gui.GenericTextArea;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.gui.GenericButton;
@@ -39,7 +37,9 @@ import org.tranche.gui.GenericOptionPane;
 import org.tranche.util.PreferencesUtil;
 import org.tranche.gui.Styles;
 import org.tranche.gui.get.DownloadPool;
-import org.tranche.server.PropagationExceptionWrapper;
+import org.tranche.time.TimeUtil;
+import org.tranche.util.TempFileUtil;
+import org.tranche.util.Text;
 
 /**
  *
@@ -189,6 +189,12 @@ public class GFTStep3Panel extends GenericWizardPanel {
             wizard.summary.getGetFileTool().setUseUnspecifiedServers(wizard.menuBar.useUnspecifiedServersCheckBoxItem.isSelected());
             wizard.summary.getGetFileTool().setContinueOnFailure(wizard.menuBar.continueOnFailureCheckBoxItem.isSelected());
             wizard.summary.getGetFileTool().setValidate(wizard.menuBar.validateMenuItem.isSelected());
+
+            if (wizard.menuBar.usePerformanceLoggingCheckBoxItem.isSelected()) {
+                File logFile = TempFileUtil.createTempFileWithName("gft-performance-gui-" + Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp()) + ".log");
+                GetFileToolPerformanceLog log = new GetFileToolPerformanceLog(logFile);
+                wizard.summary.getGetFileTool().addListener(log);
+            }
 
             // save the preference
             PreferencesUtil.set(PreferencesUtil.PREF_DOWNLOAD_FILE, directory.getAbsolutePath());
