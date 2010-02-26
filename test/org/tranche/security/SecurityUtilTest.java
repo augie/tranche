@@ -75,7 +75,7 @@ public class SecurityUtilTest extends TrancheTestCase {
             IOUtil.safeClose(fos);
 
             // encrypt the data file
-            File encrypted = SecurityUtil.encrypt(passphrase, file);
+            File encrypted = SecurityUtil.encryptDiskBacked(passphrase, file);
 
 //            int expectedLength = (int)(file.length()/16+1)*16;
             // calculate the remainder
@@ -98,7 +98,7 @@ public class SecurityUtilTest extends TrancheTestCase {
             }
 
             // store the bytes
-            File decrypted = SecurityUtil.decrypt(passphrase, encrypted);
+            File decrypted = SecurityUtil.decryptDiskBacked(passphrase, encrypted);
 
             // read the decrypted bytes
             fileBasedBytes = IOUtil.getBytes(decrypted);
@@ -111,7 +111,7 @@ public class SecurityUtilTest extends TrancheTestCase {
         // test using the in-memory based methods -- i.e. what we use on small files to avoid the overhead associated with handling small files
         if (data.length < 1024 * 1024) {
             // encrypt the bytes
-            byte[] encrypted = SecurityUtil.encrypt(passphrase, data);
+            byte[] encrypted = SecurityUtil.encryptInMemory(passphrase, data);
             // calculate the remainder
             int remainder = encrypted.length % 16 > 1 ? 1 : 0;
             int expectedLength = (int) (encrypted.length / 16 + remainder) * 16;
@@ -123,7 +123,7 @@ public class SecurityUtilTest extends TrancheTestCase {
             }
 
             // decrypted bytes should match
-            byte[] decrypted = SecurityUtil.decrypt(passphrase, encrypted);
+            byte[] decrypted = SecurityUtil.decryptInMemory(passphrase, encrypted);
             if (!checkBytes(decrypted, data)) {
                 assertTrue("Data should have matched.", false);
             }
@@ -147,128 +147,6 @@ public class SecurityUtilTest extends TrancheTestCase {
             }
         }
         return true;
-    }
-
-    /**
-     * The basic encryption/decryption test but with checks to make sure that varying the salt will vary the binary content even if the same passphrase is used.
-     * @throws java.lang.Exception Exceptions are poorly handled.
-     */
-    public void testEncryptionAndDecryptionDifferSalt() throws Exception {
-        File dir = TempFileUtil.createTemporaryDirectory();
-
-        byte[] data = "Some test data...".getBytes();
-        String passphrase = "The passphrase is...";
-        byte[] saltA = new byte[8];
-        byte[] saltB = new byte[8];
-        saltB[0]++;
-
-        // make the data file
-        File file = new File(dir, "temp.data");
-        FileOutputStream fos = new FileOutputStream(file);
-        fos.write(data);
-        IOUtil.safeClose(fos);
-
-        // encrypt the data file
-        File encryptedA = SecurityUtil.encrypt(passphrase, saltA, 1000, file);
-        File encryptedB = SecurityUtil.encrypt(passphrase, saltB, 1000, file);
-
-        int expectedLength = (int) (file.length() / 16 + 1) * 16;
-        assertEquals("Encrypted file's length should be", expectedLength, encryptedA.length());
-        assertEquals("Encrypted file's length should be", expectedLength, encryptedB.length());
-
-        // make sure that the files aren't the same
-        String a = Base16.encode(IOUtil.getBytes(file));
-        String b = Base16.encode(IOUtil.getBytes(encryptedA));
-        String c = Base16.encode(IOUtil.getBytes(encryptedB));
-
-//        System.out.println("a: "+new String(Base16.decode(a)));
-//        System.out.println("b: "+new String(Base16.decode(b)));
-//        System.out.println("c: "+new String(Base16.decode(c)));
-
-        // assert that they aren't the same
-        assertNotSame("Data shouldn't be the same.", a, b);
-        assertNotSame("Data shouldn't be the same.", a, c);
-        assertNotSame("Data shouldn't be the same.", b, c);
-        // check that the file isn't a subset
-        assertTrue("Expected not to be a subset.", b.indexOf(a) == -1);
-        assertTrue("Expected not to be a subset.", c.indexOf(a) == -1);
-
-        // decrypted the file
-        File decryptedA = SecurityUtil.decrypt(passphrase, saltA, 1000, encryptedA);
-        File decryptedB = SecurityUtil.decrypt(passphrase, saltB, 1000, encryptedB);
-
-        // make sure that the content is as expected
-        String d = Base16.encode(IOUtil.getBytes(decryptedA));
-        String e = Base16.encode(IOUtil.getBytes(decryptedB));
-
-//        System.out.println("d: "+new String(Base16.decode(d)));
-//        System.out.println("e: "+new String(Base16.decode(e)));
-
-        // check that they match
-        assertEquals("Content should match.", a, d);
-        assertEquals("Content should match.", a, e);
-
-        IOUtil.recursiveDeleteWithWarning(dir);
-    }
-
-    /**
-     * Basic encryption/decryption test but also checks that varying the iteration count will also change the encrypted binary even if the same passphrase is used.
-     * @throws java.lang.Exception Exceptions are poorly handled.
-     */
-    public void testEncryptionAndDecryptionDifferIteration() throws Exception {
-        File dir = TempFileUtil.createTemporaryDirectory();
-
-        byte[] data = "Some test data...".getBytes();
-        String passphrase = "The passphrase is...";
-        byte[] saltA = new byte[8];
-
-        // make the data file
-        File file = new File(dir, "temp.data");
-        FileOutputStream fos = new FileOutputStream(file);
-        fos.write(data);
-        IOUtil.safeClose(fos);
-
-        // encrypt the data file
-        File encryptedA = SecurityUtil.encrypt(passphrase, saltA, 1000, file);
-        File encryptedB = SecurityUtil.encrypt(passphrase, saltA, 1001, file);
-
-        int expectedLength = (int) (file.length() / 16 + 1) * 16;
-        assertEquals("Encrypted file's length should be", expectedLength, encryptedA.length());
-        assertEquals("Encrypted file's length should be", expectedLength, encryptedB.length());
-
-        // make sure that the files aren't the same
-        String a = Base16.encode(IOUtil.getBytes(file));
-        String b = Base16.encode(IOUtil.getBytes(encryptedA));
-        String c = Base16.encode(IOUtil.getBytes(encryptedB));
-
-//        System.out.println("a: "+new String(Base16.decode(a)));
-//        System.out.println("b: "+new String(Base16.decode(b)));
-//        System.out.println("c: "+new String(Base16.decode(c)));
-
-        // assert that they aren't the same
-        assertNotSame("Data shouldn't be the same.", a, b);
-        assertNotSame("Data shouldn't be the same.", a, c);
-        assertNotSame("Data shouldn't be the same.", b, c);
-        // check that the file isn't a subset
-        assertTrue("Expected not to be a subset.", b.indexOf(a) == -1);
-        assertTrue("Expected not to be a subset.", c.indexOf(a) == -1);
-
-        // decrypted the file
-        File decryptedA = SecurityUtil.decrypt(passphrase, saltA, 1000, encryptedA);
-        File decryptedB = SecurityUtil.decrypt(passphrase, saltA, 1001, encryptedB);
-
-        // make sure that the content is as expected
-        String d = Base16.encode(IOUtil.getBytes(decryptedA));
-        String e = Base16.encode(IOUtil.getBytes(decryptedB));
-
-//        System.out.println("d: "+new String(Base16.decode(d)));
-//        System.out.println("e: "+new String(Base16.decode(e)));
-
-        // check that they match
-        assertEquals("Content should match.", a, d);
-        assertEquals("Content should match.", a, e);
-
-        IOUtil.recursiveDeleteWithWarning(dir);
     }
 
     /**

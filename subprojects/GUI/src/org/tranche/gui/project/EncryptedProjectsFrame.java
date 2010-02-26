@@ -180,7 +180,7 @@ public class EncryptedProjectsFrame extends GenericFrame implements WindowListen
                             FileReader fr = null;
                             BufferedReader br = null;
                             try {
-                                File decryptedFile = SecurityUtil.decrypt(pass, selectedFile);
+                                File decryptedFile = SecurityUtil.decryptDiskBacked(pass, selectedFile);
                                 fr = new FileReader(decryptedFile);
                                 br = new BufferedReader(fr);
 
@@ -266,7 +266,7 @@ public class EncryptedProjectsFrame extends GenericFrame implements WindowListen
                                     // output the file
                                     fos = new FileOutputStream(selectedFile);
                                     os = new PrintStream(fos);
-                                    os.write(SecurityUtil.encrypt(pass, output.getBytes()));
+                                    os.write(SecurityUtil.encryptInMemory(pass, output.getBytes()));
 
                                     // notify the user
                                     GenericOptionPane.showMessageDialog(EncryptedProjectsFrame.this, "List saved.", "Success", JOptionPane.INFORMATION_MESSAGE);

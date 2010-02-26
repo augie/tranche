@@ -422,8 +422,7 @@ public class CompressionUtil {
      * @return
      * @throws java.lang.Exception
      */
-    public static final File lzmaDecompress(
-            File input) throws Exception {
+    public static final File lzmaDecompress(File input) throws Exception {
         // make a temp zipFile
         File decompressed = TempFileUtil.createTemporaryFile();
         // decompress using LZMA

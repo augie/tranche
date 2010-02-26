@@ -15,11 +15,13 @@
  */
 package org.tranche.security;
 
+import java.io.IOException;
+
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class WrongPassphraseException extends RuntimeException {
+public class WrongPassphraseException extends IOException {
 
     public static final String MESSAGE = "The wrong passphrase was used to unencrypt the data.";
 

@@ -32,7 +32,7 @@ public class AESEncodingStreamTest extends TrancheTestCase {
         byte[] bytes = Utils.makeRandomData(100000);
         // encrypt
         String passphrase = "The passphrase of today is ....";
-        byte[] aes = SecurityUtil.encrypt(passphrase, bytes);
+        byte[] aes = SecurityUtil.encryptInMemory(passphrase, bytes);
         BigHash bytesHash = new BigHash(aes);
         // compress with the stream
         byte[] buf = new byte[123];

@@ -68,6 +68,7 @@ import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.project.ProjectSummary;
 import org.tranche.security.SecurityUtil;
+import org.tranche.security.WrongPassphraseException;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.OperatingSystem;
 import org.tranche.util.Text;
@@ -88,8 +89,7 @@ public class GUIUtil {
     private static String userEmail = null;
     private static final List<UserZipFileListener> userZipFileListeners = new ArrayList<UserZipFileListener>();
     // for formatting numbers with commas
-    public static NumberFormat integerFormat = NumberFormat.getInstance(),  floatFormat = NumberFormat.getInstance();
-
+    public static NumberFormat integerFormat = NumberFormat.getInstance(), floatFormat = NumberFormat.getInstance();
 
     static {
         integerFormat.setGroupingUsed(true);
@@ -253,7 +253,7 @@ public class GUIUtil {
 
         // just in case the passphrase is blank
         try {
-            SecurityUtil.decrypt(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
+            SecurityUtil.decryptInMemory(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
             pf.setPassphraseCorrect(true);
         } catch (Exception ex) {
             pf.setPassphraseCorrect(false);
@@ -270,7 +270,7 @@ public class GUIUtil {
 
             public void keyReleased(KeyEvent e) {
                 try {
-                    SecurityUtil.decrypt(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
+                    SecurityUtil.decryptInMemory(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
                     pf.setPassphraseCorrect(true);
                 } catch (Exception ex) {
                     pf.setPassphraseCorrect(false);
@@ -411,6 +411,9 @@ public class GUIUtil {
             }
         } catch (CouldNotFindMetaDataException e) {
             GenericOptionPane.showMessageDialog(gui, e.getMessage(), "Data Set Not Found", JOptionPane.ERROR_MESSAGE);
+            gui.setVisible(false);
+        } catch (WrongPassphraseException e) {
+            GenericOptionPane.showMessageDialog(gui, e.getMessage(), "Wrong Passphrase", JOptionPane.ERROR_MESSAGE);
             gui.setVisible(false);
         } catch (Exception e) {
             GenericOptionPane.showMessageDialog(gui, "Could not download the project file.", "Data Set Not Found", JOptionPane.ERROR_MESSAGE);

@@ -104,38 +104,6 @@ public class UserZipFileTest extends TrancheTestCase {
         assertEquals("Only admins set config", isAdmin, uzf.canSetConfiguration());
     }
 
-    public void testReadUserZipFileFromStream() throws Exception {
-        File file = null;
-        InputStream is = null;
-        try {
-            file = TempFileUtil.createTemporaryFile(".zip.encrypted");
-
-            String password = "test_pw";
-
-            MakeUserZipFileTool maker = new MakeUserZipFileTool();
-            maker.setName("test");
-            maker.setValidDays(1);
-            maker.setPassphrase(password);
-            maker.setSaveFile(file);
-
-            UserZipFile uzf1 = maker.makeCertificate();
-
-            // check validity by accessing key
-            uzf1.setPassphrase(password);
-            uzf1.getPrivateKey();
-
-            // Wrap file in stream
-            is = new FileInputStream(file);
-            UserZipFile uzf2 = new UserZipFile(is, password);
-
-            // Test equality
-            assertEquals("Expecting equivalent UserZipFiles.", uzf1, uzf2);
-        } finally {
-            IOUtil.safeClose(is);
-            IOUtil.safeDelete(file);
-        }
-    }
-
     public void testCertNotValidYet() throws Exception {
         File file1 = null, file2 = null;
         try {

@@ -61,7 +61,7 @@ public class UploadCache implements LazyLoadable {
                             FileInputStream fis = null;
                             BufferedInputStream bis = null;
                             try {
-                                fis = new FileInputStream(SecurityUtil.decrypt(event.getUserZipFile().getPassphrase(), file));
+                                fis = new FileInputStream(SecurityUtil.decryptDiskBacked(event.getUserZipFile().getPassphrase(), file));
                                 bis = new BufferedInputStream(fis);
                                 // read all the preferences from the file
                                 while (bis.available() > 0) {
@@ -163,7 +163,7 @@ public class UploadCache implements LazyLoadable {
                         IOUtil.safeClose(fos);
 
                         // encrypt the file
-                        File encryptedFile = SecurityUtil.encrypt(uzf.getPassphrase(), tempFile);
+                        File encryptedFile = SecurityUtil.encryptDiskBacked(uzf.getPassphrase(), tempFile);
                         IOUtil.copyFile(encryptedFile, file);
                     } catch (Exception e) {
                     } finally {

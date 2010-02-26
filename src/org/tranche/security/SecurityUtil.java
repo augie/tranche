@@ -56,6 +56,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 import org.tranche.ConfigureTranche;
 import org.tranche.exceptions.PassphraseRequiredException;
+import org.tranche.hash.BigHash;
+import org.tranche.hash.BigHashMaker;
 import org.tranche.users.UserCertificateUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
@@ -71,6 +73,8 @@ import org.tranche.util.TempFileUtil;
 public class SecurityUtil {
 
     private static boolean debug = false;
+    private static final byte[] ENCRYPTION_SALT = new byte[8];
+    private static final int ENCRYPTION_ITERATIONS = 1000;
     private static String adminCertificateLocation = "/org/tranche/test/admin.public.certificate", writeCertificateLocation = "/org/tranche/test/write.public.certificate", userCertificateLocation = "/org/tranche/test/user.public.certificate", readCertificateLocation = "/org/tranche/test/read.public.certificate", autocertCertificateLocation = "/org/tranche/test/autocert.public.certificate", anonCertificateLocation = "/org/tranche/test/anonymous.public.certificate", anonPrivateKeyLocation = "/org/tranche/test/anonymous.private.key", emailCertificateLocation = "/org/tranche/test/email.public.certificate", emailPrivateKeyLocation = "/org/tranche/test/email.private.key";
     private static boolean uninitialized = true;
     private static X509Certificate defaultCertificate = null;
@@ -882,275 +886,6 @@ public class SecurityUtil {
     }
 
     /**
-     * <p>Encrypts a file using AES and a passphrase.</p>
-     * @param passphrase
-     * @param file
-     * @return
-     * @throws java.io.IOException
-     * @throws java.security.GeneralSecurityException
-     */
-    public static File encrypt(String passphrase, File file) throws IOException, GeneralSecurityException {
-        return encrypt(passphrase, new byte[8], 1000, file);
-    }
-
-    /**
-     * <p>Encrypts a file using AES and a passphrase.</p>
-     * @param passphrase
-     * @param salt
-     * @param iterations
-     * @param file
-     * @return
-     * @throws java.io.IOException
-     */
-    public static File encrypt(String passphrase, byte[] salt, int iterations, File file) throws IOException {
-        // make the AES encryption engine
-        AESFastEngine encrypt = new AESFastEngine();
-        // make up some params
-        PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
-        pg.init(passphrase.getBytes(), salt, iterations);
-        CipherParameters params = pg.generateDerivedParameters(256);
-        // initialize
-        encrypt.init(true, params);
-        int blockSize = encrypt.getBlockSize();
-
-        // read the file and encrypt it
-        File encryptedFile = TempFileUtil.createTemporaryFile();
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        FileOutputStream fos = null;
-        java.io.BufferedOutputStream bos = null;
-        try {
-            // initialize streams
-            fis = new FileInputStream(file);
-            bis = new BufferedInputStream(fis);
-            fos = new FileOutputStream(encryptedFile);
-            bos = new java.io.BufferedOutputStream(fos);
-
-            // make the buffers
-            byte[] data = new byte[blockSize];
-            byte[] encrypted = new byte[blockSize];
-
-            // encrypt all the data
-            int bytesRead = 0;
-            for (bytesRead = bis.read(data); bytesRead == blockSize; bytesRead = bis.read(data)) {
-                encrypt.processBlock(data, 0, encrypted, 0);
-                // write the data
-                bos.write(encrypted);
-            }
-            if (bytesRead == -1) {
-                bytesRead = 0;
-            }
-            // padd the rest using method#2 recommended by PKCS#5 add x bytes with a value of x.
-            int paddingLength = data.length - bytesRead;
-            for (int i = bytesRead; i < data.length; i++) {
-                data[i] = (byte) (0xff & paddingLength);
-            }
-            // process the data
-            encrypt.processBlock(data, 0, encrypted, 0);
-            bos.write(encrypted);
-
-            // return the file
-            return encryptedFile;
-        } finally {
-            IOUtil.safeClose(bis);
-            IOUtil.safeClose(fis);
-            IOUtil.safeClose(bos);
-            IOUtil.safeClose(fos);
-        }
-    }
-
-    /**
-     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
-     * @param passphrase
-     * @param file
-     * @return
-     * @throws java.io.IOException
-     * @throws java.security.GeneralSecurityException
-     */
-    public static File decrypt(String passphrase, File file) throws IOException, GeneralSecurityException {
-        return decrypt(passphrase, new byte[8], 1000, file);
-    }
-
-    /**
-     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
-     * @param passphrase
-     * @param is
-     * @return
-     * @throws java.io.IOException
-     * @throws java.security.GeneralSecurityException
-     */
-    public static ByteArrayOutputStream decrypt(String passphrase, InputStream is) throws IOException, GeneralSecurityException {
-        return decrypt(passphrase, new byte[8], 1000, is);
-    }
-
-    /**
-     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
-     * @param passphrase
-     * @param salt
-     * @param iterations
-     * @param is
-     * @return
-     * @throws java.io.IOException
-     */
-    public static ByteArrayOutputStream decrypt(String passphrase, byte[] salt, int iterations, InputStream is) throws IOException {
-        if (passphrase == null) {
-            throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
-        }
-        // make the AES encryption engine
-        AESFastEngine encrypt = new AESFastEngine();
-        // make up some params
-        PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
-        pg.init(passphrase.getBytes(), salt, iterations);
-        CipherParameters params = pg.generateDerivedParameters(256);
-        // initialize
-        encrypt.init(false, params);
-        int blockSize = encrypt.getBlockSize();
-
-        // make the IO
-        BufferedInputStream bis = null;
-        ByteArrayOutputStream fos = null;
-        BufferedOutputStream bos = null;
-        try {
-            // initialize streams
-            bis = new BufferedInputStream(is);
-            fos = new ByteArrayOutputStream();
-            bos = new BufferedOutputStream(fos);
-
-            // make the buffers
-            byte[] data = new byte[blockSize];
-            byte[] encrypted = new byte[blockSize];
-            byte[] encryptedBuffer = new byte[blockSize];
-            boolean firstRound = true;
-
-            // encrypt all the data
-            int offset = 0;
-            for (int bytesRead = bis.read(data, offset, data.length - offset); bytesRead != -1; bytesRead = bis.read(data, offset, data.length - offset)) {
-                // check for bytes read
-                if (bytesRead + offset != data.length) {
-                    offset += bytesRead;
-                    continue;
-                }
-                offset = 0;
-
-                // if not the first round, write it
-                encrypt.processBlock(data, 0, encrypted, 0);
-                // write the data
-                if (!firstRound) {
-                    bos.write(encryptedBuffer);
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                } else {
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                    firstRound = false;
-                }
-            }
-            // take the last block and remove padding
-            int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
-                throw new WrongPassphraseException();
-            }
-            bos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
-
-            // return the file
-            return fos;
-        } finally {
-            IOUtil.safeClose(bis);
-            IOUtil.safeClose(is);
-            IOUtil.safeClose(bos);
-            IOUtil.safeClose(fos);
-        }
-    }
-
-    /**
-     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
-     * @param passphrase
-     * @param salt
-     * @param iterations
-     * @param file
-     * @return
-     * @throws java.io.IOException
-     */
-    public static File decrypt(String passphrase, byte[] salt, int iterations, File file) throws IOException {
-        // make the AES encryption engine
-        AESFastEngine encrypt = new AESFastEngine();
-        // make up some params
-        PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
-        pg.init(passphrase.getBytes(), salt, iterations);
-        CipherParameters params = pg.generateDerivedParameters(256);
-        // initialize
-        encrypt.init(false, params);
-        int blockSize = encrypt.getBlockSize();
-
-        // read the file and encrypt it
-        File encryptedFile = TempFileUtil.createTemporaryFile();
-        // make the IO
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        FileOutputStream fos = null;
-        BufferedOutputStream bos = null;
-        try {
-            // initialize streams
-            fis = new FileInputStream(file);
-            bis = new BufferedInputStream(fis);
-            fos = new FileOutputStream(encryptedFile);
-            bos = new BufferedOutputStream(fos);
-
-            // make the buffers
-            byte[] data = new byte[blockSize];
-            byte[] encrypted = new byte[blockSize];
-            byte[] encryptedBuffer = new byte[blockSize];
-            boolean firstRound = true;
-
-            // encrypt all the data
-            int offset = 0;
-            for (int bytesRead = bis.read(data, offset, data.length - offset); bytesRead != -1; bytesRead = bis.read(data, offset, data.length - offset)) {
-                // check for bytes read
-                if (bytesRead + offset != data.length) {
-                    offset += bytesRead;
-                    continue;
-                }
-                offset = 0;
-
-                // if not the first round, write it
-                encrypt.processBlock(data, 0, encrypted, 0);
-                // write the data
-                if (!firstRound) {
-                    bos.write(encryptedBuffer);
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                } else {
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                    firstRound = false;
-                }
-            }
-            // take the last block and remove padding
-            int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            // This data set has the wrong amount of padding on the end:
-            // MkGyTFmb1AfYweV2lygIhefMT8piy9jsToD4XGPmrW/iAkNPOJYTs1YG/dtEzraNRwKTHGqSoFOoxcL60EeoLFobgBsAAAAAAAAfBg==
-            // The data set downloads and validates with these changes
-//            if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
-//                System.out.println("Padding length: " + paddingLength);
-//                System.out.println("Encrypted buffer length: " + encryptedBuffer.length);
-//                throw new WrongPassphraseException();
-//            }
-            debugOut("Padding length: " + paddingLength);
-            debugOut("Encrypted buffer length: " + encryptedBuffer.length);
-            if (paddingLength < 0) {
-                paddingLength = 0;
-            } else if (paddingLength > encryptedBuffer.length) {
-                paddingLength = encryptedBuffer.length;
-            }
-            bos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
-
-            // return the file
-            return encryptedFile;
-        } finally {
-            IOUtil.safeClose(bis);
-            IOUtil.safeClose(fis);
-            IOUtil.safeClose(bos);
-            IOUtil.safeClose(fos);
-        }
-    }
-
-    /**
      * <p>Helper method to convert certificate's into unique names.</p>
      * @param cert
      * @return
@@ -1269,32 +1004,82 @@ public class SecurityUtil {
     }
 
     /**
-     * <p>In-memory version of encryption function. This method avoids all uses of temporary files, which can save some time when handling lots of small files.</p>
+     * <p>Encrypts a file using AES and a passphrase.</p>
      * @param passphrase
-     * @param dataBytes
+     * @param file
      * @return
      * @throws java.io.IOException
-     * @throws java.security.GeneralSecurityException
      */
-    public static byte[] encrypt(String passphrase, byte[] dataBytes) throws IOException, GeneralSecurityException {
-        return encrypt(passphrase, new byte[8], 1000, dataBytes);
+    public static File encryptDiskBacked(String passphrase, File file) throws IOException {
+        // make the AES encryption engine
+        AESFastEngine encrypt = new AESFastEngine();
+        // make up some params
+        PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
+        pg.init(passphrase.getBytes(), ENCRYPTION_SALT, ENCRYPTION_ITERATIONS);
+        CipherParameters params = pg.generateDerivedParameters(256);
+        // initialize
+        encrypt.init(true, params);
+        int blockSize = encrypt.getBlockSize();
+
+        // read the file and encrypt it
+        File encryptedFile = TempFileUtil.createTemporaryFile();
+        FileInputStream fis = null;
+        BufferedInputStream bis = null;
+        FileOutputStream fos = null;
+        java.io.BufferedOutputStream bos = null;
+        try {
+            // initialize streams
+            fis = new FileInputStream(file);
+            bis = new BufferedInputStream(fis);
+            fos = new FileOutputStream(encryptedFile);
+            bos = new java.io.BufferedOutputStream(fos);
+
+            // make the buffers
+            byte[] data = new byte[blockSize];
+            byte[] encrypted = new byte[blockSize];
+
+            // encrypt all the data
+            int bytesRead = 0;
+            for (bytesRead = bis.read(data); bytesRead == blockSize; bytesRead = bis.read(data)) {
+                encrypt.processBlock(data, 0, encrypted, 0);
+                // write the data
+                bos.write(encrypted);
+            }
+            if (bytesRead == -1) {
+                bytesRead = 0;
+            }
+            // padd the rest using method#2 recommended by PKCS#5 add x bytes with a value of x.
+            int paddingLength = data.length - bytesRead;
+            for (int i = bytesRead; i < data.length; i++) {
+                data[i] = (byte) (0xff & paddingLength);
+            }
+            // process the data
+            encrypt.processBlock(data, 0, encrypted, 0);
+            bos.write(encrypted);
+
+            // return the file
+            return encryptedFile;
+        } finally {
+            IOUtil.safeClose(bis);
+            IOUtil.safeClose(fis);
+            IOUtil.safeClose(bos);
+            IOUtil.safeClose(fos);
+        }
     }
 
     /**
      * <p>In-memory version of encryption function. This method avoids all uses of temporary files, which can save some time when handling lots of small files.</p>
      * @param passphrase
-     * @param salt
-     * @param iterations
      * @param dataBytes
      * @return
      * @throws java.io.IOException
      */
-    public static byte[] encrypt(String passphrase, byte[] salt, int iterations, byte[] dataBytes) throws IOException {
+    public static byte[] encryptInMemory(String passphrase, byte[] dataBytes) throws IOException {
         // make the AES encryption engine
         AESFastEngine encrypt = new AESFastEngine();
         // make up some params
         PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
-        pg.init(passphrase.getBytes(), salt, iterations);
+        pg.init(passphrase.getBytes(), ENCRYPTION_SALT, ENCRYPTION_ITERATIONS);
         CipherParameters params = pg.generateDerivedParameters(256);
         // initialize
         encrypt.init(true, params);
@@ -1343,27 +1128,138 @@ public class SecurityUtil {
     }
 
     /**
-     * <p>In-memory version of decryption function. This method avoids all uses of temporary files, which can save some time when handling lots of small files.</p>
+     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
      * @param passphrase
-     * @param dataBytes
+     * @param file
      * @return
-     * @throws java.io.IOException
-     * @throws java.security.GeneralSecurityException
+     * @throws WrongPassphraseException
+     * @throws IOException
+     * @throws GeneralSecurityException
      */
-    public static byte[] decrypt(String passphrase, byte[] dataBytes) throws IOException, GeneralSecurityException {
-        return decrypt(passphrase, new byte[8], 1000, dataBytes);
+    public static File decryptDiskBacked(String passphrase, File file) throws WrongPassphraseException, IOException, GeneralSecurityException {
+        return decryptDiskBacked(passphrase, file, null);
+    }
+
+    /**
+     * <p>Decrypt an AES-encrypted file using a specified passphrase.</p>
+     * @param passphrase
+     * @param file
+     * @param expectedHash
+     * @return
+     * @throws WrongPassphraseException
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public static File decryptDiskBacked(String passphrase, File file, BigHash expectedHash) throws WrongPassphraseException, IOException, GeneralSecurityException {
+        // make the AES encryption engine
+        AESFastEngine encrypt = new AESFastEngine();
+        // make up some params
+        PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
+        pg.init(passphrase.getBytes(), ENCRYPTION_SALT, ENCRYPTION_ITERATIONS);
+        CipherParameters params = pg.generateDerivedParameters(256);
+        // initialize
+        encrypt.init(false, params);
+        int blockSize = encrypt.getBlockSize();
+
+        // read the file and encrypt it
+        File encryptedFile = TempFileUtil.createTemporaryFile();
+        // make the IO
+        BigHashMaker bhm = null;
+        FileInputStream fis = null;
+        BufferedInputStream bis = null;
+        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;
+        try {
+            if (expectedHash != null) {
+                bhm = new BigHashMaker();
+            }
+            // initialize streams
+            fis = new FileInputStream(file);
+            bis = new BufferedInputStream(fis);
+            fos = new FileOutputStream(encryptedFile);
+            bos = new BufferedOutputStream(fos);
+
+            // make the buffers
+            byte[] data = new byte[blockSize];
+            byte[] encrypted = new byte[blockSize];
+            byte[] encryptedBuffer = new byte[blockSize];
+            boolean firstRound = true;
+
+            // encrypt all the data
+            int offset = 0;
+            for (int bytesRead = bis.read(data, offset, data.length - offset); bytesRead != -1; bytesRead = bis.read(data, offset, data.length - offset)) {
+                // check for bytes read
+                if (bytesRead + offset != data.length) {
+                    offset += bytesRead;
+                    continue;
+                }
+                offset = 0;
+
+                // if not the first round, write it
+                encrypt.processBlock(data, 0, encrypted, 0);
+                // write the data
+                if (!firstRound) {
+                    bos.write(encryptedBuffer);
+                    if (bhm != null) {
+                        bhm.update(encryptedBuffer, 0, encryptedBuffer.length);
+                    }
+                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
+                } else {
+                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
+                    firstRound = false;
+                }
+            }
+            // take the last block and remove padding
+            int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
+            if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
+                throw new WrongPassphraseException();
+            }
+            bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+            if (bhm != null) {
+                bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+                BigHash actualHash = BigHash.createFromBytes(bhm.finish());
+                if (!actualHash.equals(expectedHash)) {
+                    debugOut("Expected " + expectedHash + " but actually " + actualHash);
+                    throw new WrongPassphraseException();
+                } else {
+                    debugOut("Verified hash.");
+                }
+            }
+
+            // return the file
+            return encryptedFile;
+        } finally {
+            IOUtil.safeClose(bis);
+            IOUtil.safeClose(fis);
+            IOUtil.safeClose(bos);
+            IOUtil.safeClose(fos);
+        }
     }
 
     /**
      * <p>In-memory version of decryption function. This method avoids all uses of temporary files, which can save some time when handling lots of small files.</p>
      * @param passphrase
-     * @param salt
-     * @param iterations
      * @param dataBytes
      * @return
-     * @throws java.io.IOException
+     * @throws WrongPassphraseException
+     * @throws IOException
+     * @throws GeneralSecurityException
      */
-    public static byte[] decrypt(String passphrase, byte[] salt, int iterations, byte[] dataBytes) throws IOException {
+    public static byte[] decryptInMemory(String passphrase, byte[] dataBytes) throws WrongPassphraseException, IOException, GeneralSecurityException {
+        return decryptInMemory(passphrase, dataBytes, null);
+    }
+
+    /**
+     * <p>In-memory version of decryption function. This method avoids all uses of temporary files, which can save some time when handling lots of small files.</p>
+     * @param passphrase
+     * @param dataBytes
+     * @param expectedHash
+     * @return
+     * @throws WrongPassphraseException
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public static byte[] decryptInMemory(String passphrase, byte[] dataBytes, BigHash expectedHash) throws WrongPassphraseException, IOException, GeneralSecurityException {
         if (passphrase == null) {
             throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
         }
@@ -1371,17 +1267,21 @@ public class SecurityUtil {
         AESFastEngine encrypt = new AESFastEngine();
         // make up some params
         PKCS5S2ParametersGenerator pg = new PKCS5S2ParametersGenerator();
-        pg.init(passphrase.getBytes(), salt, iterations);
+        pg.init(passphrase.getBytes(), ENCRYPTION_SALT, ENCRYPTION_ITERATIONS);
         CipherParameters params = pg.generateDerivedParameters(256);
         // initialize
         encrypt.init(false, params);
         int blockSize = encrypt.getBlockSize();
 
         // make the IO
+        BigHashMaker bhm = null;
         ByteArrayInputStream fis = null;
         BufferedInputStream bis = null;
         ByteArrayOutputStream fos = null;
         try {
+            if (expectedHash != null) {
+                bhm = new BigHashMaker();
+            }
             // initialize streams
             fis = new ByteArrayInputStream(dataBytes);
             bis = new BufferedInputStream(fis);
@@ -1408,6 +1308,9 @@ public class SecurityUtil {
                 // write the data
                 if (!firstRound) {
                     fos.write(encryptedBuffer);
+                    if (bhm != null) {
+                        bhm.update(encryptedBuffer, 0, encryptedBuffer.length);
+                    }
                     System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
                 } else {
                     System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
@@ -1419,7 +1322,17 @@ public class SecurityUtil {
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
                 throw new WrongPassphraseException();
             }
-            fos.write(encryptedBuffer, 0, encrypted.length - paddingLength);
+            fos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+            if (bhm != null) {
+                bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+                BigHash actualHash = BigHash.createFromBytes(bhm.finish());
+                if (!actualHash.equals(expectedHash)) {
+                    debugOut("Expected " + expectedHash + " but actually " + actualHash);
+                    throw new WrongPassphraseException();
+                } else {
+                    debugOut("Verified hash.");
+                }
+            }
 
             // return the file
             return fos.toByteArray();

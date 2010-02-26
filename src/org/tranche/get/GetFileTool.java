@@ -764,8 +764,10 @@ public class GetFileTool {
         List<String> writableHosts = new LinkedList<String>();
         List<String> nonWritableHosts = new LinkedList<String>();
         List<String> externalHosts = new LinkedList<String>();
+        List<String> lastDitchHosts = new LinkedList<String>();
         // add all connected servers with the hash in their hash spans
         if (useUnspecifiedServers) {
+            CONNECTIONS:
             for (StatusTableRow row : ConnectionUtil.getConnectedRows()) {
                 if (!row.isReadable()) {
                     continue;
@@ -778,9 +780,10 @@ public class GetFileTool {
                         } else {
                             nonWritableHosts.add(row.getHost());
                         }
-                        break;
+                        continue CONNECTIONS;
                     }
                 }
+                lastDitchHosts.add(row.getHost());
             }
         }
         StatusTable table = NetworkUtil.getStatus().clone();
@@ -879,6 +882,30 @@ public class GetFileTool {
             Collections.sort(keys);
             for (Integer key : keys) {
                 List<String> list = externalHostsMap.get(key);
+                Collections.shuffle(list);
+                hosts.addAll(list);
+            }
+        }
+
+        // order last-ditch hosts by # of requests
+        {
+            Map<Integer, List<String>> lastDitchHostsMap = new HashMap<Integer, List<String>>();
+            for (String host : lastDitchHosts) {
+                try {
+                    int outstandingRequests = ConnectionUtil.getConnection(host).getRemoteTrancheServer().countOutstandingRequests();
+                    if (!lastDitchHostsMap.containsKey(outstandingRequests)) {
+                        lastDitchHostsMap.put(outstandingRequests, new ArrayList<String>());
+                    }
+                    lastDitchHostsMap.get(outstandingRequests).add(host);
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
+            // add each of the subsets in ascending order
+            List<Integer> keys = new ArrayList<Integer>(lastDitchHostsMap.keySet());
+            Collections.sort(keys);
+            for (Integer key : keys) {
+                List<String> list = lastDitchHostsMap.get(key);
                 Collections.shuffle(list);
                 hosts.addAll(list);
             }
@@ -984,7 +1011,7 @@ public class GetFileTool {
                     downloadFile(null, metaData, pf, new byte[0]);
                 }
                 if (!pf.exists()) {
-                    throw new Exception("Could not download the project file.");
+                    throw new IOException("Could not download the project file.");
                 }
                 // read the file
                 projectFile = ProjectFile.createFromFile(pf);
@@ -1199,9 +1226,10 @@ public class GetFileTool {
      * @param metaData The meta data for the file to be downloaded.
      * @param saveAs The location to save the downloaded file.
      * @param padding The bytes that were tacked on the end up the uploaded file.
+     * @throws WrongPassphraseException
      */
-    private void downloadFile(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) {
-        if (metaData.getEncodings().get(0).getHash().getLength() > DataBlockUtil.ONE_MB) {
+    private void downloadFile(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) throws WrongPassphraseException {
+        if (metaData.getHash().getLength() > DataBlockUtil.ONE_MB) {
             downloadFileDiskBacked(part, metaData, saveAs, padding);
         } else {
             downloadFileInMemory(part, metaData, saveAs, padding);
@@ -1214,8 +1242,9 @@ public class GetFileTool {
      * @param metaData The meta data for the file to be downloaded.
      * @param saveAs The location to save the downloaded file.
      * @param padding The bytes that were tacked on the end up the uploaded file.
+     * @throws WrongPassphraseException
      */
-    private void downloadFileInMemory(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) {
+    private void downloadFileInMemory(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) throws WrongPassphraseException {
         debugOut("Downloading file (in memory) " + saveAs.getName() + ". Padding length: " + padding.length);
         // none encoding hash
         BigHash fileHash = metaData.getEncodings().get(0).getHash();
@@ -1260,8 +1289,9 @@ public class GetFileTool {
      * @param metaData The meta data for the file to be downloaded.
      * @param saveAs The location to save the downloaded file.
      * @param padding The bytes that were tacked on the end up the uploaded file.
+     * @throws WrongPassphraseException
      */
-    private void downloadFileDiskBacked(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) {
+    private void downloadFileDiskBacked(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) throws WrongPassphraseException {
         debugOut("Downloading file (disk backed) " + saveAs.getName() + ". Padding length: " + padding.length);
         // none encoding hash
         BigHash fileHash = metaData.getEncodings().get(0).getHash();
@@ -1334,7 +1364,7 @@ public class GetFileTool {
      */
     private void decodeFileInMemory(ProjectFilePart part, MetaData metaData, byte[] bytes, File saveAs, byte[] padding) throws Exception {
         // none encoding hash
-        BigHash fileHash = metaData.getEncodings().get(0).getHash();
+        BigHash fileHash = metaData.getHash();
         debugOut("Decoding file (in memory) " + fileHash);
         // decode the file -- rewind the encodings
         List<FileEncoding> encodings = metaData.getEncodings();
@@ -1345,12 +1375,18 @@ public class GetFileTool {
             } else if (fe.getName().equals(FileEncoding.LZMA)) {
                 bytes = CompressionUtil.lzmaDecompress(bytes);
             } else if (fe.getName().equals(FileEncoding.AES)) {
+                BigHash nextHash = null;
+                if (i > 0) {
+                    nextHash = encodings.get(i - 1).getHash();
+                } else {
+                    nextHash = fileHash;
+                }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {
-                    bytes = SecurityUtil.decrypt(fe.getProperty(FileEncoding.PROP_PASSPHRASE), bytes);
+                    bytes = SecurityUtil.decryptInMemory(fe.getProperty(FileEncoding.PROP_PASSPHRASE), bytes, nextHash);
                 } else {
                     debugOut("Decoding (in memory) using passphrase: " + passphrase);
-                    bytes = SecurityUtil.decrypt(passphrase, bytes);
+                    bytes = SecurityUtil.decryptInMemory(passphrase, bytes, nextHash);
                 }
             }
         }
@@ -1382,23 +1418,30 @@ public class GetFileTool {
      */
     private void decodeFileDiskBacked(ProjectFilePart part, MetaData metaData, File tempFile, File saveAs, byte[] padding) throws Exception {
         // none encoding hash
-        BigHash fileHash = metaData.getEncodings().get(0).getHash();
+        BigHash fileHash = metaData.getHash();
         debugOut("Decoding file (disk backed) " + fileHash);
         // decode the file -- rewind the encodings
         List<FileEncoding> encodings = metaData.getEncodings();
         for (int i = encodings.size() - 1; i >= 0; i--) {
             FileEncoding fe = encodings.get(i);
+            debugOut(fe.getHash().toString());
             if (fe.getName().equals(FileEncoding.GZIP)) {
                 tempFile = CompressionUtil.gzipDecompress(tempFile);
             } else if (fe.getName().equals(FileEncoding.LZMA)) {
                 tempFile = CompressionUtil.lzmaDecompress(tempFile);
             } else if (fe.getName().equals(FileEncoding.AES)) {
+                BigHash nextHash = null;
+                if (i > 0) {
+                    nextHash = encodings.get(i - 1).getHash();
+                } else {
+                    nextHash = fileHash;
+                }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {
-                    tempFile = SecurityUtil.decrypt(fe.getProperty(FileEncoding.PROP_PASSPHRASE), tempFile);
+                    tempFile = SecurityUtil.decryptDiskBacked(fe.getProperty(FileEncoding.PROP_PASSPHRASE), tempFile, nextHash);
                 } else {
                     debugOut("Decoding (disk backed) using passphrase: " + passphrase);
-                    tempFile = SecurityUtil.decrypt(passphrase, tempFile);
+                    tempFile = SecurityUtil.decryptDiskBacked(passphrase, tempFile, nextHash);
                 }
             }
         }
@@ -1540,7 +1583,7 @@ public class GetFileTool {
             }
             Set<PropagationExceptionWrapper> exceptions = new HashSet<PropagationExceptionWrapper>();
 
-            // ---------------------------------------------------------------------------
+            // -----------------------------------------------------------------------------
             // For some reason, a chunk sporadically fails validation once in a long while.
             // However, this problem is easily reproducable using stress tests. (Running
             // over night, might happen 10 or more times.) The second time, works fine.
@@ -1549,9 +1592,10 @@ public class GetFileTool {
             // when the mistake happens), please do not remove this logic until the 
             // problem is solved. When the problem is solved AND demonstrated that it is
             // solved by passing the stress tests, then we can remove this. Thu Nov 12 2009
-            // ---------------------------------------------------------------------------
+            // -----------------------------------------------------------------------------
             ATTEMPT:
             for (int attempt = 0; attempt < 2; attempt++) {
+                debugOut("Attempt #" + attempt + " to download " + chunkHash + " in " + fileHash);
                 HOSTS:
                 for (String host : hosts) {
                     fireTryingChunk(fileHash, chunkHash, host);
@@ -1564,12 +1608,16 @@ public class GetFileTool {
                         try {
                             long start = TimeUtil.getTrancheTimestamp();
                             PropagationReturnWrapper wrapper = IOUtil.getData(ts, chunkHash, true);
-                            debugOut("Milliseconds spent waiting for get meta data response: " + (TimeUtil.getTrancheTimestamp() - start));
+                            debugOut("Milliseconds spent waiting for get data response: " + (TimeUtil.getTrancheTimestamp() - start));
                             for (PropagationExceptionWrapper pew : wrapper.getErrors()) {
                                 debugOut(pew.toString());
                             }
                             if (!wrapper.isVoid()) {
                                 bytes = IOUtil.get1DBytes(wrapper);
+                                if (bytes == null) {
+                                    debugOut("Null bytes returned by " + host + ".");
+                                    continue HOSTS;
+                                }
                                 // are the bytes valid?
                                 if (!validateChunk(chunkHash, bytes)) {
                                     // -----------------------------------------------------------------------------
@@ -1589,9 +1637,9 @@ public class GetFileTool {
                             ConnectionUtil.unlockConnection(host);
                         }
                     } catch (Exception e) {
+                        debugErr(e);
                         exceptions.add(new PropagationExceptionWrapper(e, host, chunkHash));
                         ConnectionUtil.reportExceptionHost(host, e);
-                        debugErr(e);
                     }
                 }
             }
@@ -1599,6 +1647,7 @@ public class GetFileTool {
                 fireFailedChunk(fileHash, chunkHash, exceptions);
             }
         } catch (Exception e) {
+            debugErr(e);
             fireFailedChunk(fileHash, chunkHash, e);
         }
         return bytes;
@@ -2588,10 +2637,12 @@ public class GetFileTool {
         /**
          *
          */
-        public synchronized void waitForFinish() {
+        public void waitForFinish() {
             while (!started || !finished) {
                 try {
-                    wait();
+                    synchronized (FileDataDownloadingThread.this) {
+                        wait();
+                    }
                 } catch (Exception e) {
                     debugErr(e);
                 }
@@ -2615,7 +2666,7 @@ public class GetFileTool {
                             break;
                         }
                         // downloading the chunk
-                        dataChunk.setBytes(downloadData(dataChunk.metaChunk.md.getEncodings().get(dataChunk.metaChunk.md.getEncodings().size() - 1).getHash(), dataChunk.hash));
+                        dataChunk.setBytes(downloadData(dataChunk.metaChunk.md.getHash(), dataChunk.hash));
                         if (dataChunk.getBytes() == null) {
                             haltAll();
                             continue;

@@ -20,11 +20,9 @@ import org.tranche.util.*;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateExpiredException;
@@ -81,15 +79,6 @@ public class UserZipFile extends User {
     }
 
     /**
-     * @param is
-     * @param passphrase
-     */
-    public UserZipFile(InputStream is, String passphrase) {
-        this.passphrase = passphrase;
-        lazyLoad(is);
-    }
-
-    /**
      * 
      */
     private synchronized void lazyLoad() {
@@ -107,13 +96,7 @@ public class UserZipFile extends User {
 
         // lazy load the stream
         try {
-            ByteArrayInputStream bais = null;
-            try {
-                bais = new ByteArrayInputStream(IOUtil.getBytes(file));
-                lazyLoad(bais);
-            } finally {
-                IOUtil.safeClose(bais);
-            }
+            lazyLoad(IOUtil.getBytes(file));
         } catch (IOException ex) {
             throw new RuntimeException("Can't read the user's file: " + file, ex);
         }
@@ -123,18 +106,18 @@ public class UserZipFile extends User {
      * 
      * @param is
      */
-    private void lazyLoad(InputStream is) {
+    private void lazyLoad(byte[] bytes) {
         // check that the passphrase is present, if required
         if (passphrase == null) {
             throw new RuntimeException("Passphrase required.");
         }
 
         // if the file is encrypted, decrypt it
-        ByteArrayOutputStream decrypted = null;
+        byte[] decryptedBytes = null;
         try {
-            decrypted = SecurityUtil.decrypt(passphrase, is);
+            decryptedBytes = SecurityUtil.decryptInMemory(passphrase, bytes);
         } catch (GeneralSecurityException ex) {
-            throw new RuntimeException("Decryption error.  Is the file corrupt?", ex);
+            throw new RuntimeException("Decryption error. Is the file corrupt?", ex);
         } catch (IOException ex) {
             throw new RuntimeException("Can't read encrypted file.", ex);
         }
@@ -145,7 +128,7 @@ public class UserZipFile extends User {
         ZipInputStream zis = null;
         try {
             // load the input streams
-            fis = new ByteArrayInputStream(decrypted.toByteArray());
+            fis = new ByteArrayInputStream(decryptedBytes);
             bis = new BufferedInputStream(fis);
             zis = new ZipInputStream(bis);
 
@@ -221,7 +204,7 @@ public class UserZipFile extends User {
 
             // if encrypted, encrypt
             if (getPassphrase() != null) {
-                File encrypted = SecurityUtil.encrypt(passphrase, file);
+                File encrypted = SecurityUtil.encryptDiskBacked(passphrase, file);
                 // rename to the expected file
                 IOUtil.renameFallbackCopy(encrypted, file);
             }
