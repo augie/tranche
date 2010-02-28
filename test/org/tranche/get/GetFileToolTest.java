@@ -1026,11 +1026,11 @@ public class GetFileToolTest extends TrancheTestCase {
 
         GetFileTool gft = new GetFileTool();
         gft.setValidate(true);
-        gft.validateFile(expectedHash, metaData, tempFile, new byte[0]);
+        gft.validateDiskBacked(expectedHash, metaData, tempFile, new byte[0]);
         // bad hash
         boolean exceptionThrown = false;
         try {
-            gft.validateFile(DevUtil.getRandomBigHash(), metaData, tempFile, new byte[0]);
+            gft.validateDiskBacked(DevUtil.getRandomBigHash(), metaData, tempFile, new byte[0]);
         } catch (Exception e) {
             exceptionThrown = true;
         }
@@ -1040,7 +1040,7 @@ public class GetFileToolTest extends TrancheTestCase {
         // bad signature
         exceptionThrown = false;
         try {
-            gft.validateFile(DevUtil.getRandomBigHash(), DevUtil.createRandomMetaData(), tempFile, new byte[0]);
+            gft.validateDiskBacked(DevUtil.getRandomBigHash(), DevUtil.createRandomMetaData(), tempFile, new byte[0]);
         } catch (Exception e) {
             exceptionThrown = true;
         }
@@ -1050,8 +1050,8 @@ public class GetFileToolTest extends TrancheTestCase {
 
         // should not throw exception
         gft.setValidate(false);
-        gft.validateFile(DevUtil.getRandomBigHash(), metaData, tempFile, new byte[0]);
-        gft.validateFile(DevUtil.getRandomBigHash(), DevUtil.createRandomMetaData(), tempFile, new byte[0]);
+        gft.validateDiskBacked(DevUtil.getRandomBigHash(), metaData, tempFile, new byte[0]);
+        gft.validateDiskBacked(DevUtil.getRandomBigHash(), DevUtil.createRandomMetaData(), tempFile, new byte[0]);
     }
 
     public void testDownloadData() throws Exception {

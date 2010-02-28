@@ -72,6 +72,7 @@ import org.tranche.FileEncoding;
 import org.tranche.Tertiary;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.ChunkAlreadyExistsSecurityException;
+import org.tranche.exceptions.UnknownArgumentException;
 import org.tranche.get.GetFileTool;
 import org.tranche.network.MultiServerRequestStrategy;
 import org.tranche.network.StatusTable;
@@ -125,17 +126,17 @@ public class AddFileTool {
      * User parameters
      */
     private File file = START_VALUE_FILE;
-    private boolean compress = DEFAULT_COMPRESS,  dataOnly = DEFAULT_DATA_ONLY,  explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD,  showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS,  emailOnFailure = DEFAULT_EMAIL_ON_FAILURE;
+    private boolean compress = DEFAULT_COMPRESS, dataOnly = DEFAULT_DATA_ONLY, explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD, showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, emailOnFailure = DEFAULT_EMAIL_ON_FAILURE, sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
     private License license;
     private X509Certificate userCertificate;
     private PrivateKey userPrivateKey;
-    private String title = START_VALUE_TITLE,  description = START_VALUE_DESCRIPTION,  passphrase;
+    private String title = START_VALUE_TITLE, description = START_VALUE_DESCRIPTION, passphrase;
     private final List<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
-    private final Set<String> emailConfirmationSet = new HashSet<String>(),  serverHostUseSet = new HashSet<String>(),  serverHostStickySet = new HashSet<String>();
+    private final Set<String> emailConfirmationSet = new HashSet<String>(), serverHostUseSet = new HashSet<String>(), serverHostStickySet = new HashSet<String>();
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -147,7 +148,7 @@ public class AddFileTool {
      */
     private boolean projectFileAddedToStack = false;
     private ProjectFile projectFile = START_VALUE_PROJECT_FILE;
-    private int threadCount = DEFAULT_THREADS,  fileCount = START_VALUE_FILE_COUNT;
+    private int threadCount = DEFAULT_THREADS, fileCount = START_VALUE_FILE_COUNT;
     private long size = START_VALUE_SIZE;
     byte[] padding = START_VALUE_PADDING;
     private boolean locked = false;
@@ -618,6 +619,22 @@ public class AddFileTool {
     }
 
     /**
+     * <p></p>
+     * @param sendPerformanceInfo
+     */
+    public void setSendPerformanceInfo(boolean sendPerformanceInfo) {
+        this.sendPerformanceInfo = sendPerformanceInfo;
+    }
+
+    /**
+     * <p></p>
+     * @return
+     */
+    public boolean isSendPerformanceInfo() {
+        return sendPerformanceInfo;
+    }
+
+    /**
      * <p>Set whether the upload is paused.</p>
      * @param paused Whether the upload is paused.
      */
@@ -1045,6 +1062,15 @@ public class AddFileTool {
         final AddFileToolReport report = new AddFileToolReport(startTimestamp, title, description, passphrase != null, showMetaDataIfEncrypted, null);
         addListener(new AddFileToolReportListener(report));
         File licenseFile = null;
+        AddFileToolPerformanceLog performanceLog = null;
+        if (isSendPerformanceInfo()) {
+            try {
+                performanceLog = new AddFileToolPerformanceLog();
+                addListener(performanceLog);
+            } catch (Exception e) {
+                debugErr(e);
+            }
+        }
         try {
             // lock the variables in place
             locked = true;
@@ -1209,6 +1235,9 @@ public class AddFileTool {
                         AddFileToolUtil.emailFailureNotice(ConfigureTranche.getAdminEmailAccounts(), this, report);
                     }
                 }
+            }
+            if (performanceLog != null) {
+                removeListener(performanceLog);
             }
             locked = false;
         }
@@ -1542,22 +1571,20 @@ public class AddFileTool {
         System.err.println("    We recommend you use the default values, which are adjusted for best performance and stability.");
         System.err.println();
         System.err.println("    -A, --annotation            Values: any two strings.  Adds an annotation to the meta data. (e.g., '-A \"My Name\" Augie').");
-        System.err.println("    -c, --agreecczero           Values: none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
-        System.err.println("    -e, --passphrase            Values: any string.       Used to encrypt the upload. Data will only be available to users with this password.");
-        System.err.println("    -f, --useunspecified        Values: true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
-        System.err.println("    -I, --sticky                Values: any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
-        System.err.println("    -l, --customlicense         Values: any string.       Provide custom custom license information.");
-        System.err.println("    -m, --tempdir               Values: any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
-        System.err.println("    -M, --customlicensefile     Values: any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
-        System.err.println("    -N, --threads               Values: number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
-        System.err.println("    -O, --compress              Values: true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
-        System.err.println("    -R, --server                Values: any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
-        System.err.println("    -w, --showencinfo           Values: true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
-        System.err.println("    -x, --explode               Values: true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
-        System.err.println("    -y, --dataonly              Values: true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
-        System.err.println();
-        System.err.println("TROUBLESHOOTING PARAMETERS");
-        System.err.println("    -F, --performance           Value: true/false.        Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
+        System.err.println("    -c, --agreecczero           Value:  none.             Agree to the Creative Commons Zero waiver. For more information, use the --describecczero parameter.");
+        System.err.println("    -e, --passphrase            Value:  any string.       Used to encrypt the upload. Data will only be available to users with this password.");
+        System.err.println("    -f, --useunspecified        Value:  true or false.    Whether to use unspecified servers for the upload. Specify servers to use with the \"-V, --server\" and \"-I, --sticky\" parameters. Default value is " + AddFileTool.DEFAULT_USE_UNSPECIFIED_SERVERS + ".");
+        System.err.println("    -F, --performance           Value:  true or false.    Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
+        System.err.println("    -I, --sticky                Value:  any string.       Specify the host name of a server to which the files should be stuck. If want to specify more than one, use flag multiple times (e.g., \"-I 141.214.241.100 -I 100.100.100.100\").");
+        System.err.println("    -l, --customlicense         Value:  any string.       Provide custom custom license information.");
+        System.err.println("    -m, --tempdir               Value:  any string.       Path to use for temporary directory instead of default. Default is based on different heuristics for operating system. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
+        System.err.println("    -M, --customlicensefile     Value:  any string.       Provide custom custom license information (in a plain-text file, specify path to file).");
+        System.err.println("    -N, --threads               Value:  number.           The number of threads to allow for upload. Default value is " + AddFileTool.DEFAULT_THREADS + ".");
+        System.err.println("    -O, --compress              Value:  true or false.    Compress the files as they are uploaded. Tranche currently uses the GZIP algorithm to perform compression. Default value is " + AddFileTool.DEFAULT_COMPRESS + ".");
+        System.err.println("    -R, --server                Value:  any string.       Specify the host name of a preferred server. If want to specify more than one, use flag multiple times (e.g., \"-V 141.214.241.100 -V 100.100.100.100\").");
+        System.err.println("    -w, --showencinfo           Value:  true or false.    If your upload is encrypted, setting this to true will make the title and description available in the meta data. Default value is " + AddFileTool.DEFAULT_SHOW_META_DATA_IF_ENCRYPTED + ".");
+        System.err.println("    -x, --explode               Value:  true or false.    Explode and decompress archives before uploading. Supported formats are GZIP, LZMA, BZIP2, TAR, ZIP, TAR-GZIP, and TAR-BZIP2. Default value is " + AddFileTool.DEFAULT_EXPLODE_BEFORE_UPLOAD + ".");
+        System.err.println("    -y, --dataonly              Value:  true or false.    Upload only the data chunks. This can be used to quickly increase the replication of data chunks. Default value is " + AddFileTool.DEFAULT_DATA_ONLY + ".");
         System.err.println();
         System.err.println("HASHES OUTPUT");
         System.err.println("    The flag \"--allhashes\" or \"-a\" will print out all file hashes to standard output (stdout). Each uploaded file will result in a single line printed in the following format:");
@@ -1656,12 +1683,11 @@ public class AddFileTool {
 
             AddFileTool aft = new AddFileTool();
             boolean showSummary = DEFAULT_SHOW_SUMMARY;
-            boolean isPerformanceLogging = DEFAULT_USE_PERFORMANCE_LOG;
             try {
                 for (int i = 1; i < args.length - 1; i += 2) {
-                    
+
                     String arg = args[i];
-                    
+
                     if (arg.equals("-g") || arg.equals("--debug")) {
                         i--;
                     } else if (arg.equals("-S") || arg.equals("--showsummary")) {
@@ -1717,7 +1743,7 @@ public class AddFileTool {
                             aft.setUserCertificate(user.getCertificate());
                             aft.setUserPrivateKey(user.getPrivateKey());
                         } catch (Exception e) {
-                            System.err.println("Check login information, "+e.getClass().getSimpleName() + ": " + e.getMessage());
+                            System.err.println("Check login information, " + e.getClass().getSimpleName() + ": " + e.getMessage());
                             e.printStackTrace(System.err);
                             LogUtil.logError(e);
                             if (!TestUtil.isTesting()) {
@@ -1811,23 +1837,21 @@ public class AddFileTool {
                     } else if (arg.equals("-X") || arg.equals("--proxyport")) {
                         System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
                     } else if (arg.equals("-F") || arg.equals("--performance")) {
-                        isPerformanceLogging = Boolean.parseBoolean(args[i + 1]);
+                        try {
+                            aft.setSendPerformanceInfo(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
                     }
                 }
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
                     System.exit(3);
                 } else {
                     throw e;
                 }
-            }
-
-            if (isPerformanceLogging) {
-                File logFile = TempFileUtil.createTempFileWithName("aft-performance-command-line-" + Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp()) + ".log");
-                AddFileToolPerformanceLog log = new AddFileToolPerformanceLog(logFile);
-                aft.addListener(log);
             }
 
             // perform upload
@@ -2102,7 +2126,7 @@ public class AddFileTool {
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
         private int emptyCount = 0;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         private final LinkedList<FileToUpload> fileStack;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         public BigHash primaryFileHash;
@@ -2610,7 +2634,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
@@ -2936,7 +2960,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
         public MetaDataUploadingThread(Set<FileEncodingThread> fileThreads, Set<DataUploadingThread> dataThreads, Set<MetaDataUploadingThread> metaThreads, PriorityBlockingQueue<MetaChunk> metaChunkQueue) {

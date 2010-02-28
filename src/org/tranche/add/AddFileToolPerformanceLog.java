@@ -1,12 +1,24 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ *    Copyright 2005 The Regents of the University of Michigan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.tranche.add;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,6 +35,7 @@ import org.tranche.time.TimeUtil;
 import org.tranche.util.CompressionUtil;
 import org.tranche.util.EmailUtil;
 import org.tranche.util.IOUtil;
+import org.tranche.util.TempFileUtil;
 import org.tranche.util.Text;
 
 /**
@@ -43,10 +56,10 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
 
     /**
      * 
-     * @param file
-     * @throws java.io.FileNotFoundException
+     * @throws IOException
+     * @throws FileNotFoundException
      */
-    public AddFileToolPerformanceLog(File file) throws FileNotFoundException {
+    public AddFileToolPerformanceLog() throws IOException, FileNotFoundException {
         // Set the objId equal to the number of pre-existing logs, then increment
         synchronized (classLock) {
             objId = classInstances++;
@@ -54,7 +67,7 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
         rtsListenerMap = new HashMap();
         rtsDiagnosticsLog = new ConnectionDiagnosticsLog("RemoteTrancheServer diagnostics log");
         aftDiagnosticsLog = new ConnectionDiagnosticsLog("AddFileTool diagnostics log");
-        this.file = file;
+        this.file = TempFileUtil.createTempFileWithName("aft-performance-" + TimeUtil.getTrancheTimestamp() + ".log");
         this.start = TimeUtil.getTrancheTimestamp();
 
         this.dataChunks = new HashMap();
@@ -407,7 +420,7 @@ public class AddFileToolPerformanceLog implements AddFileToolListener {
     private void sendEmailAndDeleteFile() {
         File zippedFile = null;
         try {
-            String subject = "AddFilePerformanceLog [" + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + "]: " + this.getFile().getName();
+            String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Performance Log @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
             String message = "See attached file.";
 
             zippedFile = CompressionUtil.zipCompress(this.getFile());

@@ -141,10 +141,6 @@ public class GetFileToolUtil {
         if (TestUtil.isTesting() || !report.isFailed()) {
             return;
         }
-        // we don't care about some errors
-        if (report.getFailureExceptions().size() == 1 && report.getFailureExceptions().get(0).exception instanceof NotEnoughDiskSpaceException) {
-            return;
-        }
 
         try {
             String[] emailRecipients = ConfigureTranche.getAdminEmailAccounts();
@@ -183,10 +179,10 @@ public class GetFileToolUtil {
                         // Any missing meta data chunks
                         int missingMDSize = failedChunksListener.getMissingMetaDataChunks().size();
                         if (missingMDSize > 0) {
-                            writer.write("* Data set missing "+missingMDSize+" meta chunk"+(missingMDSize==1?"":"s")+":");
+                            writer.write("* Data set missing " + missingMDSize + " meta chunk" + (missingMDSize == 1 ? "" : "s") + ":");
                             writer.newLine();
                             for (BigHash metaHash : failedChunksListener.getMissingMetaDataChunks()) {
-                                writer.write("    - "+metaHash);
+                                writer.write("    - " + metaHash);
                                 writer.newLine();
                             }
                         } else {
@@ -194,26 +190,26 @@ public class GetFileToolUtil {
                             writer.newLine();
                         }
                         writer.newLine();
-                        
+
                         // Any missing data chunks
                         int missingDataChunksSize = 0, missingFromFiles = failedChunksListener.getMissingDataChunks().size();
-                        
+
                         if (missingFromFiles > 0) {
                             for (BigHash metaHash : failedChunksListener.getMissingDataChunks().keySet()) {
                                 Set<BigHash> dataChunks = failedChunksListener.getMissingDataChunks().get(metaHash);
                                 missingDataChunksSize += dataChunks.size();
                             }
-                            
-                            writer.write("A total of "+missingDataChunksSize+" data chunks missing in "+missingFromFiles+" files:");
+
+                            writer.write("A total of " + missingDataChunksSize + " data chunks missing in " + missingFromFiles + " files:");
                             writer.newLine();
-                            
+
                             for (BigHash metaHash : failedChunksListener.getMissingDataChunks().keySet()) {
                                 Set<BigHash> dataChunks = failedChunksListener.getMissingDataChunks().get(metaHash);
-                                writer.write("    - File: "+metaHash);
+                                writer.write("    - File: " + metaHash);
                                 writer.newLine();
-                                
+
                                 for (BigHash dataHash : dataChunks) {
-                                    writer.write("        -> "+dataHash);
+                                    writer.write("        -> " + dataHash);
                                     writer.newLine();
                                 }
                             }
@@ -221,10 +217,10 @@ public class GetFileToolUtil {
                             writer.write("* No missing data chunks were reported. (Note: data chunks might be missing and not reported because associated meta data not found.)");
                             writer.newLine();
                         }
-                        
+
                         writer.newLine();
                         writer.newLine();
-                        
+
                     } finally {
                         IOUtil.safeClose(writer);
                     }
@@ -260,11 +256,12 @@ public class GetFileToolUtil {
             String exceptionMessage = "";
             String exceptionStack = "";
             if (!report.getFailureExceptions().isEmpty()) {
-                PropagationExceptionWrapper e = report.getFailureExceptions().get(0);
-                exceptionName = e.exception.getClass().getName();
-                exceptionMessage = e.exception.getMessage();
-                for (StackTraceElement ste : e.exception.getStackTrace()) {
-                    exceptionStack = exceptionStack + ste.toString() + "\n";
+                for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                    exceptionName = pew.exception.getClass().getName();
+                    exceptionMessage = pew.exception.getMessage();
+                    for (StackTraceElement ste : pew.exception.getStackTrace()) {
+                        exceptionStack = exceptionStack + ste.toString() + "\n";
+                    }
                 }
             }
 

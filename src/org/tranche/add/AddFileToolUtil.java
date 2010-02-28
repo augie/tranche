@@ -104,7 +104,7 @@ public class AddFileToolUtil {
                         "Hash: " + report.getHash().toString() + "\n" +
                         "Title: " + report.getTitle() + "\n" +
                         "Description: " + report.getDescription() + "\n";
-                EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Registration Failed", ConfigureTranche.getAdminEmailAccounts(), message);
+                EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Registration Failed @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()), ConfigureTranche.getAdminEmailAccounts(), message);
             }
         } catch (Exception e) {
             AddFileTool.debugErr(e);

@@ -1118,7 +1118,6 @@ public class SecurityUtil {
             encrypt.processBlock(data, 0, encrypted, 0);
             fos.write(encrypted);
 
-            // return the file
             return fos.toByteArray();
         } finally {
             IOUtil.safeClose(bis);
@@ -1180,10 +1179,10 @@ public class SecurityUtil {
             bos = new BufferedOutputStream(fos);
 
             // make the buffers
+            int round = 0, bufferBlocks = 6;
             byte[] data = new byte[blockSize];
             byte[] encrypted = new byte[blockSize];
-            byte[] encryptedBuffer = new byte[blockSize];
-            boolean firstRound = true;
+            byte[] encryptedBuffer = new byte[blockSize * bufferBlocks];
 
             // encrypt all the data
             int offset = 0;
@@ -1198,35 +1197,43 @@ public class SecurityUtil {
                 // if not the first round, write it
                 encrypt.processBlock(data, 0, encrypted, 0);
                 // write the data
-                if (!firstRound) {
-                    bos.write(encryptedBuffer);
+                if (round >= bufferBlocks) {
+                    // push out the first block
+                    bos.write(encryptedBuffer, 0, blockSize);
                     if (bhm != null) {
-                        bhm.update(encryptedBuffer, 0, encryptedBuffer.length);
+                        bhm.update(encryptedBuffer, 0, blockSize);
                     }
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
+                    // shift middle blocks
+                    for (int i = 1; i < bufferBlocks - 1; i++) {
+                        System.arraycopy(encryptedBuffer, blockSize * i, encryptedBuffer, blockSize * (i - 1), blockSize);
+                    }
+                    // shift last blocks
+                    System.arraycopy(encryptedBuffer, blockSize * (bufferBlocks - 1), encryptedBuffer, blockSize * (bufferBlocks - 2), encryptedBuffer.length - (blockSize * (bufferBlocks - 1)));
+                    // write over the last block
+                    System.arraycopy(encrypted, 0, encryptedBuffer, blockSize * (bufferBlocks - 1), encrypted.length);
                 } else {
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                    firstRound = false;
+                    System.arraycopy(encrypted, 0, encryptedBuffer, blockSize * round, encrypted.length);
                 }
+                round++;
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
+            debugOut("Expected Padding length: " + paddingLength);
+            debugOut("Buffer length: " + encryptedBuffer.length);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
                 throw new WrongPassphraseException();
             }
             bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+            bos.flush();
             if (bhm != null) {
                 bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
                 BigHash actualHash = BigHash.createFromBytes(bhm.finish());
                 if (!actualHash.equals(expectedHash)) {
-                    debugOut("Expected " + expectedHash + " but actually " + actualHash);
+                    debugOut("Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
                     throw new WrongPassphraseException();
-                } else {
-                    debugOut("Verified hash.");
                 }
             }
 
-            // return the file
             return encryptedFile;
         } finally {
             IOUtil.safeClose(bis);
@@ -1277,7 +1284,7 @@ public class SecurityUtil {
         BigHashMaker bhm = null;
         ByteArrayInputStream fis = null;
         BufferedInputStream bis = null;
-        ByteArrayOutputStream fos = null;
+        ByteArrayOutputStream bos = null;
         try {
             if (expectedHash != null) {
                 bhm = new BigHashMaker();
@@ -1285,13 +1292,13 @@ public class SecurityUtil {
             // initialize streams
             fis = new ByteArrayInputStream(dataBytes);
             bis = new BufferedInputStream(fis);
-            fos = new ByteArrayOutputStream();
+            bos = new ByteArrayOutputStream();
 
             // make the buffers
+            int round = 0, bufferBlocks = 6;
             byte[] data = new byte[blockSize];
             byte[] encrypted = new byte[blockSize];
-            byte[] encryptedBuffer = new byte[blockSize];
-            boolean firstRound = true;
+            byte[] encryptedBuffer = new byte[blockSize * bufferBlocks];
 
             // encrypt all the data
             int offset = 0;
@@ -1306,40 +1313,48 @@ public class SecurityUtil {
                 // if not the first round, write it
                 encrypt.processBlock(data, 0, encrypted, 0);
                 // write the data
-                if (!firstRound) {
-                    fos.write(encryptedBuffer);
+                if (round >= bufferBlocks) {
+                    // push out the first block
+                    bos.write(encryptedBuffer, 0, blockSize);
                     if (bhm != null) {
-                        bhm.update(encryptedBuffer, 0, encryptedBuffer.length);
+                        bhm.update(encryptedBuffer, 0, blockSize);
                     }
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
+                    // shift middle blocks
+                    for (int i = 1; i < bufferBlocks - 1; i++) {
+                        System.arraycopy(encryptedBuffer, blockSize * i, encryptedBuffer, blockSize * (i - 1), blockSize);
+                    }
+                    // shift last blocks
+                    System.arraycopy(encryptedBuffer, blockSize * (bufferBlocks - 1), encryptedBuffer, blockSize * (bufferBlocks - 2), encryptedBuffer.length - (blockSize * (bufferBlocks - 1)));
+                    // write over the last block
+                    System.arraycopy(encrypted, 0, encryptedBuffer, blockSize * (bufferBlocks - 1), encrypted.length);
                 } else {
-                    System.arraycopy(encrypted, 0, encryptedBuffer, 0, encrypted.length);
-                    firstRound = false;
+                    System.arraycopy(encrypted, 0, encryptedBuffer, blockSize * round, encrypted.length);
                 }
+                round++;
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
+            debugOut("Expected Padding length: " + paddingLength);
+            debugOut("Buffer length: " + encryptedBuffer.length);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
                 throw new WrongPassphraseException();
             }
-            fos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+            bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
+            bos.flush();
             if (bhm != null) {
                 bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
                 BigHash actualHash = BigHash.createFromBytes(bhm.finish());
                 if (!actualHash.equals(expectedHash)) {
-                    debugOut("Expected " + expectedHash + " but actually " + actualHash);
+                    debugOut("Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
                     throw new WrongPassphraseException();
-                } else {
-                    debugOut("Verified hash.");
                 }
             }
 
-            // return the file
-            return fos.toByteArray();
+            return bos.toByteArray();
         } finally {
             IOUtil.safeClose(bis);
             IOUtil.safeClose(fis);
-            IOUtil.safeClose(fos);
+            IOUtil.safeClose(bos);
         }
     }
 

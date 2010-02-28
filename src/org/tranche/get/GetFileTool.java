@@ -15,6 +15,7 @@
  */
 package org.tranche.get;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -107,10 +108,10 @@ public class GetFileTool {
     /**
      * User parameters
      */
-    private boolean batch = DEFAULT_BATCH,  validate = DEFAULT_VALIDATE,  continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS;
+    private boolean batch = DEFAULT_BATCH, validate = DEFAULT_VALIDATE, continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
     private BigHash hash;
     private File saveTo;
-    private String uploaderName = DEFAULT_UPLOADER_NAME,  uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH,  passphrase,  regEx = DEFAULT_REG_EX;
+    private String uploaderName = DEFAULT_UPLOADER_NAME, uploadRelativePath = DEFAULT_UPLOAD_RELATIVE_PATH, passphrase, regEx = DEFAULT_REG_EX;
     private Long uploadTimestamp = DEFAULT_UPLOAD_TIMESTAMP;
     private final Set<String> serverHostUseSet = new HashSet<String>();
     private final Set<String> externalServerURLs = new HashSet();
@@ -118,7 +119,7 @@ public class GetFileTool {
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -136,7 +137,6 @@ public class GetFileTool {
     private final GetFileToolFailedChunksListener failedChunksListener;
 
     public GetFileTool() {
-
         // Create and add listener for failed chunks
         failedChunksListener = new GetFileToolFailedChunksListener();
         this.addListener(failedChunksListener);
@@ -495,6 +495,22 @@ public class GetFileTool {
      */
     public boolean isUsingUnspecifiedServers() {
         return useUnspecifiedServers;
+    }
+
+    /**
+     * <p></p>
+     * @param sendPerformanceInfo 
+     */
+    public void setSendPerformanceInfo(boolean sendPerformanceInfo) {
+        this.sendPerformanceInfo = sendPerformanceInfo;
+    }
+
+    /**
+     * <p></p>
+     * @return
+     */
+    public boolean isSendPerformanceInfo() {
+        return sendPerformanceInfo;
     }
 
     /**
@@ -1030,6 +1046,15 @@ public class GetFileTool {
     public GetFileToolReport getFile() {
         GetFileToolReport report = new GetFileToolReport();
         addListener(new GetFileToolReportListener(report));
+        GetFileToolPerformanceLog performanceLog = null;
+        if (isSendPerformanceInfo()) {
+            try {
+                performanceLog = new GetFileToolPerformanceLog();
+                addListener(performanceLog);
+            } catch (Exception e) {
+                debugErr(e);
+            }
+        }
         try {
             // lock the variables in place
             locked = true;
@@ -1058,6 +1083,8 @@ public class GetFileTool {
                 padding = new BigHash(passphrase.getBytes()).toByteArray();
             }
             downloadFile(null, metaData, file, padding);
+        } catch (WrongPassphraseException e) {
+            // dealt with
         } catch (Exception e) {
             debugErr(e);
             if (metaData == null) {
@@ -1088,6 +1115,9 @@ public class GetFileTool {
                     GetFileToolUtil.registerFailedDownload(this, report);
                 }
             }
+            if (performanceLog != null) {
+                removeListener(performanceLog);
+            }
             locked = false;
         }
         return report;
@@ -1100,6 +1130,15 @@ public class GetFileTool {
     public GetFileToolReport getDirectory() {
         GetFileToolReport report = new GetFileToolReport();
         addListener(new GetFileToolReportListener(report));
+        GetFileToolPerformanceLog performanceLog = null;
+        if (isSendPerformanceInfo()) {
+            try {
+                performanceLog = new GetFileToolPerformanceLog();
+                addListener(performanceLog);
+            } catch (Exception e) {
+                debugErr(e);
+            }
+        }
         try {
             // lock the variables in place
             locked = true;
@@ -1135,6 +1174,13 @@ public class GetFileTool {
             }
             timeEstimator = new ContextualTimeEstimator(0, size, 0, files);
             fireStartedDirectory(hash);
+
+            if (metaData.isEncrypted()) {
+                debugOut("Data set is encrypted.");
+            }
+            if (metaData.isPublicPassphraseSet()) {
+                debugOut("Public passphrase: " + metaData.getPublicPassphrase());
+            }
 
             // download the directory
             PriorityBlockingQueue<DataChunk> dataChunkQueue = new PriorityBlockingQueue(DEFAULT_DATA_QUEUE_SIZE);
@@ -1194,6 +1240,9 @@ public class GetFileTool {
                     GetFileToolUtil.registerFailedDownload(this, report);
                 }
             }
+            if (performanceLog != null) {
+                removeListener(performanceLog);
+            }
             locked = false;
         }
         return report;
@@ -1210,8 +1259,7 @@ public class GetFileTool {
     private boolean skipFile(BigHash expectedHash, File saveAs, byte[] padding) throws Exception {
         debugOut("Checking for skip file: " + saveAs.getAbsolutePath());
         if (saveAs.exists()) {
-            BigHash checkHash = new BigHash(saveAs, padding);
-            if (checkHash.equals(expectedHash)) {
+            if (new BigHash(saveAs, padding).equals(expectedHash)) {
                 return true;
             }
             // doesn't match, delete
@@ -1309,37 +1357,42 @@ public class GetFileTool {
                 }
                 // make a meta chunk
                 MetaChunk metaChunk = new MetaChunk(metaData, true);
-                // make a new list of data chunks
-                LinkedList<DataChunk> dataChunks = new LinkedList<DataChunk>();
-                long offset = 0;
-                for (BigHash partHash : metaData.getParts()) {
-                    dataChunks.add(new DataChunk(offset, partHash, metaChunk));
-                    // update the offset
-                    offset += partHash.getLength();
-                }
-                // create the data downloading threads
-                Set<FileDataDownloadingThread> dataThreads = new HashSet<FileDataDownloadingThread>();
-                for (int i = 0; i < threadCount && i < metaData.getParts().size(); i++) {
-                    FileDataDownloadingThread thread = new FileDataDownloadingThread(dataChunks, dataThreads);
-                    dataThreads.add(thread);
-                    thread.start();
-                }
-                // wait for them all to stop
-                for (FileDataDownloadingThread thread : dataThreads) {
-                    thread.waitForFinish();
-                }
-                // check for failure
-                for (FileDataDownloadingThread thread : dataThreads) {
-                    if (!thread.exceptions.isEmpty()) {
-                        throw new Exception("Could not find part of the file.");
+                try {
+                    // make a new list of data chunks
+                    LinkedList<DataChunk> dataChunks = new LinkedList<DataChunk>();
+                    long offset = 0;
+                    for (BigHash partHash : metaData.getParts()) {
+                        dataChunks.add(new DataChunk(offset, partHash, metaChunk));
+                        // update the offset
+                        offset += partHash.getLength();
+                    }
+                    // create the data downloading threads
+                    Set<FileDataDownloadingThread> dataThreads = new HashSet<FileDataDownloadingThread>();
+                    for (int i = 0; i < threadCount && i < metaData.getParts().size(); i++) {
+                        FileDataDownloadingThread thread = new FileDataDownloadingThread(dataChunks, dataThreads);
+                        dataThreads.add(thread);
+                        thread.start();
+                    }
+                    // wait for them all to stop
+                    for (FileDataDownloadingThread thread : dataThreads) {
+                        thread.waitForFinish();
+                    }
+                    // check for failure
+                    for (FileDataDownloadingThread thread : dataThreads) {
+                        if (!thread.exceptions.isEmpty()) {
+                            throw new Exception("Could not find part of the file.");
+                        }
+                    }
+                    // close the RAF
+                    IOUtil.safeClose(metaChunk.getFileDecoding().raf);
+                    // decode
+                    decodeFileDiskBacked(part, metaData, metaChunk.getFileDecoding().tempFile, saveAs, padding);
+                } finally {
+                    if (metaChunk.isFileDecodingSet()) {
+                        // delete the temp file
+                        IOUtil.safeDelete(metaChunk.getFileDecoding().tempFile);
                     }
                 }
-                // close the RAF
-                IOUtil.safeClose(metaChunk.getFileDecoding().raf);
-                // decode
-                decodeFileDiskBacked(part, metaData, metaChunk.getFileDecoding().tempFile, saveAs, padding);
-                // delete the temp file
-                IOUtil.safeDelete(metaChunk.getFileDecoding().tempFile);
             }
         } catch (WrongPassphraseException e) {
             fireFailedFile(fileHash, e);
@@ -1397,10 +1450,10 @@ public class GetFileTool {
             System.arraycopy(bytes, 0, trimmedBytes, 0, trimmedBytes.length);
             bytes = trimmedBytes;
         }
+        // validate
+        validateInMemory(fileHash, metaData, bytes, padding);
         // save the decoded bytes to the expected file
         IOUtil.setBytes(bytes, saveAs);
-        // validate
-        validateFile(fileHash, metaData, saveAs, padding);
         // set last modified timestamp
         saveAs.setLastModified(metaData.getTimestampFileModified());
         // done
@@ -1424,7 +1477,6 @@ public class GetFileTool {
         List<FileEncoding> encodings = metaData.getEncodings();
         for (int i = encodings.size() - 1; i >= 0; i--) {
             FileEncoding fe = encodings.get(i);
-            debugOut(fe.getHash().toString());
             if (fe.getName().equals(FileEncoding.GZIP)) {
                 tempFile = CompressionUtil.gzipDecompress(tempFile);
             } else if (fe.getName().equals(FileEncoding.LZMA)) {
@@ -1477,7 +1529,7 @@ public class GetFileTool {
         }
         debugOut("Validating " + saveAs.getAbsolutePath());
         // validate
-        validateFile(fileHash, metaData, tempFile, padding);
+        validateDiskBacked(fileHash, metaData, tempFile, padding);
         debugOut("Copying to " + saveAs.getAbsolutePath());
         // finally, rename the decoded file to the expected one
         IOUtil.renameFallbackCopy(tempFile, saveAs);
@@ -1671,6 +1723,36 @@ public class GetFileTool {
     }
 
     /**
+     * 
+     * @param expectedHash
+     * @param metaData
+     * @param file
+     * @param padding
+     * @throws Exception
+     */
+    protected void validateInMemory(BigHash expectedHash, MetaData metaData, byte[] file, byte[] padding) throws Exception {
+        if (validate) {
+            debugOut("Validating " + expectedHash);
+            // validate the hash
+            BigHash actualHash = new BigHash(file, padding);
+            if (!actualHash.equals(expectedHash)) {
+                throw new Exception("Decoded file does not match the expected file.\n  Expected: " + expectedHash + "\n  Found: " + actualHash);
+            }
+            // validate the signature
+            ByteArrayInputStream bais = null;
+            try {
+                bais = new ByteArrayInputStream(file);
+                // verify that it matches what is expected
+                if (!SecurityUtil.verify(bais, metaData.getSignature().getBytes(), metaData.getSignature().getAlgorithm(), metaData.getSignature().getCert().getPublicKey())) {
+                    throw new CantVerifySignatureException("Data downloaded is invalid.");
+                }
+            } finally {
+                IOUtil.safeClose(bais);
+            }
+        }
+    }
+
+    /**
      * <p>Validates a file.</p>
      * @param expectedHash What hash is expected.
      * @param metaData The meta data of the file
@@ -1678,8 +1760,9 @@ public class GetFileTool {
      * @param padding The bytes that were tacked on the end up the uploaded file.
      * @throws java.lang.Exception
      */
-    protected void validateFile(BigHash expectedHash, MetaData metaData, File file, byte[] padding) throws Exception {
+    protected void validateDiskBacked(BigHash expectedHash, MetaData metaData, File file, byte[] padding) throws Exception {
         if (validate) {
+            debugOut("Validating " + expectedHash);
             // validate the hash
             BigHash actualHash = new BigHash(file, padding);
             if (!actualHash.equals(expectedHash)) {
@@ -2060,11 +2143,9 @@ public class GetFileTool {
         System.out.println("    -a, --validate              Value: true/false.     Verify integrity of data and validate signed by proper users. Default value is " + DEFAULT_VALIDATE + ".");
         System.out.println("    -b, --batch                 Value: true/false.     Enables faster uploads by simulateously downloading small chunks of data together. Default value is " + DEFAULT_BATCH + ".");
         System.out.println("    -c, --continue              Value: true/false.     Upon failure, continue to download as much as possible. Default value is " + DEFAULT_CONTINUE_ON_FAILURE + ".");
+        System.out.println("    -F, --performance           Value: true/false.     Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
         System.out.println("    -m, --tempdir               Value: any string.     Path to use for temporary directory instead of default. Default is based on different heuristics for OS and filesystem permissions. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
         System.out.println("    -t, --threads               Value: any number.     The maximum number of threads to use. Increasing may require more memory, and may result in increased CPU usage, increased bandwidth, increased disk accesses and faster downloads. Default value is " + DEFAULT_THREADS + ".");
-        System.out.println();
-        System.out.println("TROUBLESHOOTING PARAMETERS");
-        System.out.println("    -F, --performance           Value: true/false.     Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
         System.out.println();
         System.out.println("RETURN CODES");
         System.out.println("    0: Exited normally");
@@ -2119,7 +2200,7 @@ public class GetFileTool {
             try {
                 ConfigureTranche.load(args);
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
                 e.printStackTrace(System.err);
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
@@ -2128,12 +2209,12 @@ public class GetFileTool {
                     return;
                 }
             }
-            
+
             // Make sure at least three arguments: <config> hash /path/to/save
             if (args.length < 3) {
                 System.err.println("Missing required parameters.");
                 printUsage();
-                
+
                 if (!TestUtil.isTesting()) {
                     System.exit(6);
                 } else {
@@ -2143,7 +2224,6 @@ public class GetFileTool {
 
             GetFileTool gft = new GetFileTool();
             boolean showSummary = DEFAULT_SHOW_SUMMARY;
-            boolean isPerformanceLogging = DEFAULT_USE_PERFORMANCE_LOG;
             try {
                 for (int i = 1; i < args.length - 2; i += 2) {
                     String arg = args[i];
@@ -2206,14 +2286,12 @@ public class GetFileTool {
                     } else if (arg.equals("-X") || arg.equals("--proxyport")) {
                         System.err.println("WARNING: The use of -X, --proxyport has been deprecated.");
                     } else if (arg.equals("-F") || arg.equals("--performance")) {
-                        isPerformanceLogging = Boolean.parseBoolean(args[i + 1]);
+                        try {
+                            gft.setSendPerformanceInfo(Boolean.parseBoolean(args[i + 1]));
+                        } catch (Exception e) {
+                            throw new UnknownArgumentException("Expect a true/false value for " + arg + ", received " + args[i + 1]);
+                        }
                     }
-                }
-
-                if (isPerformanceLogging) {
-                    File logFile = TempFileUtil.createTempFileWithName("gft-performance-command-line-"+Text.getFormattedDateSimple(TimeUtil.getTrancheTimestamp())+".log");
-                    GetFileToolPerformanceLog log = new GetFileToolPerformanceLog(logFile);
-                    gft.addListener(log);
                 }
 
                 // Set hash
@@ -2221,7 +2299,7 @@ public class GetFileTool {
                 // set the save location
                 gft.setSaveFile(new File(args[args.length - 1]));
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName()+": " + e.getMessage());
+                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
                 e.printStackTrace(System.err);
                 debugErr(e);
                 if (!TestUtil.isTesting()) {
@@ -2306,7 +2384,7 @@ public class GetFileTool {
             }
         }
     }
-    
+
     /**
      * <p>By default, GetFileTool has a listener attached to print out information about failed chunks.</p>
      * <p>To suppress, set to true. Can undo later by setting to false.</p>
@@ -2597,7 +2675,7 @@ public class GetFileTool {
     private class FileDataDownloadingThread extends Thread {
 
         private final LinkedList<DataChunk> dataList;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         private List<PropagationExceptionWrapper> exceptions = new LinkedList<PropagationExceptionWrapper>();
         private Set<FileDataDownloadingThread> dataThreads;
 
@@ -2699,7 +2777,7 @@ public class GetFileTool {
     private class DirectoryDataDownloadingThread extends Thread {
 
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         // batch data structures
         private final Map<String, DataChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;
@@ -2981,10 +3059,11 @@ public class GetFileTool {
                             try {
                                 IOUtil.safeClose(dataChunk.metaChunk.getFileDecoding().raf);
                                 decodeFileDiskBacked(dataChunk.metaChunk.part, dataChunk.metaChunk.md, dataChunk.metaChunk.getFileDecoding().tempFile, dataChunk.metaChunk.saveAs, dataChunk.metaChunk.part.getPadding());
-                                IOUtil.safeDelete(dataChunk.metaChunk.getFileDecoding().tempFile);
                             } catch (Exception e) {
                                 debugErr(e);
                                 fireFailedFile(dataChunk.metaChunk.part.getHash(), dataChunk.metaChunk.saveAs.getAbsolutePath(), e);
+                            } finally {
+                                IOUtil.safeDelete(dataChunk.metaChunk.getFileDecoding().tempFile);
                             }
                         } else {
                             debugOut("File not ready to be decoded after processing data chunk " + dataChunk.hash + " (" + dataChunk.metaChunk.getFileDecoding().dataChunksWrittenToRandomAccessFile + " / " + dataChunk.metaChunk.md.getParts().size() + ")");
@@ -3087,7 +3166,7 @@ public class GetFileTool {
 
         private final LinkedList<MetaChunk> metaChunks;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         // batch data structures
         private final Map<String, MetaChunkBatch> batchWaitingList;
         private Set<DirectoryDataDownloadingThread> dataThreads;

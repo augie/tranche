@@ -33,6 +33,7 @@ import javax.swing.table.TableCellRenderer;
 import org.tranche.gui.GenericPopupListener;
 import org.tranche.gui.GenericTable;
 import org.tranche.gui.Styles;
+import org.tranche.project.ProjectSummary;
 
 /**
  *
@@ -94,12 +95,15 @@ public class DownloadsTable extends GenericTable {
         int row = rowAtPoint(e.getPoint());
         String description = null;
         if (row >= 0) {
-            description = model.getRow(row).getProjectSummary().description;
-            if (description != null) {
-                if (description.length() > 80) {
-                    description = description.substring(0, 80) + "...";
-                } else if (description.equals("")) {
-                    description = null;
+            ProjectSummary ps = model.getRow(row).getProjectSummary();
+            if (ps != null) {
+                description = ps.description;
+                if (description != null) {
+                    if (description.length() > 80) {
+                        description = description.substring(0, 80) + "...";
+                    } else if (description.equals("")) {
+                        description = null;
+                    }
                 }
             }
         }
