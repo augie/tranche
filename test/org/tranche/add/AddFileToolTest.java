@@ -1355,13 +1355,9 @@ public class AddFileToolTest extends TrancheTestCase {
 
                 @Override()
                 public void run() {
-                    synchronized (isRunning) {
-                        isRunning[0] = true;
-                    }
+                    isRunning[0] = true;
                     reportArr[0] = aft.execute();
-                    synchronized (isRunning) {
-                        isRunning[0] = false;
-                    }
+                    isRunning[0] = false;
                 }
             };
             t.setDaemon(true);
@@ -1491,13 +1487,9 @@ public class AddFileToolTest extends TrancheTestCase {
 
                 @Override()
                 public void run() {
-                    synchronized (isRunning) {
-                        isRunning[0] = true;
-                    }
+                    isRunning[0] = true;
                     reportArr[0] = aft.execute();
-                    synchronized (isRunning) {
-                        isRunning[0] = false;
-                    }
+                    isRunning[0] = false;
                 }
             };
             t.setDaemon(true);

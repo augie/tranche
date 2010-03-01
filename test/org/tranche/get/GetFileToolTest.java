@@ -423,13 +423,9 @@ public class GetFileToolTest extends TrancheTestCase {
 
                 @Override()
                 public void run() {
-                    synchronized (isRunning) {
-                        isRunning[0] = true;
-                    }
+                    isRunning[0] = true;
                     downFile[0] = gft.getFile();
-                    synchronized (isRunning) {
-                        isRunning[0] = false;
-                    }
+                    isRunning[0] = false;
                 }
             };
             t.setDaemon(true);
@@ -1267,7 +1263,7 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.stop();
         }
     }
-    
+
     public void testPublishPassphrase() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testPublishPassphrase()");
 
