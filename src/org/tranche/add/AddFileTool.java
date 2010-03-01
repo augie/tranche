@@ -2799,7 +2799,8 @@ public class AddFileTool {
                                     }
                                 }
                                 // verify upload
-                                for (String host : thisUploadedHosts) {
+                                Set<String> thisUploadedHostsCopy = new HashSet<String>(thisUploadedHosts);
+                                for (String host : thisUploadedHostsCopy) {
                                     // break point
                                     if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
@@ -3155,7 +3156,8 @@ public class AddFileTool {
                                     }
                                 }
                                 // verify upload
-                                for (String host : thisUploadedHosts) {
+                                Set<String> thisUploadedHostsCopy = new HashSet<String>(thisUploadedHosts);
+                                for (String host : thisUploadedHostsCopy) {
                                     // break point
                                     if (stopped || AddFileTool.this.stopped) {
                                         break DOWHILE;
