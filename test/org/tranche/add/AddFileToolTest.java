@@ -639,11 +639,6 @@ public class AddFileToolTest extends TrancheTestCase {
         }
     }
 
-    /**
-     * ================================================================================
-     * START: Uncomment block
-     * ================================================================================
-     */
     public void testFailureAllServersOutOfSpace() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testFailureAllServersOutOfSpace()");
 
@@ -1513,6 +1508,37 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.stop();
 
             IOUtil.recursiveDelete(testDir);
+        }
+    }
+
+    public void testFailureNotEnoughReplications() throws Exception {
+        TestUtil.printTitle("AddFileToolTest:testFailureNotEnoughReplications()");
+
+        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, "2");
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+        try {
+            testNetwork.start();
+
+            int fileCount = 100;
+            final File uploadFile = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 2);
+
+            // add the data
+            AddFileTool aft = new AddFileTool();
+            aft.addServerToUse(HOST1);
+            aft.setUseUnspecifiedServers(false);
+            aft.setUserCertificate(DevUtil.getDevAuthority());
+            aft.setUserPrivateKey(DevUtil.getDevPrivateKey());
+            aft.addListener(new CommandLineAddFileToolListener(aft, System.out));
+            aft.setFile(uploadFile);
+
+            AddFileToolReport uploadReport = aft.execute();
+            assertTrue(uploadReport.isFailed());
+            assertTrue(uploadReport.isFinished());
+            assertNull(uploadReport.getHash());
+        } finally {
+            testNetwork.stop();
         }
     }
 

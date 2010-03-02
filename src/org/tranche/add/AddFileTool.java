@@ -71,7 +71,6 @@ import org.tranche.util.DebugUtil;
 import org.tranche.FileEncoding;
 import org.tranche.Tertiary;
 import org.tranche.exceptions.AssertionFailedException;
-import org.tranche.exceptions.ChunkAlreadyExistsSecurityException;
 import org.tranche.exceptions.UnknownArgumentException;
 import org.tranche.get.GetFileTool;
 import org.tranche.network.MultiServerRequestStrategy;
@@ -2679,24 +2678,16 @@ public class AddFileTool {
          * @return
          * @throws Exception
          */
-        private final Collection<PropagationExceptionWrapper> upload(DataChunk dataChunk, String host, String[] hosts) throws Exception {
-            debugOut("Starting to upload chunk to " + host + ": " + dataChunk.hash);
-            TrancheServer ts = ConnectionUtil.connectHost(host, true);
-            if (ts == null) {
-                throw new Exception("No connection for " + host + ".");
+        private final Collection<PropagationExceptionWrapper> upload(DataChunk dataChunk, TrancheServer ts, String[] hosts) throws Exception {
+            debugOut("Starting to upload chunk to " + ts.getHost() + ": " + dataChunk.hash);
+            fireTryingData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, ts.getHost());
+            long startTime = TimeUtil.getTrancheTimestamp();
+            PropagationReturnWrapper wrapper = IOUtil.setData(ts, userCertificate, userPrivateKey, dataChunk.hash, dataChunk.bytes, hosts);
+            for (PropagationExceptionWrapper pew : wrapper.getErrors()) {
+                debugOut(pew.toString());
             }
-            try {
-                fireTryingData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
-                long startTime = TimeUtil.getTrancheTimestamp();
-                PropagationReturnWrapper wrapper = IOUtil.setData(ts, userCertificate, userPrivateKey, dataChunk.hash, dataChunk.bytes, hosts);
-                for (PropagationExceptionWrapper pew : wrapper.getErrors()) {
-                    debugOut(pew.toString());
-                }
-                debugOut("Time spent uploading a data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
-                return wrapper.getErrors();
-            } finally {
-                ConnectionUtil.unlockConnection(host);
-            }
+            debugOut("Time spent uploading a data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
+            return wrapper.getErrors();
         }
 
         /**
@@ -2773,14 +2764,13 @@ public class AddFileTool {
                             throw new Exception("No servers to which to upload.");
                         }
 
-                        Collection<PropagationExceptionWrapper> exceptions = new HashSet<PropagationExceptionWrapper>();
-
                         // upload to core using the multi server request strategy
                         Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(coreHosts, Tertiary.DONT_CARE, Tertiary.TRUE);
                         if (strategies.isEmpty()) {
-                            throw new AssertionFailedException("Failed to find strategy.");
+                            throw new Exception("Failed to find an upload strategy for " + dataChunk.hash.toString());
                         }
                         debugOut(strategies.size() + " strategies found.");
+
                         Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
@@ -2788,61 +2778,54 @@ public class AddFileTool {
                             if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
-                            debugOut(dataChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
+                            // upload
                             try {
-                                Collection<PropagationExceptionWrapper> innerExceptions = upload(dataChunk, strategy.getHostReceivingRequest(), toUploadCoreHosts.toArray(new String[0]));
-                                // TODO: MAKE SURE HOST NAME BEING RETURNED IS CORRECT
-                                Set<String> thisUploadedHosts = new HashSet<String>(toUploadCoreHosts);
-                                for (PropagationExceptionWrapper pew : innerExceptions) {
-                                    if (pew.host != null && !(pew.exception instanceof ChunkAlreadyExistsSecurityException)) {
-                                        thisUploadedHosts.remove(pew.host);
-                                    }
+                                TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
+                                if (ts == null) {
+                                    throw new Exception("Could not connect to " + strategy.getHostReceivingRequest() + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
                                 }
-                                // verify upload
-                                Set<String> thisUploadedHostsCopy = new HashSet<String>(thisUploadedHosts);
-                                for (String host : thisUploadedHostsCopy) {
-                                    // break point
-                                    if (stopped || AddFileTool.this.stopped) {
-                                        break DOWHILE;
+                                try {
+                                    upload(dataChunk, ts, toUploadCoreHosts.toArray(new String[0]));
+                                } catch (Exception e) {
+                                    debugErr(e);
+                                    ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
+                                } finally {
+                                    ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
+                                }
+                            } catch (Exception e) {
+                                debugErr(e);
+                            }
+                            // verify
+                            Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+                            for (String host : toUploadCoreHostsCopy) {
+                                // break point
+                                if (stopped || AddFileTool.this.stopped) {
+                                    break DOWHILE;
+                                }
+                                try {
+                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                    if (ts == null) {
+                                        throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
                                     }
                                     try {
-                                        TrancheServer ts = ConnectionUtil.connectHost(host, true);
-                                        if (ts == null) {
-                                            throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
-                                        }
-                                        try {
-                                            if (!IOUtil.hasData(ts, dataChunk.hash)) {
-                                                thisUploadedHosts.remove(host);
-                                            } else {
-                                                debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost());
-                                            }
-                                        } catch (Exception e) {
-                                            thisUploadedHosts.remove(host);
-                                            debugErr(e);
-                                            ConnectionUtil.reportExceptionHost(host, e);
-                                        } finally {
-                                            ConnectionUtil.unlockConnection(host);
+                                        if (IOUtil.hasData(ts, dataChunk.hash)) {
+                                            uploadedCoreHosts.add(host);
+                                            toUploadCoreHosts.remove(host);
+                                            fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
                                         }
                                     } catch (Exception e) {
                                         debugErr(e);
-                                        thisUploadedHosts.remove(host);
+                                        ConnectionUtil.reportExceptionHost(host, e);
+                                    } finally {
+                                        ConnectionUtil.unlockConnection(host);
                                     }
+                                } catch (Exception e) {
+                                    debugErr(e);
                                 }
-                                uploadedCoreHosts.addAll(thisUploadedHosts);
-                                if (!thisUploadedHosts.isEmpty()) {
-                                    toUploadCoreHosts.removeAll(thisUploadedHosts);
-                                    for (String uploadedHost : thisUploadedHosts) {
-                                        fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, uploadedHost);
-                                    }
-                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
-                                        break;
-                                    }
-                                }
-                                exceptions.addAll(innerExceptions);
-                            } catch (Exception e) {
-                                debugErr(e);
-                                exceptions.add(new PropagationExceptionWrapper(e));
-                                ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
+                            }
+                            // have we uploaded enough copies?
+                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                                break;
                             }
                         }
 
@@ -2854,44 +2837,25 @@ public class AddFileTool {
                                 break DOWHILE;
                             }
                             try {
-                                String[] hosts = {host};
-                                Collection<PropagationExceptionWrapper> innerExceptions = upload(dataChunk, host, hosts);
-                                Set<PropagationExceptionWrapper> doubleInnerExceptions = new HashSet<PropagationExceptionWrapper>();
-                                for (PropagationExceptionWrapper pew : innerExceptions) {
-                                    if (!(pew.exception instanceof ChunkAlreadyExistsSecurityException)) {
-                                        doubleInnerExceptions.add(pew);
-                                    }
+                                TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                if (ts == null) {
+                                    throw new Exception("Could not connect to " + host + ".");
                                 }
-                                // verify upload
-                                boolean verified = false;
                                 try {
-                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
-                                    if (ts == null) {
-                                        throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
-                                    }
-                                    try {
-                                        if (IOUtil.hasData(ts, dataChunk.hash)) {
-                                            debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost());
-                                            verified = true;
-                                        }
-                                    } catch (Exception e) {
-                                        debugErr(e);
-                                        ConnectionUtil.reportExceptionHost(host, e);
-                                    } finally {
-                                        ConnectionUtil.unlockConnection(host);
+                                    upload(dataChunk, ts, new String[]{host});
+                                    if (IOUtil.hasData(ts, dataChunk.hash)) {
+                                        debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost() + ".");
+                                        uploadedNonCoreHosts.add(host);
+                                        fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
                                     }
                                 } catch (Exception e) {
                                     debugErr(e);
-                                }
-                                if (doubleInnerExceptions.isEmpty() && verified) {
-                                    uploadedNonCoreHosts.add(host);
-                                    fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
-                                } else {
-                                    exceptions.addAll(innerExceptions);
+                                    ConnectionUtil.reportExceptionHost(host, e);
+                                } finally {
+                                    ConnectionUtil.unlockConnection(host);
                                 }
                             } catch (Exception e) {
                                 debugErr(e);
-                                exceptions.add(new PropagationExceptionWrapper(e));
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
@@ -2902,8 +2866,7 @@ public class AddFileTool {
                             throw new Exception("Data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
                         }
                         if (nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
-
-                            throw new Exception("Data upload to " + uploadedNonCoreHosts.size() + " non-core servers, but expected number is " + nonCoreHosts.size());
+                            throw new Exception("Data uploaded to " + uploadedNonCoreHosts.size() + " non-core servers, but expected number is " + nonCoreHosts.size());
                         }
 
                         fireFinishedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash);
@@ -3000,19 +2963,15 @@ public class AddFileTool {
          * 
          * @param metaChunk
          * @param metaDataBytes
-         * @param host
+         * @param ts
          * @param hosts
          * @return
          * @throws Exception
          */
-        private final Collection<PropagationExceptionWrapper> upload(MetaChunk metaChunk, byte[] metaDataBytes, String host, String[] hosts) throws Exception {
-            debugOut("Starting to upload meta chunk to " + host + ": " + metaChunk.hash);
-            TrancheServer ts = ConnectionUtil.connectHost(host, true);
-            if (ts == null) {
-                throw new Exception("No connection for " + host + ".");
-            }
+        private final Collection<PropagationExceptionWrapper> upload(MetaChunk metaChunk, byte[] metaDataBytes, TrancheServer ts, String[] hosts) throws Exception {
+            debugOut("Starting to upload meta chunk to " + ts.getHost() + ": " + metaChunk.hash);
             try {
-                fireTryingMetaData(metaChunk.hash, host);
+                fireTryingMetaData(metaChunk.hash, ts.getHost());
                 long startTime = TimeUtil.getTrancheTimestamp();
                 PropagationReturnWrapper wrapper = IOUtil.setMetaData(ts, userCertificate, userPrivateKey, true, metaChunk.hash, metaDataBytes, hosts);
                 for (PropagationExceptionWrapper pew : wrapper.getErrors()) {
@@ -3021,7 +2980,7 @@ public class AddFileTool {
                 debugOut("Time spent uploading meta data chunk: " + (TimeUtil.getTrancheTimestamp() - startTime));
                 return wrapper.getErrors();
             } finally {
-                ConnectionUtil.unlockConnection(host);
+                ConnectionUtil.unlockConnection(ts.getHost());
             }
         }
 
@@ -3130,14 +3089,13 @@ public class AddFileTool {
                         // convert the metadata object to bytes
                         byte[] metaDataBytes = metaChunk.metaData.toByteArray();
 
-                        Collection<PropagationExceptionWrapper> exceptions = new HashSet<PropagationExceptionWrapper>();
-
                         // upload to core using the multi server request strategy
                         Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(coreHosts, Tertiary.DONT_CARE, Tertiary.TRUE);
                         if (strategies.isEmpty()) {
                             throw new AssertionFailedException("Failed to find strategy.");
                         }
                         debugOut(strategies.size() + " strategies found.");
+
                         Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
                         Set<String> uploadedCoreHosts = new HashSet<String>();
                         for (MultiServerRequestStrategy strategy : strategies) {
@@ -3145,61 +3103,54 @@ public class AddFileTool {
                             if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
-                            debugOut(metaChunk.hash.toString().substring(0, 5) + "... " + strategy.toString());
+                            // upload
                             try {
-                                Collection<PropagationExceptionWrapper> innerExceptions = upload(metaChunk, metaDataBytes, strategy.getHostReceivingRequest(), toUploadCoreHosts.toArray(new String[0]));
-                                // TODO: MAKE SURE HOST NAME BEING RETURNED IS CORRECT
-                                Set<String> thisUploadedHosts = new HashSet<String>(toUploadCoreHosts);
-                                for (PropagationExceptionWrapper pew : innerExceptions) {
-                                    if (pew.host != null && !(pew.exception instanceof ChunkAlreadyExistsSecurityException)) {
-                                        thisUploadedHosts.remove(pew.host);
-                                    }
+                                TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
+                                if (ts == null) {
+                                    throw new Exception("Could not connect to " + strategy.getHostReceivingRequest() + ".");
                                 }
-                                // verify upload
-                                Set<String> thisUploadedHostsCopy = new HashSet<String>(thisUploadedHosts);
-                                for (String host : thisUploadedHostsCopy) {
-                                    // break point
-                                    if (stopped || AddFileTool.this.stopped) {
-                                        break DOWHILE;
+                                try {
+                                    upload(metaChunk, metaDataBytes, ts, toUploadCoreHosts.toArray(new String[0]));
+                                } catch (Exception e) {
+                                    debugErr(e);
+                                    ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
+                                } finally {
+                                    ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
+                                }
+                            } catch (Exception e) {
+                                debugErr(e);
+                            }
+                            // verify
+                            Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+                            for (String host : toUploadCoreHostsCopy) {
+                                // break point
+                                if (stopped || AddFileTool.this.stopped) {
+                                    break DOWHILE;
+                                }
+                                try {
+                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                    if (ts == null) {
+                                        throw new Exception("Could not connect to " + host + ".");
                                     }
                                     try {
-                                        TrancheServer ts = ConnectionUtil.connectHost(host, true);
-                                        if (ts == null) {
-                                            throw new Exception("Could not connect to " + host + " to verify the upload of meta data " + metaChunk.hash.toString().substring(0, 5) + "...");
-                                        }
-                                        try {
-                                            if (!IOUtil.hasMetaData(ts, metaChunk.hash)) {
-                                                thisUploadedHosts.remove(host);
-                                            } else {
-                                                debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
-                                            }
-                                        } catch (Exception e) {
-                                            thisUploadedHosts.remove(host);
-                                            debugErr(e);
-                                            ConnectionUtil.reportExceptionHost(host, e);
-                                        } finally {
-                                            ConnectionUtil.unlockConnection(host);
+                                        if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
+                                            uploadedCoreHosts.add(host);
+                                            toUploadCoreHosts.remove(host);
+                                            fireUploadedMetaData(metaChunk.hash, host);
                                         }
                                     } catch (Exception e) {
                                         debugErr(e);
-                                        thisUploadedHosts.remove(host);
+                                        ConnectionUtil.reportExceptionHost(host, e);
+                                    } finally {
+                                        ConnectionUtil.unlockConnection(host);
                                     }
+                                } catch (Exception e) {
+                                    debugErr(e);
                                 }
-                                uploadedCoreHosts.addAll(thisUploadedHosts);
-                                if (!thisUploadedHosts.isEmpty()) {
-                                    toUploadCoreHosts.removeAll(thisUploadedHosts);
-                                    for (String uploadedHost : thisUploadedHosts) {
-                                        fireUploadedMetaData(metaChunk.hash, uploadedHost);
-                                    }
-                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
-                                        break;
-                                    }
-                                }
-                                exceptions.addAll(innerExceptions);
-                            } catch (Exception e) {
-                                debugErr(e);
-                                exceptions.add(new PropagationExceptionWrapper(e));
-                                ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
+                            }
+                            // have we uploaded enough copies?
+                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                                break;
                             }
                         }
 
@@ -3211,52 +3162,29 @@ public class AddFileTool {
                                 break DOWHILE;
                             }
                             try {
-                                String[] hosts = {host};
-                                Collection<PropagationExceptionWrapper> innerExceptions = upload(metaChunk, metaDataBytes, host, hosts);
-                                Set<PropagationExceptionWrapper> doubleInnerExceptions = new HashSet<PropagationExceptionWrapper>();
-                                for (PropagationExceptionWrapper pew : innerExceptions) {
-                                    if (!(pew.exception instanceof ChunkAlreadyExistsSecurityException)) {
-                                        doubleInnerExceptions.add(pew);
-                                    }
+                                TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                if (ts == null) {
+                                    throw new Exception("Could not connect to " + host + ".");
                                 }
-                                // break point
-                                if (stopped || AddFileTool.this.stopped) {
-                                    break DOWHILE;
-                                }
-                                // verify upload
-                                boolean verified = false;
                                 try {
-                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
-                                    if (ts == null) {
-                                        throw new Exception("Could not connect to " + host + " to verify the upload of meta data " + metaChunk.hash.toString().substring(0, 5) + "...");
-                                    }
-                                    try {
-                                        if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
-                                            debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
-                                            verified = true;
-                                        }
-                                    } catch (Exception e) {
-                                        debugErr(e);
-                                        ConnectionUtil.reportExceptionHost(host, e);
-                                    } finally {
-                                        ConnectionUtil.unlockConnection(host);
+                                    upload(metaChunk, metaDataBytes, ts, new String[] {host});
+                                    if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
+                                        debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
+                                        uploadedNonCoreHosts.add(host);
+                                        fireUploadedMetaData(metaChunk.hash, host);
                                     }
                                 } catch (Exception e) {
                                     debugErr(e);
-                                }
-                                if (doubleInnerExceptions.isEmpty() && verified) {
-                                    uploadedNonCoreHosts.add(host);
-                                    fireUploadedMetaData(metaChunk.hash, host);
-                                } else {
-                                    exceptions.addAll(innerExceptions);
+                                    ConnectionUtil.reportExceptionHost(host, e);
+                                } finally {
+                                    ConnectionUtil.unlockConnection(host);
                                 }
                             } catch (Exception e) {
                                 debugErr(e);
-                                exceptions.add(new PropagationExceptionWrapper(e));
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-
+                        
                         // checks
                         int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
                         if (uploadedCoreHosts.size() < reps) {
