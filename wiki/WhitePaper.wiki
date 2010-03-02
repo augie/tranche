@@ -468,17 +468,17 @@ Tranche underwent a significant architectural redesign that began in the summer 
 =Related Work=
 
 || || [http://oceanstore.cs.berkeley.edu/ OceanStore] ||
-|| *Decentralized Architecture* || Described as a "cooperative file system" (*1*). Data blocks are unique to the files to which they belong. In other words, there is no sharing between files, and thus no space saving. ||
-|| *Large Files* || ||
-|| *Persistence* || ||
-|| *Immutability/Integrity* || ||
-|| *Provenance* || ||
-|| *Encryption* ||  ||
-|| *Licensing* || || 
-|| *Versioning* || Same idea as Tranche. Previous versions are left as-is. They seem to not allow for deletion? Well-thought out implementation of versioning. New versions only write out the changed data blocks, then point to the existing data blocks. ||
-|| *Citability* || ||
-|| *Usage* || "Pond" is the !OceanStore prototype implementation. "Pond contains a sufficiently complete implementation of the !OceanStore design to give a reasonable estimate of the performance of a full system." (*1*) Last stable build of Pond released in 2004 (*2*) and is still said to be in "Alpha" (*3*). ||
-|| *Sources* || *1* Pond: the !OceanStore Prototype. Sean Rhea, Patrick Eaton, Dennis Geels, Hakim Weatherspoon, Ben Zhao, and John Kubiatowicz. <br> *2* [http://oceanstore.sourceforge.net/] <br> *3* [http://sourceforge.net/projects/oceanstore/] ||
+|| *Decentralized Architecture* || Described as a "cooperative file system" (*1*). There is an inner ring of servers called the "primary replicate" that is the point of interaction for users. The inner ring pushes backup replicates to the secondary servers. ||
+|| *Large Files* || Scalability of files stored on the system is not mentioned and the system was not tested with large files. Files are chunked, so they could theoretically be of unlimited size. ||
+|| *Persistence* || Persistence through geographically distributed redundancy. ||
+|| *Immutability/Integrity* || Hashing data chunk contents ensures integrity. Each read-only version of a file is kept indefinitely. ||
+|| *Provenance* || The uploader's information along with other metadata is stored with the files. ||
+|| *Encryption* || All files are encrypted by default. Uploaders can specifically assign readability to other users or groups of users. ||
+|| *Licensing* || Licensing is not part of the system. || 
+|| *Versioning* || Same general idea as Tranche. Previous versions are left as they are. They seem to not allow for deletion? Well-thought out implementation of versioning. New versions only write out the changed data blocks, then point to the existing data blocks. ||
+|| *Citability* || Files are identified by a globally unique identifier that is the hashed concatenation of an application-specified file name plus the user's private key. ||
+|| *Usage* || "Pond" is the !OceanStore prototype implementation in Java. "Pond contains a sufficiently complete implementation of the !OceanStore design to give a reasonable estimate of the performance of a full system." (*1*) Last stable build of Pond released in 2004 (*2*) and is still said to be in "Alpha" (*3*). ||
+|| *Sources* || *1* Pond: the !OceanStore Prototype. Sean Rhea, Patrick Eaton, Dennis Geels, Hakim Weatherspoon, Ben Zhao, and John Kubiatowicz. <br> *2* [http://oceanstore.sourceforge.net/] <br> *3* [http://sourceforge.net/projects/oceanstore/] <br> *4* OceanStore: An Architecture for Global-Scale Persistent Storage. John Kubiatowicz, David Bindel, Yan Chen, Steven Czerwinski, Patrick Eaton, Dennis Geels, Ramakrishna Gummadi, Sean Rhea, Hakim Weatherspoon, Westley Weimer, Chris Wells, and Ben Zhao. ||
 
 || || [http://labs.google.com/papers/gfs.html Google File System] ||
 || *Decentralized Architecture* || ||
