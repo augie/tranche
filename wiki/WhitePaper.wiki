@@ -429,7 +429,7 @@ Tranche Annotations was developed to contextualize the data sets in an accompany
 
 ==Controlled Measurements==
 
-A repository was set up between three identical commodity desktop computers connected via a Linksys router model BEFW1154 with 4-port switch. They all contain dual-core AMD Athlon 64-bit 3600+ processors, 4 GB of DDR2 RAM, a 7,200 RPM SATA hard drive, an NVIDIA Gigabit LAN controller, and run the Ubuntu 8.10 operating system. A fourth identical computer connected on the same switch was used to take the measurements.
+A repository was set up between three identical commodity desktop computers connected via a Linksys router model BEFW1154 with 4-port switch. The throughput for this router was determined using the 'pv' command to be 11.3 MB/s. They all contain dual-core AMD Athlon 64-bit 3600+ processors, 4 GB of DDR2 RAM, a 7,200 RPM SATA hard drive, an NVIDIA Gigabit LAN controller, and run the Ubuntu 8.10 operating system. A fourth identical computer connected on the same switch was used to take the measurements.
 
 Measuring the storage capacity and usage of a Tranche repository can be tricky. Because data is stored and referenced by contents, files may overlap, so identical files or identical parts of files will not take any more space. Additionally, uploads can be compressed upon upload, and certain types of files (typically plain-text) are often effectively compressed. For example, mass spectrometry-based proteomics data can be highly repetitive (depending on the file format), sometimes leading to compression rates of 80% or higher.
 
