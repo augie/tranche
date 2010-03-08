@@ -24,6 +24,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.swing.BorderFactory;
@@ -63,9 +64,9 @@ public class AFTStep1Panel extends GenericWizardPanel {
     public JTextArea description = new GenericTextArea();
     public JTextField fileText = new GenericTextField(),  title = new GenericTextField();
     public SignInUserButton userButton = new SignInUserButton();
-    private EncryptionPanel encryptionPanel;
+    public EncryptionPanel encryptionPanel;
     public long totalFiles = 0,  totalFileSize = 0;
-    public Set<String> uploadStructures = new HashSet<String>();
+    public final Set<String> uploadStructures = new HashSet<String>();
 
     public AFTStep1Panel(AddFileToolWizard wizard) {
         this.wizard = wizard;
@@ -269,6 +270,11 @@ public class AFTStep1Panel extends GenericWizardPanel {
         userButton.setUser(user);
     }
 
+    public void setUploadStructures(Collection<String> uploadStructures) {
+        this.uploadStructures.clear();
+        this.uploadStructures.addAll(uploadStructures);
+    }
+
     public void onLoad() {
     }
 
@@ -343,7 +349,7 @@ public class AFTStep1Panel extends GenericWizardPanel {
             }
 
             // Set the passphrase
-            wizard.summary.getAddFileTool().setPassphrase(passphrase1);
+            wizard.summary.getAddFileTool().setPassphrase(passphrase1.trim());
             wizard.summary.getAddFileTool().setShowMetaDataIfEncrypted(encryptionPanel.isShareMetaIfEncrypted.isSelected());
         }
 
@@ -421,12 +427,12 @@ public class AFTStep1Panel extends GenericWizardPanel {
      * <p>Simplifies management of passwords or other options.</p>
      * <p>Note that this is used in different contexts and will change as needed.</p>
      */
-    private class EncryptionPanel extends JPanel {
+    public class EncryptionPanel extends JPanel {
 
         private JPasswordField password1 = new JPasswordField(),  password2 = new JPasswordField();
         private JLabel password1Label = new GenericLabel("Passphrase:"),  password2Label = new GenericLabel("Confirm Passphrase:");
-        private GenericCheckBox encryptBox = new GenericCheckBox("Encrypt"),  isShareMetaIfEncrypted = new GenericCheckBox("Display descriptive information even though encrypted");
-        private RandomPassphraseButton random = new RandomPassphraseButton(password1, password2);
+        public GenericCheckBox encryptBox = new GenericCheckBox("Encrypt"),  isShareMetaIfEncrypted = new GenericCheckBox("Display descriptive information even though encrypted");
+        public RandomPassphraseButton random = new RandomPassphraseButton(password1, password2);
 
         private EncryptionPanel() {
             setPassphrasesVisible(false);

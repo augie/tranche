@@ -17,16 +17,17 @@ package org.tranche.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import org.tranche.security.Signature;
 import org.tranche.flatfile.FlatFileTrancheServer;
+import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.remote.Token;
-import org.tranche.users.User;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
-import org.tranche.util.TempFileUtil;
+import org.tranche.util.TestNetwork;
+import org.tranche.util.TestServerConfiguration;
+import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -35,19 +36,30 @@ import org.tranche.util.TrancheTestCase;
  */
 public class ShutdownItemTest extends TrancheTestCase {
 
+    @Override()
+    protected void setUp() throws Exception {
+        super.setUp();
+        FlatFileTrancheServer.setDebug(true);
+        Server.setDebug(true);
+    }
+
+    @Override()
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        FlatFileTrancheServer.setDebug(false);
+        Server.setDebug(false);
+    }
+
     public void testDoAction() throws Exception {
-        FlatFileTrancheServer ffts = null;
-        File dir = null;
-        Server s = null;
+        TestUtil.printTitle("ShutdownItemTest:testDoAction()");
+
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
-            // create a local server
-            dir = TempFileUtil.createTemporaryDirectory();
-            ffts = new FlatFileTrancheServer(dir);
-            User devUser = DevUtil.getDevUser();
-            devUser.setFlags(User.ALL_PRIVILEGES);
-            ffts.getConfiguration().addUser(devUser);
-            s = new Server(ffts, 1500);
-            s.start();
+            testNetwork.start();
+            Server s = testNetwork.getServer(HOST1);
+            FlatFileTrancheServer ffts = testNetwork.getFlatFileTrancheServer(HOST1);
 
             // get a nonce from the server
             byte[] nonce = IOUtil.getNonce(ffts);
@@ -75,9 +87,7 @@ public class ShutdownItemTest extends TrancheTestCase {
             String responseLine = RemoteUtil.readLine(new ByteArrayInputStream(response.toByteArray()));
             assertEquals(Token.OK_STRING, responseLine);
         } finally {
-            IOUtil.safeClose(s);
-            IOUtil.safeClose(ffts);
-            IOUtil.recursiveDelete(dir);
+            testNetwork.stop();
         }
     }
 }

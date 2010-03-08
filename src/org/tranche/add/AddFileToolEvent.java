@@ -85,136 +85,23 @@ public class AddFileToolEvent {
     private long timestamp = TimeUtil.getTrancheTimestamp();
 
     /**
-     * 
+     *
      * @param action
      * @param type
+     * @param file
+     * @param fileName
+     * @param fileHash
+     * @param chunkHash
+     * @param serverHostName
      */
-    public AddFileToolEvent(short action, int type) {
+    public AddFileToolEvent(short action, int type, File file, String fileName, BigHash fileHash, BigHash chunkHash, String serverHostName) {
         this.action = action;
         this.type = type;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param file
-     */
-    public AddFileToolEvent(short action, int type, File file) {
-        this(action, type);
         this.file = file;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param relativeName
-     * @param file
-     * @param fileHash
-     */
-    public AddFileToolEvent(short action, int type, String relativeName, File file, BigHash fileHash) {
-        this(action, type, relativeName, file);
-        this.fileHash = fileHash;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param relativeName
-     * @param chunkHash
-     * @param file
-     */
-    public AddFileToolEvent(short action, int type, String relativeName, BigHash chunkHash, File file) {
-        this(action, type, relativeName, file);
-        this.chunkHash = chunkHash;
-    }
-
-    /**
-     *
-     * @param action
-     * @param type
-     * @param fileHash
-     */
-    public AddFileToolEvent(short action, int type, BigHash fileHash) {
-        this(action, type);
-        this.fileHash = fileHash;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param fileName
-     * @param file
-     */
-    public AddFileToolEvent(short action, int type, String fileName, File file) {
-        this(action, type, file);
         this.fileName = fileName;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param file
-     * @param serverHostName
-     */
-    public AddFileToolEvent(short action, int type, File file, String serverHostName) {
-        this(action, type, file);
-        this.serverHostName = serverHostName;
-    }
-
-    /**
-     *
-     * @param action
-     * @param type
-     * @param fileName
-     * @param file
-     * @param serverHostName
-     */
-    public AddFileToolEvent(short action, int type, String fileName, File file, String serverHostName) {
-        this(action, type, fileName, file);
-        this.serverHostName = serverHostName;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param fileHash
-     * @param serverHostName
-     */
-    public AddFileToolEvent(short action, int type, BigHash fileHash, String serverHostName) {
-        this(action, type, fileHash);
-        this.serverHostName = serverHostName;
-    }
-
-    /**
-     * 
-     * @param action
-     * @param type
-     * @param file
-     * @param chunkHash
-     */
-    public AddFileToolEvent(short action, int type, File file, BigHash chunkHash) {
-        this(action, type, file);
+        this.fileHash = fileHash;
         this.chunkHash = chunkHash;
-    }
-
-    /**
-     *
-     * @param fileName
-     * @param action
-     * @param type
-     * @param file
-     * @param serverHostName
-     * @param chunkHash
-     */
-    public AddFileToolEvent(short action, int type, String fileName, File file, String serverHostName, BigHash chunkHash) {
-        this(action, type, fileName, file, serverHostName);
-        this.chunkHash = chunkHash;
+        this.serverHostName = serverHostName;
     }
 
     /**

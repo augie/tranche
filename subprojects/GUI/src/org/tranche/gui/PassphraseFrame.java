@@ -163,7 +163,7 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
             } else if (passwordField.getPassword() == null || passwordField.getPassword().length == 0) {
                 abq.add("");
             } else {
-                abq.add(new String(passwordField.getPassword()));
+                abq.add(new String(passwordField.getPassword()).trim());
             }
             // hide this frame
             dispose();

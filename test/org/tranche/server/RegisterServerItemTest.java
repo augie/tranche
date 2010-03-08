@@ -17,6 +17,7 @@ package org.tranche.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.remote.Token;
 import org.tranche.util.TestNetwork;
@@ -33,12 +34,14 @@ public class RegisterServerItemTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
+        FlatFileTrancheServer.setDebug(true);
         Server.setDebug(true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
+        FlatFileTrancheServer.setDebug(false);
         Server.setDebug(false);
     }
 
@@ -52,7 +55,6 @@ public class RegisterServerItemTest extends TrancheTestCase {
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST2, 1501, "127.0.0.1", true, true, false));
-
         try {
             testNetwork.start();
 

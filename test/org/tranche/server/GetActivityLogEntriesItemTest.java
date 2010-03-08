@@ -17,14 +17,18 @@ package org.tranche.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import org.tranche.exceptions.TodoException;
 import org.tranche.flatfile.FlatFileTrancheServer;
+import org.tranche.hash.BigHash;
+import org.tranche.hash.span.HashSpan;
 import org.tranche.logs.activity.Activity;
+import org.tranche.network.ConnectionUtil;
+import org.tranche.remote.RemoteUtil;
+import org.tranche.remote.Token;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.TempFileUtil;
+import org.tranche.util.TestNetwork;
+import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
@@ -38,36 +42,34 @@ public class GetActivityLogEntriesItemTest extends TrancheTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         TestUtil.setTestingActivityLogs(true);
+        FlatFileTrancheServer.setDebug(true);
+        Server.setDebug(true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
         TestUtil.setTestingActivityLogs(false);
+        FlatFileTrancheServer.setDebug(false);
+        Server.setDebug(false);
     }
 
     public void testDoAction() throws Exception {
-        FlatFileTrancheServer ffts = null;
-        File dir = null;
-        Server s = null;
+        TestUtil.printTitle("GetActivityLogEntriesItemTest:testDoAction()");
+
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
+            testNetwork.start();
+            Server s = testNetwork.getServer(HOST1);
+
             long startTimestamp = TimeUtil.getTrancheTimestamp();
-            
-            // create a local server
-            dir = TempFileUtil.createTemporaryDirectory();
-            ffts = new FlatFileTrancheServer(dir);
-            ffts.getConfiguration().addUser(DevUtil.getDevUser());
-            s = new Server(ffts, 1500);
-            s.start();
-
-            if (true) {
-                throw new TodoException();
-            }
-
-            // wait for startup
-            ffts.waitToLoadExistingDataBlocks();
-            s.waitForStartup(1000);
-
+            // create fake data chunk
+            byte[] bytes = DevUtil.createRandomDataChunk1MB();
+            BigHash hash = new BigHash(bytes);
+            PropagationReturnWrapper pew = IOUtil.setData(ConnectionUtil.connectHost(HOST1, false), DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), hash, bytes);
+            assertFalse(pew.isAnyErrors());
             long endTimestamp = TimeUtil.getTrancheTimestamp();
 
             // create the item
@@ -82,14 +84,15 @@ public class GetActivityLogEntriesItemTest extends TrancheTestCase {
             item.doAction(new ByteArrayInputStream(request.toByteArray()), response, "localhost");
 
             // verify
-            Activity[] activities = GetActivityLogEntriesItem.readResponse(new ByteArrayInputStream(response.toByteArray()));
-            if (true) {
-                throw new TodoException();
-            }
+            ByteArrayInputStream bais = new ByteArrayInputStream(response.toByteArray());
+            assertEquals(Token.OK_STRING, RemoteUtil.readLine(bais));
+            Activity[] activities = GetActivityLogEntriesItem.readResponse(bais);
+            assertEquals(1, activities.length);
+            assertEquals(Activity.SET_DATA, activities[0].getAction());
+            assertEquals(hash.toString(), activities[0].getHash().toString());
+            assertTrue(activities[0].isData());
         } finally {
-            IOUtil.safeClose(s);
-            IOUtil.safeClose(ffts);
-            IOUtil.recursiveDelete(dir);
+            testNetwork.stop();
         }
     }
 }

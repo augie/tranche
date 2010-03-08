@@ -17,16 +17,18 @@ package org.tranche.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import org.tranche.security.Signature;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
+import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.remote.Token;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
-import org.tranche.util.TempFileUtil;
+import org.tranche.util.TestNetwork;
+import org.tranche.util.TestServerConfiguration;
+import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -35,21 +37,30 @@ import org.tranche.util.TrancheTestCase;
  */
 public class SetDataItemTest extends TrancheTestCase {
 
-    public void testDoAction() throws Exception {
-        FlatFileTrancheServer ffts = null;
-        File dir = null;
-        Server s = null;
-        try {
-            // create a local server
-            dir = TempFileUtil.createTemporaryDirectory();
-            ffts = new FlatFileTrancheServer(dir);
-            ffts.getConfiguration().addUser(DevUtil.getDevUser());
-            s = new Server(ffts, 1500);
-            s.start();
+    @Override()
+    protected void setUp() throws Exception {
+        super.setUp();
+        FlatFileTrancheServer.setDebug(true);
+        Server.setDebug(true);
+    }
 
-            // wait for startup
-            ffts.waitToLoadExistingDataBlocks();
-            s.waitForStartup(1000);
+    @Override()
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        FlatFileTrancheServer.setDebug(false);
+        Server.setDebug(false);
+    }
+
+    public void testDoAction() throws Exception {
+        TestUtil.printTitle("SetDataItemTest:testDoAction()");
+
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
+        try {
+            testNetwork.start();
+            Server s = testNetwork.getServer(HOST1);
+            FlatFileTrancheServer ffts = testNetwork.getFlatFileTrancheServer(HOST1);
 
             // make a meta data to set
             byte[] bytesToUpload = DevUtil.createRandomDataChunk1MB();
@@ -85,9 +96,7 @@ public class SetDataItemTest extends TrancheTestCase {
             assertEquals(0, wrapper.getErrors().size());
             assertTrue(IOUtil.hasData(ffts, hash));
         } finally {
-            IOUtil.safeClose(s);
-            IOUtil.safeClose(ffts);
-            IOUtil.recursiveDelete(dir);
+            testNetwork.stop();
         }
     }
 }

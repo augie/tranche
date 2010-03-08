@@ -47,7 +47,7 @@ public class RandomPassphraseButton extends GenericButton implements ClipboardOw
                         String p = GUIUtil.generateRandomPassphrase(20);
                         passphraseField.setText(p);
                         confirmPassphraseField.setText(p);
-                        int returnInt = GenericOptionPane.showConfirmDialog(RandomPassphraseButton.this, "Your randomly generated passphrase: " + p + "\nDo you want to copy this to your clipboard?", "Random Passphrase", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                        int returnInt = GenericOptionPane.showConfirmDialog(null, "Your randomly generated passphrase: " + p + "\nDo you want to copy this to your clipboard?", "Random Passphrase", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                         if (returnInt == JOptionPane.YES_OPTION) {
                             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(p), RandomPassphraseButton.this);
                         }

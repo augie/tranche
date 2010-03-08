@@ -42,7 +42,7 @@ import org.tranche.gui.TextPanel;
 public class AFTStep2Panel extends GenericWizardPanel {
 
     private AddFileToolWizard wizard;
-    private JRadioButton cc0Button = new JRadioButton(License.CC0.getTitle()),  customButton = new JRadioButton("Custom License");
+    public JRadioButton cc0Button = new JRadioButton(License.CC0.getTitle()),  customButton = new JRadioButton("Custom License");
     private ButtonGroup group = new ButtonGroup();
 
     public AFTStep2Panel(AddFileToolWizard wizard) {

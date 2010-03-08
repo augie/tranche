@@ -46,7 +46,7 @@ public class AFTStep3Panel extends GenericWizardPanel {
 
     private AddFileToolWizard wizard;
     private JLabel headerLabel = new GenericLabel("");
-    private CustomLicensePanel customLicensePanel = new CustomLicensePanel();
+    public CustomLicensePanel customLicensePanel = new CustomLicensePanel();
     private CC0LicensePanel cc0LicensePanel = new CC0LicensePanel();
 
     public AFTStep3Panel(AddFileToolWizard wizard) {
@@ -176,7 +176,7 @@ public class AFTStep3Panel extends GenericWizardPanel {
         }
     }
 
-    private class CustomLicensePanel extends JPanel {
+    public class CustomLicensePanel extends JPanel {
 
         public JTextArea customLicenseTextArea = new GenericTextArea();
         public GenericCheckBox agreeBox = new GenericCheckBox("");

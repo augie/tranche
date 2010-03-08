@@ -42,6 +42,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
 
     @Override
     protected void setUp() throws Exception {
+        super.setUp();
         TestUtil.setTestingActivityLogs(true);
         TestUtil.setTestingServerStartupThread(true);
         TestUtil.setTestingHashSpanFixingThread(false);
@@ -49,6 +50,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
 
     @Override
     protected void tearDown() throws Exception {
+        super.tearDown();
         TestUtil.setTestingActivityLogs(false);
         TestUtil.setTestingServerStartupThread(false);
         TestUtil.setTestingHashSpanFixingThread(wasTestingHashSpanFixingThread);

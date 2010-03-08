@@ -130,6 +130,30 @@ public class AddFileToolWizard extends GenericWizard {
         step1Panel.userButton.setUser(userZipFile);
     }
 
+    public AddFileToolWizardMenuBar getAddFileToolWizardMenuBar() {
+        return menuBar;
+    }
+
+    public AnnotationFrame getAnnotationFrame() {
+        return annotationFrame;
+    }
+
+    public UploadSummary getUploadSummary() {
+        return summary;
+    }
+
+    public AFTStep1Panel getStep1Panel() {
+        return step1Panel;
+    }
+
+    public AFTStep2Panel getStep2Panel() {
+        return step2Panel;
+    }
+
+    public AFTStep3Panel getStep3Panel() {
+        return step3Panel;
+    }
+
     public class AddFileToolWizardMenuBar extends GenericMenuBar {
 
         public HomeButton homeButton = new HomeButton(ef, AddFileToolWizard.this);

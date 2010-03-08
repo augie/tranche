@@ -181,6 +181,7 @@ public class FlatFileTrancheServer extends TrancheServer {
     private X509Certificate authCert;
     private PrivateKey authPrivateKey;
     private String cachedHost = null;
+
     ;
 
     /**
@@ -1441,82 +1442,25 @@ public class FlatFileTrancheServer extends TrancheServer {
 //                        // skip empty directories...they can be deleted
 //                        continue;
 //                    }
-                    // TODO: remove the directory and transfer all of the data chunks out of it!
-                    // for now assume that this can't happen!
+                        // TODO: remove the directory and transfer all of the data chunks out of it!
+                        // for now assume that this can't happen!
 //                    throw new RuntimeException("Removing old data directories is not supported!");
                     }
                 }
 
-            // Argh, old bug: when configuration is set in FFTS, reads in bytes and creates DDC objects.
-            // Then checks if they exist. Problem is, they probably do; but now you have "equal" DDC objects
-            // that are actually different in memory.
+                // Argh, old bug: when configuration is set in FFTS, reads in bytes and creates DDC objects.
+                // Then checks if they exist. Problem is, they probably do; but now you have "equal" DDC objects
+                // that are actually different in memory.
 
-            // Solution:
+                // Solution:
 
             }
 
-            // check for changes in the hash spans
-            {
-                Set<HashSpan> newHashSpans = new HashSet();
-                newHashSpans.addAll(c.getHashSpans());
-
-                Set<HashSpan> existingHashSpans = config.getHashSpans();
-                // purge all old hash spans
-                existingHashSpans.clear();
-                // check for newly added hash spans
-                existingHashSpans.addAll(newHashSpans);
-            }
-
-            // check for changes in the hash spans
-            {
-                Set<HashSpan> newHashSpans = new HashSet();
-                newHashSpans.addAll(c.getTargetHashSpans());
-
-                /* -------------------------------------------------------------
-                Set<HashSpan> existingHashSpans = config.getTargetHashSpans();
-                // purge all old hash spans
-                existingHashSpans.clear();
-                // check for newly added hash spans
-                existingHashSpans.addAll(newHashSpans);
-                ------------------------------------------------------------- */
-
-                config.clearTargetHashSpans();
-                config.setTargetHashSpans(newHashSpans);
-            }
-
-            // check for changes in users
-            {
-                Set<User> newUsers = new HashSet();
-                newUsers.addAll(c.getUsers());
-                Set<User> existingUsers = config.getUsers();
-
-                // purge all old users
-                existingUsers.clear();
-                // add all the new
-                existingUsers.addAll(newUsers);
-            }
-
-            // check for changes in the sticky projects
-            {
-                Set<BigHash> newStickyProjects = c.getStickyProjects();
-                Set<BigHash> existingHashSpans = config.getStickyProjects();
-
-                // purge old
-                existingHashSpans.clear();
-                // add new
-                existingHashSpans.addAll(newStickyProjects);
-            }
-
-            // check for changes in the sticky projects
-            {
-                Set<ServerConfiguration> newServerConfigurations = c.getServerConfigs();
-                Set<ServerConfiguration> existingServerConfigurations = config.getServerConfigs();
-
-                // purge old
-                existingServerConfigurations.clear();
-                // add new
-                existingServerConfigurations.addAll(newServerConfigurations);
-            }
+            config.setHashSpans(new HashSet(c.getHashSpans()));
+            config.setTargetHashSpans(new HashSet(c.getTargetHashSpans()));
+            config.setUsers(new HashSet(c.getUsers()));
+            config.setStickyProjects(new HashSet(c.getStickyProjects()));
+            config.setServerConfigs(new HashSet(c.getServerConfigs()));
 
             // check for changes in the properties
             {

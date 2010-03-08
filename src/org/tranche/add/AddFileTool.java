@@ -1189,7 +1189,7 @@ public class AddFileTool {
                     if (report.isFailed()) {
                         fireFailedDirectory(file, report.getFailureExceptions());
                     } else {
-                        fireFinishedDirectory(file);
+                        fireFinishedDirectory(file, report.getHash());
                     }
                 }
             } catch (Exception e) {
@@ -1248,7 +1248,7 @@ public class AddFileTool {
      * @param hash The hash of the meta data.
      */
     private void fireStartedMetaData(BigHash hash) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_METADATA, hash));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_METADATA, null, null, hash, null, null));
     }
 
     /**
@@ -1257,7 +1257,7 @@ public class AddFileTool {
      * @param serverHost The host name of the server.
      */
     private void fireTryingMetaData(BigHash hash, String serverHost) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_TRYING, AddFileToolEvent.TYPE_METADATA, hash, serverHost));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_TRYING, AddFileToolEvent.TYPE_METADATA, null, null, hash, null, serverHost));
     }
 
     /**
@@ -1266,7 +1266,7 @@ public class AddFileTool {
      * @param serverHost The host name of the server.
      */
     private void fireUploadedMetaData(BigHash hash, String serverHost) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_UPLOADED, AddFileToolEvent.TYPE_METADATA, hash, serverHost));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_UPLOADED, AddFileToolEvent.TYPE_METADATA, null, null, hash, null, serverHost));
     }
 
     /**
@@ -1276,7 +1276,7 @@ public class AddFileTool {
      * @param propagationExceptions
      */
     private void fireFailedMetaData(File file, BigHash hash, Collection<PropagationExceptionWrapper> exceptions) {
-        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_METADATA, file, hash), exceptions);
+        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_METADATA, file, null, hash, null, null), exceptions);
     }
 
     /**
@@ -1288,7 +1288,7 @@ public class AddFileTool {
         if (!metaData.isProjectFile() && timeEstimator != null) {
             timeEstimator.update(timeEstimator.getBytesDone(), timeEstimator.getTotalBytes() - hash.getLength() + metaData.getEncodings().get(metaData.getEncodings().size() - 1).getHash().getLength(), timeEstimator.getFilesDone() + 1, timeEstimator.getTotalFiles());
         }
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_METADATA, hash));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_METADATA, null, null, hash, null, null));
     }
 
     /**
@@ -1298,7 +1298,7 @@ public class AddFileTool {
      * @param chunkHash The hash of the data chunk.
      */
     private void fireStartedData(String fileName, File file, BigHash chunkHash) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_DATA, fileName, chunkHash, file));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_DATA, file, fileName, null, chunkHash, null));
     }
 
     /**
@@ -1309,7 +1309,7 @@ public class AddFileTool {
      * @param serverHost The host name of the server.
      */
     private void fireTryingData(String fileName, File file, BigHash chunkHash, String serverHost) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_TRYING, AddFileToolEvent.TYPE_DATA, fileName, file, serverHost, chunkHash));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_TRYING, AddFileToolEvent.TYPE_DATA, file, fileName, null, chunkHash, serverHost));
     }
 
     /**
@@ -1320,7 +1320,7 @@ public class AddFileTool {
      * @param serverHost The host name of the server.
      */
     private void fireUploadedData(String fileName, File file, BigHash chunkHash, String serverHost) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_UPLOADED, AddFileToolEvent.TYPE_DATA, fileName, file, serverHost, chunkHash));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_UPLOADED, AddFileToolEvent.TYPE_DATA, file, fileName, null, chunkHash, serverHost));
     }
 
     /**
@@ -1331,7 +1331,7 @@ public class AddFileTool {
      * @param propagationExceptions
      */
     private void fireFailedData(String fileName, File file, BigHash chunkHash, Collection<PropagationExceptionWrapper> exceptions) {
-        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DATA, fileName, chunkHash, file), exceptions);
+        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DATA, file, fileName, null, chunkHash, null), exceptions);
     }
 
     /**
@@ -1344,7 +1344,7 @@ public class AddFileTool {
         if (file != null && !file.getName().equals(ProjectFile.DEFAULT_PROJECT_FILE_NAME) && timeEstimator != null) {
             timeEstimator.update(timeEstimator.getBytesDone() + chunkHash.getLength(), timeEstimator.getTotalBytes(), timeEstimator.getFilesDone(), timeEstimator.getTotalFiles());
         }
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_DATA, fileName, chunkHash, file));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_DATA, file, fileName, null, chunkHash, null));
     }
 
     /**
@@ -1353,7 +1353,7 @@ public class AddFileTool {
      * @param relativeName The relative name of the file in the data set.
      */
     private void fireStartedFile(File file, String relativeName) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_FILE, relativeName, file));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_FILE, file, relativeName, null, null, null));
     }
 
     /**
@@ -1362,7 +1362,7 @@ public class AddFileTool {
      * @param propagationExceptions
      */
     private void fireFailedFile(File file, String relativeName, Collection<PropagationExceptionWrapper> exceptions) {
-        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_FILE, relativeName, file), exceptions);
+        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_FILE, file, relativeName, null, null, null), exceptions);
     }
 
     /**
@@ -1370,7 +1370,7 @@ public class AddFileTool {
      * @param hash The hash of the file.
      */
     private void fireFinishedFile(File file, String relativeName, BigHash fileHash) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_FILE, relativeName, file, fileHash));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_FILE, file, relativeName, fileHash, null, null));
     }
 
     /**
@@ -1378,15 +1378,16 @@ public class AddFileTool {
      * @param hash The directory file.
      */
     private void fireStartedDirectory(File file) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_DIRECTORY, file));
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_STARTED, AddFileToolEvent.TYPE_DIRECTORY, file, null, null, null, null));
     }
 
     /**
      * <p>Notifies listeners that a directory upload has finished.</p>
+     * @param file The directory uploaded.
      * @param hash The hash of the directory.
      */
-    private void fireFinishedDirectory(File file) {
-        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_DIRECTORY, file));
+    private void fireFinishedDirectory(File file, BigHash hash) {
+        fire(new AddFileToolEvent(AddFileToolEvent.ACTION_FINISHED, AddFileToolEvent.TYPE_DIRECTORY, file, null, hash, null, null));
     }
 
     /**
@@ -1397,7 +1398,7 @@ public class AddFileTool {
     private void fireFailedDirectory(File file, Exception exception) {
         Set<PropagationExceptionWrapper> exceptions = new HashSet<PropagationExceptionWrapper>();
         exceptions.add(new PropagationExceptionWrapper(exception));
-        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DIRECTORY, file), exceptions);
+        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DIRECTORY, file, null, null, null, null), exceptions);
     }
 
     /**
@@ -1406,7 +1407,7 @@ public class AddFileTool {
      * @param propagationExceptions
      */
     private void fireFailedDirectory(File file, Collection<PropagationExceptionWrapper> exceptions) {
-        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DIRECTORY, file), exceptions);
+        fireFailure(new AddFileToolEvent(AddFileToolEvent.ACTION_FAILED, AddFileToolEvent.TYPE_DIRECTORY, file, null, null, null, null), exceptions);
     }
 
     /**
