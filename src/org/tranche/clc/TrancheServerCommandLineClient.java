@@ -192,10 +192,20 @@ public class TrancheServerCommandLineClient extends Thread {
                                 }
                             } // catch "illegal seek" exceptions
                             catch (Exception e) {
-                                e.printStackTrace();
-                                // sleep some
+                                
+                                // -------------------------------------------------------------------------------
+                                // WHEN ADMIN DISCONNECTS FROM REMOTE SERVER (E.G., SSH)...
+                                //
+                                //   Every read on the input stream will throw an "illegal seek" exception,
+                                //   including available()! This results in huge amounts of exception messages.
+                                //   (e.g., on Mar 8 2010, 5.2GB on Japan, which ran out of space, killing the
+                                //   server.)
+                                //
+                                //   Don't print exception messages here!
+                                // -------------------------------------------------------------------------------
+
                                 try {
-                                    Thread.sleep(100);
+                                    Thread.sleep(500);
                                 } catch (Exception ee) {
                                 }
                             }
