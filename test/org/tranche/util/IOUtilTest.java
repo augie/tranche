@@ -290,12 +290,64 @@ public class IOUtilTest extends TrancheTestCase {
         }
     }
 
+    public void testReadBytes() throws Exception {
+        testReadBytes(false);
+    }
+
+    public void testReadBytesIgnoreExcess() throws Exception {
+        testReadBytes(true);
+    }
+
+    public void testReadBytes(boolean specifyExcess) throws Exception {
+        ByteArrayInputStream bais = null;
+        try {
+            int bytesLen = RandomUtil.getInt(1024 * 1024) + 1;
+            byte[] bytes = new byte[bytesLen];
+            RandomUtil.getBytes(bytes);
+            bais = new ByteArrayInputStream(bytes);
+
+            int toRead = bytesLen;
+            if (specifyExcess) {
+                toRead += (RandomUtil.getInt(1024 * 1024) + 1);
+            }
+
+            byte[] verifyBytes = IOUtil.readBytes(toRead, bais);
+            AssertionUtil.assertBytesSame(bytes, verifyBytes);
+        } finally {
+            IOUtil.safeClose(bais);
+        }
+    }
+
+    public void testReadFully() throws Exception {
+        final byte[] bytes = new byte[RandomUtil.getInt(1024 + 1024)];
+        RandomUtil.getBytes(bytes);
+        int bufferLen = 1024;
+
+        ByteArrayInputStream bais = null;
+        try {
+            bais = new ByteArrayInputStream(bytes);
+            byte[] buffer = IOUtil.readBytes(bufferLen, bais);
+            
+            int total = 0;
+            
+            while (buffer.length > 0) {
+                total += buffer.length;
+                buffer = IOUtil.readBytes(bufferLen, bais);
+            }
+            
+            assertEquals("Should have read in all bytes without any problems.", bytes.length, total);
+
+        } finally {
+            IOUtil.safeClose(bais);
+        }
+    }
+
     public void testSerialization() throws Exception {
         TestUtil.printTitle("IOUtilTest:testSerialization()");
 
         // test byte
         {
-            byte expected = (byte)RandomUtil.getInt();
+            byte expected = (byte) RandomUtil.getInt();
 
             // write
             ByteArrayOutputStream baos = null;
@@ -318,7 +370,7 @@ public class IOUtilTest extends TrancheTestCase {
 
         // test bytes
         {
-            byte[] expected = new byte[RandomUtil.getInt(10)+1];
+            byte[] expected = new byte[RandomUtil.getInt(10) + 1];
             RandomUtil.getBytes(expected);
 
             // write
@@ -346,7 +398,7 @@ public class IOUtilTest extends TrancheTestCase {
 
         // test data
         {
-            byte[] expected = new byte[RandomUtil.getInt(10)+1];
+            byte[] expected = new byte[RandomUtil.getInt(10) + 1];
             RandomUtil.getBytes(expected);
 
             // write
@@ -372,7 +424,7 @@ public class IOUtilTest extends TrancheTestCase {
 
             // null
             expected = null;
-            
+
             // write
             baos = null;
             try {

@@ -16,6 +16,9 @@
 package org.tranche.util;
 
 import junit.framework.TestCase;
+import org.tranche.add.AddFileToolReport;
+import org.tranche.get.GetFileToolReport;
+import org.tranche.server.PropagationExceptionWrapper;
 
 /**
  *
@@ -47,4 +50,39 @@ public class TrancheTestCase extends TestCase {
         DebugUtil.setDebug(false);
     }
 
+    /**
+     * <p>Assert that the upload completed successfully.</p>
+     * @param report
+     */
+    protected void assertSuccess(AddFileToolReport report) {
+        assertTrue("Upload should be finished.", report.isFinished());
+
+        if (report.isFailed()) {
+            System.err.println("The upload failed with the following " + report.getFailureExceptions().size() + " error(s):");
+            for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                System.err.println("    * "+pew.exception.getMessage()+" <"+pew.host+">: "+pew.exception.getMessage());
+                pew.exception.printStackTrace();
+            }
+            fail("Upload should not have failed, but did.");
+        }
+        
+        assertNotNull("Hash should not be null.", report.getHash());
+    }
+    
+    /**
+     * <p>Assert that the download completed successfully.</p>
+     * @param report
+     */
+    protected void assertSuccess(GetFileToolReport report) {
+        assertTrue("Download should be finished.", report.isFinished());
+
+        if (report.isFailed()) {
+            System.err.println("The download failed with the following " + report.getFailureExceptions().size() + " error(s):");
+            for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
+                System.err.println("    * "+pew.exception.getMessage()+" <"+pew.host+">: "+pew.exception.getMessage());
+                pew.exception.printStackTrace();
+            }
+            fail("Download should not have failed, but did.");
+        }
+    }
 }

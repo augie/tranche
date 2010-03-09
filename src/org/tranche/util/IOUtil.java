@@ -200,7 +200,7 @@ public class IOUtil {
             }
         }
     }
-    
+
     /**
      * <p>Helper method to safely close a DataBlockUtil.</p>
      * @param dbu
@@ -208,7 +208,8 @@ public class IOUtil {
     public static final void safeClose(DataBlockUtil dbu) {
         try {
             dbu.close();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
     /**
@@ -1365,9 +1366,44 @@ public class IOUtil {
         o.flush();
     }
 
+    /**
+     * <p>Read up to specified byte count from input stream. Stops on following two conditions:</p>
+     * <ul>
+     *      <li>Read specified byte count</li>
+     *      <li>End of stream</li>
+     * </ul>
+     * <p>If reach end of stream and less bytes were read than the specified byte count, the resulting byte array will be trimmed to the size of the bytes read.</p>
+     * @param byteCount
+     * @param i
+     * @return
+     * @throws java.io.IOException
+     */
     public static final byte[] readBytes(int byteCount, InputStream i) throws IOException {
         byte[] bytes = new byte[byteCount];
-        i.read(bytes);
+
+        int read = i.read(bytes);
+        int total = read;
+
+        while (read != -1 && total < byteCount) {
+            read = i.read(bytes);
+
+            if (read > 0) {
+                total += read;
+            }
+        }
+
+        // Trim array if not fully populated
+        if (total < byteCount) {
+            // If nothing read, stop!
+            if (total <= 0) {
+                bytes = new byte[0];
+            } else {
+                byte[] oldBytes = bytes;
+                bytes = new byte[total];
+                System.arraycopy(oldBytes, 0, bytes, 0, total);
+            }
+        }
+
         return bytes;
     }
 
