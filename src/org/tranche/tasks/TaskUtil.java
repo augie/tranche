@@ -16,8 +16,8 @@
 package org.tranche.tasks;
 
 import org.tranche.util.*;
-import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
@@ -26,12 +26,12 @@ import java.util.Set;
 import org.tranche.Tertiary;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.Configuration;
+import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.TodoException;
 import org.tranche.get.GetFileTool;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.meta.MetaData;
-import org.tranche.meta.MetaDataUtil;
 import org.tranche.network.*;
 import org.tranche.security.SecurityUtil;
 import org.tranche.server.PropagationExceptionWrapper;
@@ -43,6 +43,11 @@ import org.tranche.server.PropagationReturnWrapper;
  * @author James "Augie" Hill - augman85@gmail.com
  */
 public class TaskUtil {
+
+    /**
+     * <p>This needs to be a global value, not a static class variable.</p>
+     */
+    private static final int REQUIRED_COPIES_FOR_DELETE = 2;
 
     /**
      * <p>Returns Configuration for a server with specified host.</p>
@@ -217,42 +222,75 @@ public class TaskUtil {
      */
     public static void publishPassphrase(BigHash hash, String passphrase, String uploaderName, X509Certificate cert, PrivateKey key, long uploadTimestamp, String relativePathInDataSet, PrintStream out) throws Exception {
         // Set to anything with proper hash span
-        Set<String> hostsToPublishTo = new HashSet();
-        Set<String> offlineHosts = new HashSet();
+        final Set<String> writableHostsToUse = new HashSet(),  writableHostsWithoutHashSpan = new HashSet(),  readOnlyHosts = new HashSet(),  offlineHosts = new HashSet();
         ROWS:
         for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
-            if (row.isOnline() && row.isWritable()) {
-                HASH_SPANS:
-                for (HashSpan hs : row.getHashSpans()) {
-                    if (hs.contains(hash)) {
-                        hostsToPublishTo.add(row.getHost());
-                        break HASH_SPANS;
-                    }
+
+            final String host = row.getHost();
+            boolean isInHashSpan = false;
+
+            HASH_SPANS:
+            for (HashSpan hs : row.getHashSpans()) {
+                if (hs.contains(hash)) {
+                    isInHashSpan = true;
+                    break HASH_SPANS;
                 }
+            }
+
+            if (!row.isOnline()) {
+                offlineHosts.add(host);
+            } else if (row.isWritable()) {
+                if (isInHashSpan) {
+                    writableHostsToUse.add(host);
+                } else {
+                    writableHostsWithoutHashSpan.add(host);
+                }
+            } else if (!row.isWritable()) {
+                readOnlyHosts.add(host);
             } else {
-                offlineHosts.add(row.getHost());
+                throw new RuntimeException("Assertion failed: unknown server status for " + row.getHost() + " <is online: " + row.isOnline() + ", is writable: " + row.isWritable() + ">");
             }
         }
 
-        if (hostsToPublishTo.size() == 0) {
+        if (writableHostsToUse.size() == 0) {
             throw new Exception("Could not publish since could not find any hosts to use.");
         }
 
-        Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(hostsToPublishTo, Tertiary.DONT_CARE, Tertiary.DONT_CARE);
-        if (strategies.size() == 0) {
-            throw new Exception("Could not find a strategy to propogate to " + hostsToPublishTo.size() + " server(s); cannot delete.");
+        Collection<MultiServerRequestStrategy> updateStrategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(writableHostsToUse, Tertiary.DONT_CARE, Tertiary.DONT_CARE);
+        if (updateStrategies.size() == 0) {
+            throw new Exception("Could not find a strategy to propogate to " + writableHostsToUse.size() + " server(s); cannot delete.");
         }
 
-        out.println("Host(s) to use: " + hostsToPublishTo.size());
-        for (String host : hostsToPublishTo) {
+        out.println("Host(s) to use (writable, has appropriate hash span): " + writableHostsToUse.size());
+        for (String host : writableHostsToUse) {
             out.println("   * " + host);
         }
         out.println();
-        out.println("Offline host(s): " + offlineHosts.size());
+        out.println("Other host(s): ");
+        out.println("   - Writable (no appropriate hash span): " + writableHostsWithoutHashSpan.size());
+        for (String host : writableHostsWithoutHashSpan) {
+            out.println("   * " + host);
+        }
+        out.println();
+        out.println("   - Read-only: " + readOnlyHosts.size());
+        for (String host : readOnlyHosts) {
+            out.println("   * " + host);
+        }
+        out.println();
+        out.println("   - Offline: " + offlineHosts.size());
         for (String host : offlineHosts) {
             out.println("   * " + host);
         }
         out.println();
+
+        // Assert: 
+        if (!isDisjoint(writableHostsToUse, writableHostsWithoutHashSpan)) {
+            throw new AssertionFailedException("Expecting two sets to be disjoint, but weren't");
+        }
+        // Assert: 
+        if (!isDisjoint(writableHostsToUse, readOnlyHosts)) {
+            throw new AssertionFailedException("Expecting two sets to be disjoint, but weren't");
+        }
 
         GetFileTool gft = new GetFileTool();
         gft.setHash(hash);
@@ -260,25 +298,8 @@ public class TaskUtil {
 
         // Select the appropriate uploader
         out.println("Number of uploaders in meta data: " + metaData.getUploaderCount());
-        boolean found = false;
-        for (int i = 0; i < metaData.getUploaderCount(); i++) {
-            metaData.selectUploader(i);
-            String nextUniqueName = metaData.getSignature().getUserName();
-            long nextTimestamp = metaData.getTimestampUploaded();
-            String nextRelativeNameInDataSet = metaData.getRelativePathInDataSet();
-            out.println(" " + nextUniqueName + ", " + nextTimestamp + ", " + nextRelativeNameInDataSet);
 
-            boolean isSameName = nextUniqueName.trim().equals(uploaderName.trim());
-            boolean isSameRelativePath = (nextRelativeNameInDataSet == null && relativePathInDataSet == null) || (nextRelativeNameInDataSet != null && relativePathInDataSet != null && nextRelativeNameInDataSet.equals(relativePathInDataSet));
-            boolean isSameTimestamp = nextTimestamp == uploadTimestamp;
-
-            if (isSameName && isSameRelativePath && isSameTimestamp) {
-                found = true;
-                break;
-            }
-        }
-        out.println();
-
+        boolean found = selectUploaderInMetaData(metaData, uploaderName, relativePathInDataSet, uploadTimestamp);
         if (!found) {
             throw new Exception("Could not find user information in meta data, so cannot delete.");
         }
@@ -289,28 +310,34 @@ public class TaskUtil {
 
         Set<String> publishedTo = new HashSet<String>();
         STRATEGIES:
-        for (MultiServerRequestStrategy strategy : strategies) {
+        for (MultiServerRequestStrategy strategy : updateStrategies) {
             out.println("Starting next strategy:");
             out.println(strategy.toString());
             try {
-                TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
-                if (ts == null) {
-                    throw new NullPointerException("Could not connect to " + strategy.getHostReceivingRequest());
-                }
+                TrancheServer ts = null;
+
                 try {
-                    PropagationReturnWrapper prw = IOUtil.setMetaData(ts, cert, key, false, hash, metaDataBytes, hostsToPublishTo.toArray(new String[0]));
-                    Set<String> thisPublishedTo = new HashSet<String>(hostsToPublishTo);
+                    ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
+                    if (ts == null) {
+                        throw new NullPointerException("Could not connect to " + strategy.getHostReceivingRequest());
+                    }
+                    PropagationReturnWrapper prw = IOUtil.setMetaData(ts, cert, key, false, hash, metaDataBytes, writableHostsToUse.toArray(new String[0]));
+                    Set<String> thisPublishedTo = new HashSet<String>(writableHostsToUse);
                     out.println("Total errors: " + prw.getErrors().size());
+
+                    // Print exception messages, and removes hosts
                     for (PropagationExceptionWrapper pew : prw.getErrors()) {
+                        out.println("       * " + pew.exception.getClass().getSimpleName() + "<" + pew.host + ">: " + pew.exception.getMessage());
+                        pew.exception.printStackTrace(System.err);
+
                         if (pew.host != null) {
                             thisPublishedTo.remove(pew.host);
                         }
-                        out.println("       * " + pew.exception.getClass().getSimpleName() + "<" + pew.host + ">: " + pew.exception.getMessage());
-                        pew.exception.printStackTrace(System.err);
                     }
+
                     publishedTo.addAll(thisPublishedTo);
-                    hostsToPublishTo.removeAll(thisPublishedTo);
-                    if (hostsToPublishTo.isEmpty()) {
+                    writableHostsToUse.removeAll(thisPublishedTo);
+                    if (writableHostsToUse.isEmpty()) {
                         break;
                     }
                 } finally {
@@ -323,9 +350,143 @@ public class TaskUtil {
             out.println();
         }
 
-        out.println("Published passphrase to the following servers:");
+        out.println("Published passphrase to the following " + publishedTo.size() + " server(s):");
         for (String host : publishedTo) {
-            out.println(" " + host);
+            out.println("   * " + host);
         }
+
+        out.println();
+
+        if (publishedTo.size() < REQUIRED_COPIES_FOR_DELETE) {
+            throw new Exception("Failed to update minimum number of copies. Required: " + REQUIRED_COPIES_FOR_DELETE + ", Updated: " + publishedTo.size());
+        }
+
+        // Assert: all servers that received chunk are not in writable set any longer
+        if (!isDisjoint(writableHostsToUse, publishedTo)) {
+            throw new AssertionFailedException("Expecting two sets to be disjoint, but weren't");
+        }
+
+        out.println("Checking for meta data to delete from non-writable servers or servers without appropriate hash span.");
+
+        // Delete chunks from all all servers that didn't get a copy (as long as online)
+
+        // ------------------------------------------------------------------------
+        // NOTE: Cannot rely on the status table to know which servers are writable, which aren't. It
+        //       counted several read-only servers as writable. 
+        // ------------------------------------------------------------------------
+        Set<String> deleteFromHosts = new HashSet();
+        deleteFromHosts.addAll(writableHostsWithoutHashSpan);
+        deleteFromHosts.addAll(readOnlyHosts);
+        deleteFromHosts.addAll(writableHostsToUse);
+
+        final int MAX_ATTEMPTS = 3;
+
+        // ------------------------------------------------------------------------
+        // NOTE: Requires user can delete on server. If not, will get error messages.
+        //
+        // It is important to check whether chunk exists first. If not, we'll
+        // get unnecessary security exceptions for servers regardless of whether
+        // they have the chunk or not.
+        //
+        // If a user is trying to delete, cannot delete and yet the chunk exists,
+        // we need an exception. Hence, we connect to each server in turn and
+        // incur the overhead.
+        // ------------------------------------------------------------------------
+        for (String host : deleteFromHosts) {
+            ATTEMPTS:
+            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                TrancheServer ts = null;
+
+                try {
+                    ts = ConnectionUtil.connectHost(host, true);
+                    if (ts == null) {
+                        throw new NullPointerException("Could not connect to " + host);
+                    }
+
+                    boolean deleted = false;
+                    if (IOUtil.hasMetaData(ts, hash)) {
+                        PropagationReturnWrapper prw = IOUtil.deleteMetaData(ts, cert, key, hash);
+                        out.println("Attempting (#" + attempt + ") to delete from " + host);
+                        deleted = true;
+
+                        // If any problems, assume the worse and try again. If worked anyhow, we'll break
+                        // out fine anyhow.
+                        if (prw.isAnyErrors()) {
+                            // Throw any exceptions found. Easier to handle this logic in one place.
+                            for (PropagationExceptionWrapper pew : prw.getErrors()) {
+                                throw pew.exception;
+                            }
+                        }
+
+                        // If still has chunk, we have a problem
+                        if (IOUtil.hasMetaData(ts, hash)) {
+                            throw new Exception("Should have deleted from server, but still has meta data chunk.");
+                        }
+                    }
+
+                    out.println("Finished checking for meta data to delete from " + host + " <attempt #" + attempt + ">. Deleted?: " + (deleted ? "yes" : "no"));
+                    break ATTEMPTS;
+                } catch (Exception e) {
+                    out.println(e.getClass().getSimpleName() + " occured while attempting (#" + attempt + " of " + MAX_ATTEMPTS + ") to find meta data to delete from " + host + ": " + e.getMessage());
+                    e.printStackTrace(out);
+
+                    // Don't waste time -- the user cannot delete, so throw exception immediately
+                    if (e instanceof GeneralSecurityException) {
+                        throw e;
+                    }
+
+                    // Otherwise, only throw exception if tried enough times
+                    if (attempt == MAX_ATTEMPTS) {
+                        throw e;
+                    }
+                } finally {
+                    ConnectionUtil.unlockConnection(host);
+                }
+            } // delete from host
+        } // attempts (to delete)
+    }
+
+    /**
+     * <p>Determines
+     * @param setA
+     * @param setB
+     * @return
+     */
+    private static boolean isDisjoint(Set setA, Set setB) {
+
+        for (Object objA : setA) {
+            if (setB.contains(objA)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param metaData
+     * @param uploaderName
+     * @param relativePathInDataSet
+     * @param uploadTimestamp
+     * @return
+     */
+    private static boolean selectUploaderInMetaData(MetaData metaData, String uploaderName, String relativePathInDataSet, long uploadTimestamp) {
+        for (int i = 0; i < metaData.getUploaderCount(); i++) {
+            metaData.selectUploader(i);
+            String nextUniqueName = metaData.getSignature().getUserName();
+            long nextTimestamp = metaData.getTimestampUploaded();
+            String nextRelativeNameInDataSet = metaData.getRelativePathInDataSet();
+
+            boolean isSameName = nextUniqueName.trim().equals(uploaderName.trim());
+            boolean isSameRelativePath = (nextRelativeNameInDataSet == null && relativePathInDataSet == null) || (nextRelativeNameInDataSet != null && relativePathInDataSet != null && nextRelativeNameInDataSet.equals(relativePathInDataSet));
+            boolean isSameTimestamp = nextTimestamp == uploadTimestamp;
+
+            if (isSameName && isSameRelativePath && isSameTimestamp) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
