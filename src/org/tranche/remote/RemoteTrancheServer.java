@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
@@ -235,13 +236,18 @@ public class RemoteTrancheServer extends TrancheServer {
         // Purge all previous callbacks. They are no longer valid.
         notifyPreviousCallbacks(Long.MAX_VALUE, "Server is reconnecting");
 
-        if (!secure) {
-            dataSocket = SocketFactory.getDefault().createSocket(host, port);
-        } else {
-            // make an SSL socket and set it
-            SSLSocket ssls = (SSLSocket) SSLSocketFactory.getDefault().createSocket(host, port);
-            ssls.setEnabledCipherSuites(ssls.getSupportedCipherSuites());
-            dataSocket = ssls;
+        try {
+            if (!secure) {
+                dataSocket = SocketFactory.getDefault().createSocket(host, port);
+            } else {
+                // make an SSL socket and set it
+                SSLSocket ssls = (SSLSocket) SSLSocketFactory.getDefault().createSocket(host, port);
+                ssls.setEnabledCipherSuites(ssls.getSupportedCipherSuites());
+                dataSocket = ssls;
+            }
+        } catch (NoRouteToHostException nre) {
+            System.err.println(nre.getClass().getSimpleName() + " happened for " + IOUtil.createURL(host, port, secure) + ": " + nre.getMessage());
+            throw nre;
         }
 
         // disable nagle's algorithm

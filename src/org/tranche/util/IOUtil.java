@@ -200,6 +200,16 @@ public class IOUtil {
             }
         }
     }
+    
+    /**
+     * <p>Helper method to safely close a DataBlockUtil.</p>
+     * @param dbu
+     */
+    public static final void safeClose(DataBlockUtil dbu) {
+        try {
+            dbu.close();
+        } catch (Exception e) {}
+    }
 
     /**
      * <p>A helper method to safely close the given OutputStream object via invoking flush() followed by close(). Any exceptions thorwn are discarded silently, including NullPointerExceptions that may be thrown if the reference is null.</p>

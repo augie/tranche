@@ -44,6 +44,9 @@ public class ProjectFindingThread extends Thread {
      * Tell this thread to stop. Happens if launching a new thread.
      */
     private boolean stopped = false;
+    private int successes = 0,  failures = 0;
+    private long metaLoaded = 0,  metaFailures = 0,  dataLoaded = 0;
+    private long totalDataBlockMismatch = 0;
 
     /**
      * 
@@ -80,9 +83,7 @@ public class ProjectFindingThread extends Thread {
             return;
         }
 
-        int successes = 0, failures = 0;
-        long metaLoaded = 0, metaFailures = 0, dataLoaded = 0;
-        long totalDataBlockMismatch = 0;
+
         final long start = TimeUtil.getTrancheTimestamp();
 
         try {
@@ -96,265 +97,11 @@ public class ProjectFindingThread extends Thread {
             Set<DataDirectoryConfiguration> ddcs = new HashSet();
             ddcs.addAll(ffts.getConfiguration().getDataDirectories());
 
-            // iterate through all of the data directory configurations
-            for (DataDirectoryConfiguration ddc : ddcs) {
-                final long startDDC = TimeUtil.getTrancheTimestamp();
-
-                debugOut("Searching for data in " + ddc.getDirectory());
-
-                /**
-                 * Before committing any information to FFTS or DataBlockUtil,
-                 * check to see whether should stop
-                 */
-                if (this.isStopped()) {
-                    debugOut("Stopped");
-                    break;
-                }
-
-                // use a stack to handle all directories
-                List<String> filenames = new LinkedList();
-                filenames.add(ddc.getDirectory());
-
-                // loop over all entries
-                while (!filenames.isEmpty()) {
-                    String filename = filenames.remove(filenames.size() - 1);
-
-                    debugOut("File name: " + filename);
-
-                    /**
-                     * Before committing any information to FFTS or DataBlockUtil,
-                     * check to see whether should stop
-                     */
-                    if (this.isStopped()) {
-                        debugOut("Stopped");
-                        break;
-                    }
-
-                    try {
-                        File file = new File(filename);
-                        debugOut("File path: " + file.getAbsolutePath());
-                        if (file.isDirectory()) {
-                            for (String moreFileName : file.list()) {
-                                debugOut("Adding file to stack: " + moreFileName);
-                                filenames.add(file.getAbsolutePath() + File.separator + moreFileName);
-                            }
-                        } else {
-                            // if this is a .backup or .toadd file, merge it!
-                            if (file.getName().contains(".")) {
-                                // add the old data
-                                String blockName = filename.substring(ddc.getDirectory().length());
-                                blockName = blockName.split("\\.")[0];
-
-                                /**
-                                 * Before committing any information to FFTS or DataBlockUtil,
-                                 * check to see whether should stop
-                                 */
-                                if (this.isStopped()) {
-                                    debugOut("Stopped");
-                                    break;
-                                }
-
-                                try {
-                                    // add the data!
-                                    this.ffts.getDataBlockUtil().mergeOldDataBlock(new File(filename));
-                                } catch (UnexpectedEndOfDataBlockException ex) {
-
-                                    // Send in the data block for salvaging and recreation
-                                    this.ffts.getDataBlockUtil().repairCorruptedDataBlock(new File(filename), "ProjectFindingThread: merging old data block (1, startup)");
-
-                                    // Rethrow the exception so logs appropriately
-                                    throw ex;
-                                }
-                                // skip loading normally
-                                continue;
-                            }
-
-                            // load the existing block normally
-                            // add all meta-data hashes and check the files for project files
-                            String trimmedFileName = filename.substring(ddc.getDirectory().length());
-                            debugOut("Trimmed File Name: " + trimmedFileName);
-
-                            if (trimmedFileName == null || trimmedFileName.trim().equals("")) {
-                                debugOut("Trimmed file name is empty for " + filename + ", skipping...");
-                                continue;
-                            }
-
-                            /**
-                             * Before committing any information to FFTS or DataBlockUtil,
-                             * check to see whether should stop
-                             */
-                            if (this.isStopped()) {
-                                debugOut("Stopped");
-                                break;
-                            }
-
-                            DataBlock dataBlock = this.ffts.getDataBlockUtil().getDataBlock(trimmedFileName);
-
-                            if (dataBlock == null) {
-                                System.err.println("Could not find data block for " + trimmedFileName + ", skipping...");
-                                System.err.flush();
-                                continue;
-                            }
-
-                            // The found DDC should match the currently iterated DDC. If not, increment
-                            // count that will be printed to standard out later.
-                            if (!ddc.equals(dataBlock.ddc)) {
-                                totalDataBlockMismatch++;
-                            }
-
-                            /**
-                             * Need to add the size back, or the DataDirectoryConfiguration size limit
-                             * won't be honored.
-                             */
-                            dataBlock.ddc.adjustUsedSpace(file.length());
-
-                            List<BigHash> metaDataHashes = null;
-
-                            try {
-                                metaDataHashes = dataBlock.getHashes(true);
-                            } catch (UnexpectedEndOfDataBlockException ex) {
-
-                                // Send in the data block for salvaging and recreation
-                                this.ffts.getDataBlockUtil().repairCorruptedDataBlock(new File(filename), "ProjectFindThread: getting meta data hashes from data block");
-
-                                // Rethrow the exception so logs appropriately
-                                throw ex;
-                            }
-                            debugOut("# Meta Data Hashes: " + metaDataHashes.size());
-
-                            /**
-                             * Before committing any information to FFTS or DataBlockUtil,
-                             * check to see whether should stop
-                             */
-                            if (this.isStopped()) {
-                                debugOut("Stopped");
-                                break;
-                            }
-
-                            // get a reference to the DataBlockUtil
-                            DataBlockUtil dbu = this.ffts.getDataBlockUtil();
-                            for (BigHash metaDataHash : metaDataHashes) {
-
-                                debugOut("Checking meta data " + metaDataHash);
-
-                                /**
-                                 * Before committing any information to FFTS or DataBlockUtil,
-                                 * check to see whether should stop
-                                 */
-                                if (this.isStopped()) {
-                                    debugOut("Stopped");
-                                    break;
-                                }
-                                // add to the meta-data list kept internally
-                                dbu.metaDataHashes.add(metaDataHash);
-
-                                byte[] metaBytes = null;
-                                try {
-                                    metaBytes = this.ffts.getDataBlockUtil().getMetaData(metaDataHash);
-                                } catch (UnexpectedEndOfDataBlockException ex) {
-
-                                    // Send in the data block for salvaging and recreation
-                                    this.ffts.getDataBlockUtil().repairCorruptedDataBlock(new File(filename), "ProjectFindThread: getting meta data chunk to look for project files");
-
-                                    // Rethrow the exception so logs appropriately
-                                    throw ex;
-                                }
-
-                                if (metaBytes == null) {
-                                    System.err.println("Returned null for meta bytes while loading meta data! Why!?!");
-                                    System.err.flush();
-                                    continue;
-                                }
-
-                                // read the meta-data to check for project files
-                                try {
-                                    MetaData md = MetaDataUtil.read(new ByteArrayInputStream(metaBytes));
-                                    if (md.isProjectFile()) {
-                                        debugOut("ProjectFile found: " + metaDataHash);
-                                        /**
-                                         * Before committing any information to FFTS or DataBlockUtil,
-                                         * check to see whether should stop
-                                         */
-                                        if (this.isStopped()) {
-                                            debugOut("Stopped");
-                                            break;
-                                        }
-
-                                        // add the hash for the project file
-                                        this.ffts.addKnownProject(metaDataHash);
-                                    }
-
-                                    if (this.ffts.isStickyMetaDataForThisServer(md) && md.isProjectFile()) {
-                                        this.ffts.getConfiguration().addStickyProject(metaDataHash);
-                                    }
-
-                                    // Only counts as loaded if makes it here
-                                    metaLoaded++;
-                                } catch (Exception metaEx) {
-                                    debugErr(metaEx);
-                                    metaFailures++;
-                                    System.err.println("Meta data exception #" + metaFailures + " while loading meta data in ProjectFindingThread <" + metaEx.getClass().getName() + ">: " + metaEx.getMessage());
-                                    System.err.flush();
-                                    // Don't print stack trace. Message above is brief but contains enough info.
-                                    // Might be a lot of these!
-//                                metaEx.printStackTrace(System.err);
-                                }
-                            }
-
-                            /**
-                             * Before committing any information to FFTS or DataBlockUtil,
-                             * check to see whether should stop
-                             */
-                            if (this.isStopped()) {
-                                debugOut("Stopped");
-                                break;
-                            }
-
-                            // add all data hashes and check the files for project files
-                            List<BigHash> dataHashes = this.ffts.getDataBlockUtil().getDataBlock(filename.substring(ddc.getDirectory().length())).getHashes(false);
-                            for (BigHash dataHash : dataHashes) {
-
-                                /**
-                                 * Before committing any information to FFTS or DataBlockUtil,
-                                 * check to see whether should stop
-                                 */
-                                if (this.isStopped()) {
-                                    debugOut("Stopped");
-                                    break;
-                                }
-
-                                // add to the meta-data list kept internally
-                                dbu.dataHashes.add(dataHash);
-                                dataLoaded++;
-                            }
-                            successes++;
-                        } // Found a datablock
-
-                    } // handle unexpected exceptions while loading data/meta-data caches
-                    catch (Exception e) {
-                        failures++;
-                        debugErr(e);
-                    }
-                }
-
-                debugOut("Finished " + ddc.getDirectory() + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", DDC took " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - startDDC) + " to scan in ProjectFindingThread.");
-            } // Go through each DDC looking for data/meta data
-
-            /**
-             * Before committing any information to FFTS or DataBlockUtil,
-             * check to see whether should stop
-             */
-            if (this.isStopped()) {
-                debugOut("Stopped");
-                return;
-            }
+            loadDataBlocks(ffts.getDataBlockUtil(), ddcs, this, ffts);
 
         } catch (Exception e) {
             debugErr(e);
         } finally {
-
-            // flag done load data blocks
-            this.ffts.doneLoadingDataBlocks = true;
 
             // Don't do anything in finally block if stopped; abandon
             if (this.isStopped()) {
@@ -459,83 +206,6 @@ public class ProjectFindingThread extends Thread {
                 // noop
             }
         }
-
-//                    // until the FFTS closes down, iterate through and check for unbalanced blocks
-//                    // this will go forever, which will slowly fix unbalanced trees no matter how they were initially created
-//                    while (!FlatFileTrancheServer.this.closed) {
-//                        // pause a second between checks
-//                        yield();
-//                        try {
-//                            synchronized (this) {
-//                                wait(1000);
-//                            }
-//                        } catch (InterruptedException ex) {
-//                            // noop
-//                        }
-//
-//                        // wrap in try/catch to avoid premature termination
-//                        try {
-//                            DataBlockUtil dbu = getDataBlockUtil();
-//                            // track the largest and smallest directory
-////                            float largestDataUseRatio = Float.MIN_VALUE;
-//                            float largestDataUseRatio = -1;
-//                            DataDirectoryConfiguration largestDataDirectory = null;
-//                            float smallestDataUseRatio = Float.MAX_VALUE;
-//                            DataDirectoryConfiguration smallestDataDirectory = null;
-//                            // sync on DataBlockUtil to prevent other DataDirectoryConfigurations from being added.
-//                            synchronized (dbu) {
-//
-//                                Set<DataDirectoryConfiguration> ddcs = getDataBlockUtil().getDataDirectoryConfigurations();
-//                                // find the smallest and the largest data use ratio
-//                                for (DataDirectoryConfiguration ddc : ddcs) {
-//                                    // calc the balance ratio to check
-//                                    float checkBalanceRatio = (float)ddc.getActualSize() / (float)ddc.getSizeLimit();
-//
-//                                    // check for min
-//                                    if (checkBalanceRatio < smallestDataUseRatio) {
-//                                        smallestDataUseRatio = checkBalanceRatio;
-//                                        smallestDataDirectory = ddc;
-//                                    }
-//
-//                                    // check for max
-//                                    if (checkBalanceRatio > largestDataUseRatio) {
-//                                        largestDataUseRatio = checkBalanceRatio;
-//                                        largestDataDirectory = ddc;
-//                                    }
-//                                }
-//                            }
-//
-//                            // skip cleaning up blocks on two conditions: if only one directory is being used or if the difference is less than a single data block (e.g. 100MB)
-//                            if (largestDataDirectory.equals(smallestDataDirectory) || largestDataDirectory.getActualSize() - smallestDataDirectory.getActualSize() < DataBlock.MAX_BLOCK_SIZE) {
-//                                continue;
-//                            }
-//
-//                            // if not balanced, pick out a DataBlock and tell it to recreate itself
-//                            synchronized (dbu.dataBlocks) {
-//                                for (int i=0;i<dbu.dataBlocks.size();i++) {
-//                                    DataBlock block = dbu.dataBlocks.get(i);
-//                                    // check until we find a block in the largest directory
-//                                    if (block.ddc.equals(largestDataDirectory)) {
-//                                        // clean up and don't let the block split
-//                                        try {
-//                                            // try to clean up a block
-//                                            block.cleanUpDataBlock(true);
-//                                        } catch (Exception e) {
-//                                            debugOut("Couldn't clean up data block!?");
-//                                            e.printStackTrace();
-//                                        }
-//                                        // break out
-//                                        break;
-//                                    }
-//                                }
-//                            }
-//                        }
-//                        // debug unexpected exceptions
-//                        catch (Exception e) {
-//                            debugOut("\n*** Caught unexpected exception while trying to balance the teee ***");
-//                            e.printStackTrace(System.out);
-//                        }
-//                    }
         debugOut("Exitting. Was stopped?: " + this.isStopped());
     }
 
@@ -546,7 +216,7 @@ public class ProjectFindingThread extends Thread {
     private void resetFlatFileTrancheServer() throws Exception {
         this.ffts.doneLoadingDataBlocks = false;
         this.ffts.clearKnownProjects();
-        // DataBlockUtil reset in FlatFileTrancheServer
+    // DataBlockUtil reset in FlatFileTrancheServer
     }
 
     /**
@@ -602,4 +272,304 @@ public class ProjectFindingThread extends Thread {
             DebugUtil.reportException(e);
         }
     }
+
+    /**
+     * <p>Depth-first traversal of data blocks to repair and merge old data blocks.</p>
+     * <p>This method interface is intended for tests and scripts. Production servers should not invoke this, but will actually run the ProjectFindingThread, which will in turn invoke this method.</p>
+     * @param dbu Must not be null (required)
+     */
+    public static void loadDataBlocks(DataBlockUtil dbu) {
+        loadDataBlocks(dbu, dbu.getDataDirectoryConfigurations(), null, null);
+    }
+
+    /**
+     * <p>Depth-first traversal of data blocks to repair, merge old data blocks and gather statistics.</p>
+     * <p>This method interface is intended for tests and scripts. Production servers should not invoke this, but will actually run the ProjectFindingThread, which will in turn invoke this method.</p>
+     * @param ffts Must not be null (required)
+     */
+    public static void loadDataBlocks(FlatFileTrancheServer ffts) {
+        Set<DataDirectoryConfiguration> ddcs = new HashSet();
+        ddcs.addAll(ffts.getConfiguration().getDataDirectories());
+        loadDataBlocks(ffts.getDataBlockUtil(), ddcs, null, ffts);
+    }
+
+    /**
+     * <p>Depth-first traversal of data blocks to repair, merge old data blocks and gather statistics.</p>
+     * <p>Note that some some parameters are required while some are not.</p>
+     * @param dbu Must not be null (required)
+     * @param ddcs Must not be null (required)
+     * @param thisThread Can be null
+     * @param ffts Can be null
+     */
+    private static void loadDataBlocks(DataBlockUtil dbu, Set<DataDirectoryConfiguration> ddcs, ProjectFindingThread thisThread, FlatFileTrancheServer ffts) {
+        try {
+
+            // iterate through all of the data directory configurations
+            for (DataDirectoryConfiguration ddc : ddcs) {
+                final long startDDC = TimeUtil.getTrancheTimestamp();
+
+                debugOut("Searching for data in " + ddc.getDirectory());
+
+                /**
+                 * Before committing any information to FFTS or DataBlockUtil,
+                 * check to see whether should stop
+                 */
+                if (thisThread != null && thisThread.isStopped()) {
+                    debugOut("Stopped");
+                    break;
+                }
+
+                // use a stack to handle all directories
+                List<String> filenames = new LinkedList();
+                filenames.add(ddc.getDirectory());
+
+                // loop over all entries
+                while (!filenames.isEmpty()) {
+                    String filename = filenames.remove(filenames.size() - 1);
+
+                    debugOut("File name: " + filename);
+
+                    /**
+                     * Before committing any information to FFTS or DataBlockUtil,
+                     * check to see whether should stop
+                     */
+                    if (thisThread != null && thisThread.isStopped()) {
+                        debugOut("Stopped");
+                        break;
+                    }
+
+                    try {
+                        File file = new File(filename);
+                        debugOut("File path: " + file.getAbsolutePath());
+                        if (file.isDirectory()) {
+                            for (String moreFileName : file.list()) {
+                                debugOut("Adding file to stack: " + moreFileName);
+                                filenames.add(file.getAbsolutePath() + File.separator + moreFileName);
+                            }
+                        } else {
+                            // if this is a .backup or .toadd file, merge it!
+                            if (file.getName().contains(".")) {
+                                // add the old data
+                                String blockName = filename.substring(ddc.getDirectory().length());
+                                blockName = blockName.split("\\.")[0];
+
+                                /**
+                                 * Before committing any information to FFTS or DataBlockUtil,
+                                 * check to see whether should stop
+                                 */
+                                if (thisThread != null && thisThread.isStopped()) {
+                                    debugOut("Stopped");
+                                    break;
+                                }
+
+                                try {
+                                    // add the data!
+                                    dbu.mergeOldDataBlock(new File(filename));
+                                } catch (UnexpectedEndOfDataBlockException ex) {
+
+                                    // Send in the data block for salvaging and recreation
+                                    dbu.repairCorruptedDataBlock(new File(filename), "ProjectFindingThread: merging old data block (1, startup)");
+
+                                    // Rethrow the exception so logs appropriately
+                                    throw ex;
+                                }
+                                // skip loading normally
+                                continue;
+                            }
+
+                            // load the existing block normally
+                            // add all meta-data hashes and check the files for project files
+                            String trimmedFileName = filename.substring(ddc.getDirectory().length());
+                            debugOut("Trimmed File Name: " + trimmedFileName);
+
+                            if (trimmedFileName == null || trimmedFileName.trim().equals("")) {
+                                debugOut("Trimmed file name is empty for " + filename + ", skipping...");
+                                continue;
+                            }
+
+                            /**
+                             * Before committing any information to FFTS or DataBlockUtil,
+                             * check to see whether should stop
+                             */
+                            if (thisThread != null && thisThread.isStopped()) {
+                                debugOut("Stopped");
+                                break;
+                            }
+
+                            DataBlock dataBlock = dbu.getDataBlock(trimmedFileName);
+
+                            if (dataBlock == null) {
+                                System.err.println("Could not find data block for " + trimmedFileName + ", skipping...");
+                                System.err.flush();
+                                continue;
+                            }
+
+                            // The found DDC should match the currently iterated DDC. If not, increment
+                            // count that will be printed to standard out later.
+                            if (thisThread != null && !ddc.equals(dataBlock.ddc)) {
+                                thisThread.totalDataBlockMismatch++;
+                            }
+
+                            /**
+                             * Need to add the size back, or the DataDirectoryConfiguration size limit
+                             * won't be honored.
+                             */
+                            dataBlock.ddc.adjustUsedSpace(file.length());
+
+                            List<BigHash> metaDataHashes = null;
+
+                            try {
+                                metaDataHashes = dataBlock.getHashes(true);
+                            } catch (UnexpectedEndOfDataBlockException ex) {
+
+                                // Send in the data block for salvaging and recreation
+                                dbu.repairCorruptedDataBlock(new File(filename), "ProjectFindThread: getting meta data hashes from data block");
+
+                                // Rethrow the exception so logs appropriately
+                                throw ex;
+                            }
+                            debugOut("# Meta Data Hashes: " + metaDataHashes.size());
+
+                            /**
+                             * Before committing any information to FFTS or DataBlockUtil,
+                             * check to see whether should stop
+                             */
+                            if (thisThread != null && thisThread.isStopped()) {
+                                debugOut("Stopped");
+                                break;
+                            }
+
+                            // get a reference to the DataBlockUtil
+                            for (BigHash metaDataHash : metaDataHashes) {
+
+                                debugOut("Checking meta data " + metaDataHash);
+
+                                /**
+                                 * Before committing any information to FFTS or DataBlockUtil,
+                                 * check to see whether should stop
+                                 */
+                                if (thisThread != null && thisThread.isStopped()) {
+                                    debugOut("Stopped");
+                                    break;
+                                }
+                                // add to the meta-data list kept internally
+                                dbu.metaDataHashes.add(metaDataHash);
+
+                                byte[] metaBytes = null;
+                                try {
+                                    metaBytes = dbu.getMetaData(metaDataHash);
+                                } catch (UnexpectedEndOfDataBlockException ex) {
+
+                                    // Send in the data block for salvaging and recreation
+                                    dbu.repairCorruptedDataBlock(new File(filename), "ProjectFindThread: getting meta data chunk to look for project files");
+
+                                    // Rethrow the exception so logs appropriately
+                                    throw ex;
+                                }
+
+                                if (metaBytes == null) {
+                                    System.err.println("Returned null for meta bytes while loading meta data! Why!?!");
+                                    System.err.flush();
+                                    continue;
+                                }
+
+                                // read the meta-data to check for project files
+                                try {
+                                    MetaData md = MetaDataUtil.read(new ByteArrayInputStream(metaBytes));
+                                    if (md.isProjectFile()) {
+                                        debugOut("ProjectFile found: " + metaDataHash);
+                                        /**
+                                         * Before committing any information to FFTS or DataBlockUtil,
+                                         * check to see whether should stop
+                                         */
+                                        if (thisThread != null && thisThread.isStopped()) {
+                                            debugOut("Stopped");
+                                            break;
+                                        }
+
+                                        // add the hash for the project file
+                                        if (ffts != null) {
+                                            ffts.addKnownProject(metaDataHash);
+                                        }
+                                    }
+
+                                    if (ffts != null && ffts.isStickyMetaDataForThisServer(md) && md.isProjectFile()) {
+                                        ffts.getConfiguration().addStickyProject(metaDataHash);
+                                    }
+
+                                    // Only counts as loaded if makes it here
+                                    if (thisThread != null) {
+                                        thisThread.metaLoaded++;
+                                    }
+                                } catch (Exception metaEx) {
+                                    debugErr(metaEx);
+                                    if (thisThread != null) {
+                                        thisThread.metaFailures++;
+                                        System.err.println("Meta data exception #" + thisThread.metaFailures + " while loading meta data in ProjectFindingThread <" + metaEx.getClass().getName() + ">: " + metaEx.getMessage());
+                                    }
+                                // Don't print stack trace. Message above is brief but contains enough info.
+                                // Might be a lot of these!
+                                }
+                            }
+
+                            /**
+                             * Before committing any information to FFTS or DataBlockUtil,
+                             * check to see whether should stop
+                             */
+                            if (thisThread != null && thisThread.isStopped()) {
+                                debugOut("Stopped");
+                                break;
+                            }
+
+                            // add all data hashes and check the files for project files
+                            List<BigHash> dataHashes = dbu.getDataBlock(filename.substring(ddc.getDirectory().length())).getHashes(false);
+                            for (BigHash dataHash : dataHashes) {
+
+                                /**
+                                 * Before committing any information to FFTS or DataBlockUtil,
+                                 * check to see whether should stop
+                                 */
+                                if (thisThread != null && thisThread.isStopped()) {
+                                    debugOut("Stopped");
+                                    break;
+                                }
+
+                                // add to the meta-data list kept internally
+                                dbu.dataHashes.add(dataHash);
+                                if (thisThread != null) {
+                                    thisThread.dataLoaded++;
+                                }
+                            }
+                            if (thisThread != null) {
+                                thisThread.successes++;
+                            }
+                        } // Found a datablock
+
+                    } // handle unexpected exceptions while loading data/meta-data caches
+                    catch (Exception e) {
+                        if (thisThread != null) {
+                            thisThread.failures++;
+                        }
+                        debugErr(e);
+                    }
+                }
+
+                debugOut("Finished " + ddc.getDirectory() + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", DDC took " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - startDDC) + " to scan in ProjectFindingThread.");
+            } // Go through each DDC looking for data/meta data
+
+            /**
+             * Before committing any information to FFTS or DataBlockUtil,
+             * check to see whether should stop
+             */
+            if (thisThread != null && thisThread.isStopped()) {
+                debugOut("Stopped");
+                return;
+            }
+        } finally {
+            // flag done load data blocks
+            if (ffts != null) {
+                ffts.doneLoadingDataBlocks = true;
+            }
+        }
+    } // loadDataBlocks
 }
