@@ -209,7 +209,6 @@ public class DownloadSummary implements ClipboardOwner {
                         }
                         GenericOptionPane.showMessageDialog(null, "Downloaded " + name + " to:\n" + getFileTool.getSaveFile().getAbsolutePath(), "Download Finished", JOptionPane.PLAIN_MESSAGE);
                     }
-                    progressBar.incrementErrorCount(report.getFailureExceptions().size());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

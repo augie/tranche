@@ -76,14 +76,6 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
     }
 
     /**
-     *
-     * @param count
-     */
-    public void incrementErrorCount(int count) {
-        this.errorCount += count;
-    }
-
-    /**
      * <p>Notification of any other event occurence.</p>
      * @param msg
      */
