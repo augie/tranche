@@ -15,17 +15,18 @@
  */
 package org.tranche.server;
 
-import java.io.File;
 import org.tranche.TrancheServer;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
+import org.tranche.hash.span.HashSpan;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.remote.RemoteCallback;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
-import org.tranche.util.TempFileUtil;
+import org.tranche.util.TestNetwork;
+import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 
@@ -51,24 +52,18 @@ public class ServerWorkerThreadTest extends TrancheTestCase {
 
     public void testKeepAlive() throws Exception {
         TestUtil.printTitle("ServerWorkerThreadTest:testKeepAlive()");
-        FlatFileTrancheServer ffts = null;
-        File dir = null;
-        Server s = null;
+        
+        String HOST1 = "server1.com";
+        TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
-            // create a local server
-            dir = TempFileUtil.createTemporaryDirectory();
-            ffts = new FlatFileTrancheServer(dir);
-            ffts.getConfiguration().addUser(DevUtil.getDevUser());
-            s = new Server(ffts, 1500);
-            s.start();
-
-            // wait for startup
-            ffts.waitToLoadExistingDataBlocks();
-            s.waitForStartup(1000);
+            testNetwork.start();
+            Server s = testNetwork.getServer(HOST1);
+            FlatFileTrancheServer ffts = testNetwork.getFlatFileTrancheServer(HOST1);
 
             // create some fake data chunks
-            int numHashes = RandomUtil.getInt(20) + 10;
-            int bogusHashes = RandomUtil.getInt(20);
+            int numHashes = RandomUtil.getInt(10) + 1;
+            int bogusHashes = RandomUtil.getInt(10);
             int numRequestedHashes = numHashes + bogusHashes;
             BigHash hashes[] = new BigHash[numRequestedHashes];
             for (int i = 0; i < numHashes; i++) {
@@ -91,6 +86,8 @@ public class ServerWorkerThreadTest extends TrancheTestCase {
                 // batch get data
                 PropagationReturnWrapper responseObject = ts.getData(hashes, false);
 
+                System.out.println("Returned from get data.");
+
                 // verify
                 assertEquals(responseObject.getErrors().size(), bogusHashes);
                 byte[][] responseByte2DArray = (byte[][]) responseObject.getReturnValueObject();
@@ -105,10 +102,8 @@ public class ServerWorkerThreadTest extends TrancheTestCase {
                 IOUtil.safeClose(ts);
             }
         } finally {
+            testNetwork.stop();
             ServerWorkerThread.setTestingKeepAlive(false);
-            IOUtil.safeClose(s);
-            IOUtil.safeClose(ffts);
-            IOUtil.recursiveDelete(dir);
         }
     }
 }

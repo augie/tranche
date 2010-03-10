@@ -59,13 +59,12 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
                 try {
                     abq.offer("");
                 } catch (Exception ee) {
-                    // do nothing
                 }
             }
         });
 
         if (cannotBeBlank) {
-            enterButton.setEnabled(!(passwordField.getText().equals("") || passwordField.getText() == null));
+            enterButton.setEnabled(!getCurrentPassphrase().equals(""));
         }
         addKeyListener(new KeyAdapter() {
 
@@ -158,12 +157,10 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
      */
     public void actionPerformed(ActionEvent e) {
         try {
-            if (cannotBeBlank && (passwordField.getPassword() == null || passwordField.getPassword().length == 0)) {
+            if (cannotBeBlank && getCurrentPassphrase().equals("")) {
                 abq.put(null);
-            } else if (passwordField.getPassword() == null || passwordField.getPassword().length == 0) {
-                abq.add("");
             } else {
-                abq.add(new String(passwordField.getPassword()).trim());
+                abq.add(getCurrentPassphrase());
             }
             // hide this frame
             dispose();
@@ -210,7 +207,11 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
     }
 
     public String getCurrentPassphrase() {
-        return new String(passwordField.getPassword());
+        if (passwordField.getPassword() == null) {
+            return "";
+        } else {
+            return new String(passwordField.getPassword()).trim();
+        }
     }
 
     public void setDescription(String descriptionText) {
@@ -219,6 +220,6 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
 
     public void setCannotBeBlank(boolean cannotBeBlank) {
         this.cannotBeBlank = cannotBeBlank;
-        enterButton.setEnabled(!(cannotBeBlank ^ !passwordField.getText().equals("")));
+        enterButton.setEnabled(!(cannotBeBlank ^ !getCurrentPassphrase().equals("")));
     }
 }

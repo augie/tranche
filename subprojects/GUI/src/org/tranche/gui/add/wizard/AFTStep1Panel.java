@@ -62,10 +62,10 @@ public class AFTStep1Panel extends GenericWizardPanel {
 
     private AddFileToolWizard wizard;
     public JTextArea description = new GenericTextArea();
-    public JTextField fileText = new GenericTextField(),  title = new GenericTextField();
+    public JTextField fileText = new GenericTextField(), title = new GenericTextField();
     public SignInUserButton userButton = new SignInUserButton();
     public EncryptionPanel encryptionPanel;
-    public long totalFiles = 0,  totalFileSize = 0;
+    public long totalFiles = 0, totalFileSize = 0;
     public final Set<String> uploadStructures = new HashSet<String>();
 
     public AFTStep1Panel(AddFileToolWizard wizard) {
@@ -329,7 +329,7 @@ public class AFTStep1Panel extends GenericWizardPanel {
             String passphrase2 = passphrases[1];
 
             // If password blank, tell user
-            if (passphrase1 == null || passphrase1.trim().equals("")) {
+            if (passphrase1 == null || passphrase1.equals("")) {
                 GenericOptionPane.showMessageDialog(
                         AFTStep1Panel.this.getParent(),
                         "If you choose to encrypt your upload, you must provide a passphrase.\nPlease set and confirm a passphrase.",
@@ -342,14 +342,22 @@ public class AFTStep1Panel extends GenericWizardPanel {
             if (!passphrase1.equals(passphrase2)) {
                 GenericOptionPane.showMessageDialog(
                         AFTStep1Panel.this.getParent(),
-                        "The passphrases you provided do not match. Please re-enter passphrases.",
+                        "The passphrases you provided do not match.",
                         "Passphrases don't match",
                         JOptionPane.ERROR_MESSAGE);
                 return false;
             }
 
+            // remove white space?
+            String trimPassphrase = passphrases[0].trim();
+            if (trimPassphrase.length() != passphrases[0].length()) {
+                GenericOptionPane.showMessageDialog(wizard, "The passphrase you have entered contains extra space at the beginning or end.\nIt will be trimmed.", "Whitespace Warning", JOptionPane.WARNING_MESSAGE);
+                encryptionPanel.password1.setText(trimPassphrase);
+                encryptionPanel.password2.setText(trimPassphrase);
+            }
+
             // Set the passphrase
-            wizard.summary.getAddFileTool().setPassphrase(passphrase1.trim());
+            wizard.summary.getAddFileTool().setPassphrase(trimPassphrase);
             wizard.summary.getAddFileTool().setShowMetaDataIfEncrypted(encryptionPanel.isShareMetaIfEncrypted.isSelected());
         }
 
@@ -429,9 +437,9 @@ public class AFTStep1Panel extends GenericWizardPanel {
      */
     public class EncryptionPanel extends JPanel {
 
-        private JPasswordField password1 = new JPasswordField(),  password2 = new JPasswordField();
-        private JLabel password1Label = new GenericLabel("Passphrase:"),  password2Label = new GenericLabel("Confirm Passphrase:");
-        public GenericCheckBox encryptBox = new GenericCheckBox("Encrypt"),  isShareMetaIfEncrypted = new GenericCheckBox("Display descriptive information even though encrypted");
+        private JPasswordField password1 = new JPasswordField(), password2 = new JPasswordField();
+        private JLabel password1Label = new GenericLabel("Passphrase:"), password2Label = new GenericLabel("Confirm Passphrase:");
+        public GenericCheckBox encryptBox = new GenericCheckBox("Encrypt"), isShareMetaIfEncrypted = new GenericCheckBox("Display descriptive information even though encrypted");
         public RandomPassphraseButton random = new RandomPassphraseButton(password1, password2);
 
         private EncryptionPanel() {

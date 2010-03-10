@@ -348,8 +348,11 @@ public class AddFileTool {
      */
     public void setPassphrase(String passphrase) {
         throwExceptionIfLocked();
-        debugOut("Setting the passphrase to: " + passphrase);
+        if (passphrase != null) {
+            passphrase = passphrase.trim();
+        }
         this.passphrase = passphrase;
+        debugOut("Setting the passphrase to: " + passphrase);
         if (this.passphrase != null) {
             this.padding = new BigHash(passphrase.getBytes()).toByteArray();
         } else {
@@ -1220,7 +1223,7 @@ public class AddFileTool {
             if (!dataOnly) {
                 if (!report.isFailed() && !TestUtil.isTesting()) {
                     AddFileToolUtil.registerUpload(this, report);
-                    if (!emailConfirmationSet.isEmpty()) {
+                    if (emailConfirmationSet != null && !emailConfirmationSet.isEmpty()) {
                         AddFileToolUtil.emailReceipt(emailConfirmationSet.toArray(new String[0]), report);
                     }
                     if (ConfigureTranche.getAdminEmailAccounts().length > 0) {

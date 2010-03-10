@@ -45,11 +45,17 @@ import org.tranche.gui.get.DownloadPool;
 public class GFTStep3Panel extends GenericWizardPanel {
 
     private GetFileToolWizard wizard;
-    private JTextField location = new JTextField(PreferencesUtil.getFile(PreferencesUtil.PREF_DOWNLOAD_FILE).getAbsolutePath());
+    private JTextField location = new JTextField();
     private boolean startedDownload = false;
 
     public GFTStep3Panel(GetFileToolWizard wizard) {
         this.wizard = wizard;
+
+        // preference
+        String f = PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE);
+        if (f != null) {
+            location.setText(f);
+        }
 
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -133,7 +139,7 @@ public class GFTStep3Panel extends GenericWizardPanel {
             }
             location.setText(locationFile.getAbsolutePath());
         } catch (Exception e) {
-            location.setText("Location does not exist.");
+            location.setText("");
             wizard.setEnableNextButtonNow(false);
         }
     }

@@ -421,7 +421,7 @@ public class ServerWorkerThread extends Thread {
 
                         // pause here
                         if (isTestingKeepAlive) {
-                            ThreadUtil.safeSleep(2 * RemoteTrancheServer.getResponseTimeout());
+                            ThreadUtil.safeSleep(1 * RemoteTrancheServer.getResponseTimeout() + 1);
                         }
 
                         // send a keep-alive signal

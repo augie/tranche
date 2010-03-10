@@ -25,11 +25,13 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JOptionPane;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolEvent;
 import org.tranche.get.GetFileToolListener;
 import org.tranche.get.GetFileToolReport;
 import org.tranche.gui.ErrorFrame;
+import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.get.monitor.DownloadMonitor;
 import org.tranche.gui.project.ProjectPool;
 import org.tranche.gui.util.GUIUtil;
@@ -193,6 +195,20 @@ public class DownloadSummary implements ClipboardOwner {
                     report = getFileTool.getFile();
                 }
                 if (report != null) {
+                    if (report.isFinished() && !report.isFailed()) {
+                        String name = "";
+                        ProjectSummary ps = getProjectSummary();
+                        if (ps == null || ps.title.trim().equals("")) {
+                            name = getFileTool.getHash().toString().substring(0, 19) + "...";
+                        } else {
+                            if (ps.title.length() > 20) {
+                                name = ps.title.substring(0, 19) + "...";
+                            } else {
+                                name = ps.title;
+                            }
+                        }
+                        GenericOptionPane.showMessageDialog(null, "Downloaded " + name + " to:\n" + getFileTool.getSaveFile().getAbsolutePath(), "Download Finished", JOptionPane.PLAIN_MESSAGE);
+                    }
                     progressBar.incrementErrorCount(report.getFailureExceptions().size());
                 }
             } catch (Exception e) {

@@ -35,7 +35,6 @@ public class PreferencesUtil {
     private static boolean debug = false;
     public static final File PREFERENCES_FILE = new File(FlatFileTrancheServer.getDefaultHomeDir() + File.separator + "preferences");
     public static final String PREF_DOWNLOAD_FILE = "download.file";
-    public static final String DEFAULT_DOWNLOAD_FILE = FlatFileTrancheServer.getDefaultHomeDir() + File.separator + "downloads";
     public static final String PREF_USER_FILE_LOCATION = "user.file";
     public static final String PREF_UPLOAD_LOCATION = "uploader.file";
     private static final Map<String, String> preferences = new HashMap<String, String>();

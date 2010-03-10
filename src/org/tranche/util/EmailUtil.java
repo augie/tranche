@@ -89,7 +89,7 @@ public class EmailUtil {
         InputStream is = null;
         try {
             // dummy check - are there recipients?
-            if (recipients == null || recipients.length == 0 || recipients[0].equals("")) {
+            if (recipients == null || recipients.length == 0 || recipients[0] == null || recipients[0].equals("")) {
                 throw new RuntimeException("No recipients specified.");
             } // is there a subject?
             else if (subject == null) {
