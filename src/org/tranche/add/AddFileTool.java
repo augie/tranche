@@ -989,17 +989,34 @@ public class AddFileTool {
     protected Collection<String> getCoreServersToUploadTo(BigHash hash) {
         List<String> hosts = new LinkedList<String>();
         StatusTable table = NetworkUtil.getStatus().clone();
-        // add all servers with the hash in their target hash spans
-        for (StatusTableRow row : table.getRows()) {
-            if (!(row.isWritable() && row.isCore() && row.isOnline())) {
-                continue;
-            }
-            for (HashSpan span : row.getTargetHashSpans()) {
-                if (span.contains(hash)) {
-                    if (!hosts.contains(row.getHost())) {
-                        hosts.add(row.getHost());
+        if (useUnspecifiedServers) {
+            // add all servers with the hash in their target hash spans
+            for (StatusTableRow row : table.getRows()) {
+                if (!(row.isWritable() && row.isCore() && row.isOnline())) {
+                    continue;
+                }
+                for (HashSpan span : row.getTargetHashSpans()) {
+                    if (span.contains(hash)) {
+                        if (!hosts.contains(row.getHost())) {
+                            hosts.add(row.getHost());
+                        }
+                        break;
                     }
-                    break;
+                }
+            }
+        } else {
+            for (String host : getServersToUse()) {
+                StatusTableRow row = table.getRow(host);
+                if (!(row.isWritable() && row.isCore() && row.isOnline())) {
+                    continue;
+                }
+                for (HashSpan span : row.getTargetHashSpans()) {
+                    if (span.contains(hash)) {
+                        if (!hosts.contains(row.getHost())) {
+                            hosts.add(row.getHost());
+                        }
+                        break;
+                    }
                 }
             }
         }
@@ -3171,7 +3188,7 @@ public class AddFileTool {
                                     throw new Exception("Could not connect to " + host + ".");
                                 }
                                 try {
-                                    upload(metaChunk, metaDataBytes, ts, new String[] {host});
+                                    upload(metaChunk, metaDataBytes, ts, new String[]{host});
                                     if (IOUtil.hasMetaData(ts, metaChunk.hash)) {
                                         debugOut("Verified upload of meta data " + metaChunk.hash + " to " + ts.getHost());
                                         uploadedNonCoreHosts.add(host);
@@ -3188,13 +3205,13 @@ public class AddFileTool {
                                 ConnectionUtil.reportExceptionHost(host, e);
                             }
                         }
-                        
+
                         // checks
                         int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
                         if (uploadedCoreHosts.size() < reps) {
                             throw new Exception("Meta data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
                         }
-                        if (nonCoreHosts.size() != uploadedNonCoreHosts.size()) {
+                        if (uploadedNonCoreHosts.size() != nonCoreHosts.size()) {
                             throw new Exception("Meta data upload to " + uploadedNonCoreHosts.size() + " non-core servers, but expected number is " + nonCoreHosts.size());
                         }
 
