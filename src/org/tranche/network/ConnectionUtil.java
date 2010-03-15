@@ -34,9 +34,11 @@ import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteTrancheServer;
 import org.tranche.routing.RoutingTrancheServer;
+import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
+import org.tranche.util.Text;
 
 /**
  * <p>Manages the Tranche server connections for the local JVM.</p>
@@ -412,19 +414,20 @@ public class ConnectionUtil {
             debugErr(e);
             // connection exceptions mean the server is absolutely offlikne
             if (e instanceof ConnectException || e instanceof NoRouteToHostException) {
-                flagOffline(host);
+                flagOffline(host,e.getClass().getSimpleName());
             } // timeout exceptions mean that the server is no longer responding for some reason (transmission error, offline, etc)
             else if (e instanceof TimeoutException || e instanceof UnresponsiveServerException) {
                 if (isConnected(host)) {
                     // three timeouts in a row = offline
-                    if (getConnection(host).getExceptionCount() >= 3) {
+                    final int limit = 3;
+                    if (getConnection(host).getExceptionCount() >= limit) {
                         for (int i = getConnection(host).getExceptionCount() - 3; i < getConnection(host).getExceptionCount(); i++) {
                             Exception x = getConnection(host).getException(i);
                             if (!(x instanceof TimeoutException || x instanceof UnresponsiveServerException)) {
                                 break;
                             }
                             if (i == getConnection(host).getExceptionCount() - 1) {
-                                flagOffline(host);
+                                flagOffline(host, e.getClass().getSimpleName()+" (happened at least "+limit+" times.)");
                             }
                         }
                     }
@@ -440,6 +443,22 @@ public class ConnectionUtil {
      * @param host A host name
      */
     public static void flagOffline(String host) {
+        flagOffline(host, null);
+    }
+    
+    /**
+     * <p>Must FIRST safely force the closure of the connection.</p>
+     * <p>Sets a server as offline in the network status.</p>
+     * @param host A host name
+     * @param reason Brief explanation why flagging offline. Can be null, but any information helps.
+     */
+    public static void flagOffline(String host, String reason) {
+        
+        if (reason == null || reason.trim().equals("")) {
+            reason = "none specified";
+        }
+        
+        System.err.println(host+" flagged offline at "+Text.getFormattedDate(TimeUtil.getTrancheTimestamp())+" (reason: "+reason+")");
         safeForceClose(host, "Flagged offline");
         // flag the server offline
         StatusTableRow row = NetworkUtil.getStatus().getRow(host);
