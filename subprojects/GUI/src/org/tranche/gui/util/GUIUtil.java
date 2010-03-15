@@ -29,8 +29,6 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -67,13 +65,11 @@ import org.tranche.hash.Base64;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.project.ProjectSummary;
-import org.tranche.security.SecurityUtil;
 import org.tranche.security.WrongPassphraseException;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.OperatingSystem;
 import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
 
 /**
@@ -251,39 +247,12 @@ public class GUIUtil {
         pf.setLocationRelativeTo(relativeTo);
         pf.setVisible(true);
 
-        // just in case the passphrase is blank
-        try {
-            SecurityUtil.decryptInMemory(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
-            pf.setPassphraseCorrect(true);
-        } catch (Exception ex) {
-            pf.setPassphraseCorrect(false);
-        }
-
-        // add a key listener
-        pf.addKeyListener(new KeyListener() {
-
-            public void keyTyped(KeyEvent e) {
-            }
-
-            public void keyPressed(KeyEvent e) {
-            }
-
-            public void keyReleased(KeyEvent e) {
-                try {
-                    SecurityUtil.decryptInMemory(pf.getCurrentPassphrase(), IOUtil.getBytes(uzf.getFile()));
-                    pf.setPassphraseCorrect(true);
-                } catch (Exception ex) {
-                    pf.setPassphraseCorrect(false);
-                }
-            }
-        });
-
         // catch password errors and show a error dialog
         uzf.setPassphrase(pf.getPassphrase());
 
         // check if they loaded a valid file
         if (uzf.getCertificate() == null) {
-            throw new RuntimeException("You must select a valid user file!");
+            throw new RuntimeException("The passphrase you entered is incorrect.");
         }
 
         // save the user file location

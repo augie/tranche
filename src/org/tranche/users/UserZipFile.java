@@ -116,10 +116,8 @@ public class UserZipFile extends User {
         byte[] decryptedBytes = null;
         try {
             decryptedBytes = SecurityUtil.decryptInMemory(passphrase, bytes);
-        } catch (GeneralSecurityException ex) {
-            throw new RuntimeException("Decryption error. Is the file corrupt?", ex);
-        } catch (IOException ex) {
-            throw new RuntimeException("Can't read encrypted file.", ex);
+        } catch (Exception ex) {
+            throw new RuntimeException("Incorrect passphrase for user zip file.", ex);
         }
 
         // read the file as a ZIP

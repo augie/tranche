@@ -33,6 +33,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JTextArea;
 
@@ -57,7 +58,11 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
             @Override
             public void windowClosed(WindowEvent e) {
                 try {
-                    abq.offer("");
+                    if (cannotBeBlank) {
+                        abq.put(null);
+                    } else {
+                        abq.offer("");
+                    }
                 } catch (Exception ee) {
                 }
             }
@@ -71,7 +76,7 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
             @Override
             public void keyReleased(KeyEvent e) {
                 if (cannotBeBlank) {
-                    enterButton.setEnabled(!(passwordField.getText().equals("") || passwordField.getText() == null));
+                    enterButton.setEnabled(!getCurrentPassphrase().equals(""));
                 }
             }
         });
@@ -150,55 +155,38 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
             throw new RuntimeException("Can't get passphrase.");
         }
     }
-
     /**
      * 
      * @param e
      */
     public void actionPerformed(ActionEvent e) {
-        try {
-            if (cannotBeBlank && getCurrentPassphrase().equals("")) {
-                abq.put(null);
-            } else {
-                abq.add(getCurrentPassphrase());
-            }
-            // hide this frame
-            dispose();
-        } catch (Exception ee) {
-        }
-    }
+        Thread t = new Thread() {
 
-    /**
-     * 
-     * @param isPassphraseCorrect
-     */
-    public void setPassphraseCorrect(boolean isPassphraseCorrect) {
-        if (isPassphraseCorrect) {
-            if (enterButton.getIcon() != null) {
-                enterButton.setIcon(null);
-                enterButton.setIconTextGap(0);
-                enterButton.setText("Passphrase Correct!");
-
+            @Override
+            public void run() {
                 try {
-                    lockIconLabel.setIcon(new ImageIcon(ImageIO.read(PassphraseFrame.class.getResourceAsStream("/org/tranche/gui/image/unlock.gif"))));
-                } catch (Exception e) {
+                    String currentPassphrase = getCurrentPassphrase();
+                    String trimmedPassphrase = currentPassphrase.trim();
+                    if (trimmedPassphrase.length() < currentPassphrase.length()) {
+                        int pressedButton = GenericOptionPane.showConfirmDialog(PassphraseFrame.this, "The passphrase you have entered contains extra space at the beginning or end.\nDo you want to remove this whitespace?", "Whitespace Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                        if (pressedButton == JOptionPane.YES_OPTION) {
+                            passwordField.setText(trimmedPassphrase);
+                            currentPassphrase = trimmedPassphrase;
+                        }
+                    }
+                    if (cannotBeBlank && currentPassphrase.equals("")) {
+                        abq.put(null);
+                    } else {
+                        abq.add(currentPassphrase);
+                    }
+                    // hide this frame
+                    dispose();
+                } catch (Exception ee) {
                 }
             }
-        } else {
-            if (enterButton.getIcon() == null) {
-                try {
-                    enterButton.setIcon(new ImageIcon(ImageIO.read(PassphraseFrame.class.getResourceAsStream("/org/tranche/gui/image/lock_yellow.gif"))));
-                    enterButton.setIconTextGap(15);
-                } catch (Exception e) {
-                }
-                enterButton.setText("Enter");
-
-                try {
-                    lockIconLabel.setIcon(new ImageIcon(ImageIO.read(PassphraseFrame.class.getResourceAsStream("/org/tranche/gui/image/lock.gif"))));
-                } catch (Exception e) {
-                }
-            }
-        }
+        };
+        t.setDaemon(true);
+        t.start();
     }
 
     @Override
@@ -210,7 +198,7 @@ public class PassphraseFrame extends GenericFrame implements ActionListener {
         if (passwordField.getPassword() == null) {
             return "";
         } else {
-            return new String(passwordField.getPassword()).trim();
+            return new String(passwordField.getPassword());
         }
     }
 
