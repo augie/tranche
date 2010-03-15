@@ -55,7 +55,7 @@ public class Text {
             /**
              * <p>BigInteger representation of the number of bytes in a petabyte.</p>
              */
-            PB = BigInteger.valueOf(Long.valueOf("112589990684262")),
+            PB = BigInteger.valueOf(Long.valueOf("1125899906842624")),
             /**
              * <p>BigInteger representation of the number of bytes in a exabyte.</p>
              */
