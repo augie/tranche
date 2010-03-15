@@ -404,11 +404,11 @@ public class NetworkUtil {
      * @param row A status row
      */
     public static void updateRow(StatusTableRow row) {
-        debugOut("Updating a row in the master status table.");
         // ignore the local server
-        if (NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
+        if (row == null || NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
             return;
         }
+        debugOut("Updating a row in the master status table.");
         // update the master status table
         masterStatusTable.setRow(row);
     }

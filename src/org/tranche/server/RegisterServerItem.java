@@ -17,9 +17,11 @@ package org.tranche.server;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import org.tranche.TrancheServer;
 import org.tranche.exceptions.TrancheProtocolException;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
+import org.tranche.network.StatusTable;
 import org.tranche.network.StatusTableRow;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.remote.Token;
@@ -82,8 +84,15 @@ public class RegisterServerItem extends ServerItem {
                 public void run() {
                     // need to verify the suggestion -- the registration may be malicious
                     try {
-                        // this will also set the server in the status table
-                        ConnectionUtil.connect(host, port, ssl, false);
+                        TrancheServer ts = ConnectionUtil.connect(host, port, ssl, true);
+                        if (ts == null) {
+                            return;
+                        }
+                        try {
+                            NetworkUtil.updateRow(ts.getNetworkStatusPortion(host, host).getRow(host));
+                        } finally {
+                            ConnectionUtil.unlockConnection(host);
+                        }
                     } catch (Exception e) {
                         ConnectionUtil.reportExceptionHost(host, e);
                     }
