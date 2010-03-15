@@ -100,6 +100,7 @@ public class AddFileTool {
     public static int DEFAULT_DATA_QUEUE_SIZE = 20;
     public static int DEFAULT_META_DATA_QUEUE_SIZE = 25;
     public static int DEFAULT_SIZE_FILE_ENCODING_BUFFER = 1024;
+    public static boolean DEFAULT_CHECK_EXISTING_CHUNKS = true;
     public static boolean DEFAULT_USE_UNSPECIFIED_SERVERS = true;
     public static boolean DEFAULT_EXPLODE_BEFORE_UPLOAD = false;
     public static boolean DEFAULT_COMPRESS = false;
@@ -125,17 +126,17 @@ public class AddFileTool {
      * User parameters
      */
     private File file = START_VALUE_FILE;
-    private boolean compress = DEFAULT_COMPRESS, dataOnly = DEFAULT_DATA_ONLY, explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD, showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, emailOnFailure = DEFAULT_EMAIL_ON_FAILURE, sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
+    private boolean compress = DEFAULT_COMPRESS,  dataOnly = DEFAULT_DATA_ONLY,  explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD,  showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS,  emailOnFailure = DEFAULT_EMAIL_ON_FAILURE,  sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
     private License license;
     private X509Certificate userCertificate;
     private PrivateKey userPrivateKey;
-    private String title = START_VALUE_TITLE, description = START_VALUE_DESCRIPTION, passphrase;
+    private String title = START_VALUE_TITLE,  description = START_VALUE_DESCRIPTION,  passphrase;
     private final List<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
-    private final Set<String> emailConfirmationSet = new HashSet<String>(), serverHostUseSet = new HashSet<String>(), serverHostStickySet = new HashSet<String>();
+    private final Set<String> emailConfirmationSet = new HashSet<String>(),  serverHostUseSet = new HashSet<String>(),  serverHostStickySet = new HashSet<String>();
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -147,10 +148,11 @@ public class AddFileTool {
      */
     private boolean projectFileAddedToStack = false;
     private ProjectFile projectFile = START_VALUE_PROJECT_FILE;
-    private int threadCount = DEFAULT_THREADS, fileCount = START_VALUE_FILE_COUNT;
+    private int threadCount = DEFAULT_THREADS,  fileCount = START_VALUE_FILE_COUNT;
     private long size = START_VALUE_SIZE;
     byte[] padding = START_VALUE_PADDING;
     private boolean locked = false;
+    private boolean isCheckExistingChunks = DEFAULT_CHECK_EXISTING_CHUNKS;
 
     /**
      * 
@@ -2146,7 +2148,7 @@ public class AddFileTool {
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
         private int emptyCount = 0;
-        private boolean started = false, finished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopped = false;
         private final LinkedList<FileToUpload> fileStack;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         public BigHash primaryFileHash;
@@ -2654,7 +2656,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
@@ -2747,6 +2749,51 @@ public class AddFileTool {
         }
 
         /**
+         * 
+         * @param dataChunk
+         * @param toUploadCoreHostsCopy
+         * @param isUploaded
+         * @return
+         */
+        private Set<String> getHostsWithDataChunk(DataChunk dataChunk, Collection<String> toUploadCoreHostsCopy, boolean isUploaded) {
+
+            Set<String> hostsWithCopy = new HashSet();
+
+            for (String host : toUploadCoreHostsCopy) {
+
+                // break point
+                if (stopped || AddFileTool.this.stopped) {
+                    return hostsWithCopy;
+                }
+
+                try {
+                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                    if (ts == null) {
+                        throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
+                    }
+                    try {
+                        if (IOUtil.hasData(ts, dataChunk.hash)) {
+                            hostsWithCopy.add(host);
+
+                            if (isUploaded) {
+                                fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
+                            }
+                        }
+                    } catch (Exception e) {
+                        debugErr(e);
+                        ConnectionUtil.reportExceptionHost(host, e);
+                    } finally {
+                        ConnectionUtil.unlockConnection(host);
+                    }
+                } catch (Exception e) {
+                    debugErr(e);
+                }
+            }
+
+            return hostsWithCopy;
+        }
+
+        /**
          *
          */
         @Override
@@ -2785,20 +2832,34 @@ public class AddFileTool {
                             throw new Exception("No servers to which to upload.");
                         }
 
+                        Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
+                        Set<String> uploadedCoreHosts = new HashSet<String>();
+                        
+                        if (isCheckExistingChunks) {
+                            Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+                            Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+                            uploadedCoreHosts.addAll(hostsWithCopy);
+                            toUploadCoreHosts.removeAll(hostsWithCopy);
+                        }
+
                         // upload to core using the multi server request strategy
                         Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(coreHosts, Tertiary.DONT_CARE, Tertiary.TRUE);
                         if (strategies.isEmpty()) {
                             throw new Exception("Failed to find an upload strategy for " + dataChunk.hash.toString());
                         }
                         debugOut(strategies.size() + " strategies found.");
-
-                        Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
-                        Set<String> uploadedCoreHosts = new HashSet<String>();
+                        
                         for (MultiServerRequestStrategy strategy : strategies) {
                             // break point
                             if (stopped || AddFileTool.this.stopped) {
                                 break DOWHILE;
                             }
+                            
+                            // have we uploaded enough copies?
+                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                                break;
+                            }
+                            
                             // upload
                             try {
                                 TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
@@ -2818,36 +2879,15 @@ public class AddFileTool {
                             }
                             // verify
                             Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-                            for (String host : toUploadCoreHostsCopy) {
-                                // break point
-                                if (stopped || AddFileTool.this.stopped) {
-                                    break DOWHILE;
-                                }
-                                try {
-                                    TrancheServer ts = ConnectionUtil.connectHost(host, true);
-                                    if (ts == null) {
-                                        throw new Exception("Could not connect to " + host + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
-                                    }
-                                    try {
-                                        if (IOUtil.hasData(ts, dataChunk.hash)) {
-                                            uploadedCoreHosts.add(host);
-                                            toUploadCoreHosts.remove(host);
-                                            fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
-                                        }
-                                    } catch (Exception e) {
-                                        debugErr(e);
-                                        ConnectionUtil.reportExceptionHost(host, e);
-                                    } finally {
-                                        ConnectionUtil.unlockConnection(host);
-                                    }
-                                } catch (Exception e) {
-                                    debugErr(e);
-                                }
+                            Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+
+                            // break point
+                            if (stopped || AddFileTool.this.stopped) {
+                                break DOWHILE;
                             }
-                            // have we uploaded enough copies?
-                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
-                                break;
-                            }
+                            
+                            uploadedCoreHosts.addAll(hostsWithCopy);
+                            toUploadCoreHosts.removeAll(hostsWithCopy);
                         }
 
                         // upload to non-core hosts directly
@@ -2945,7 +2985,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
+        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
         public MetaDataUploadingThread(Set<FileEncodingThread> fileThreads, Set<DataUploadingThread> dataThreads, Set<MetaDataUploadingThread> metaThreads, PriorityBlockingQueue<MetaChunk> metaChunkQueue) {

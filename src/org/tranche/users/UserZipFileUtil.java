@@ -103,7 +103,7 @@ public class UserZipFileUtil {
             } catch (SSLException ssle) {
                 throw ssle;
             } catch (IOException ioe) {
-                throw new Exception("Could not connect. Please try again later.");
+                throw new Exception("Could not connect. Please try again later. "+ioe.getClass().getSimpleName()+": "+ioe.getMessage());
             }
 
             // if not 200 (OK), there is a scripting or connection problem
