@@ -2831,64 +2831,137 @@ public class AddFileTool {
                         if (coreHosts.isEmpty() && nonCoreHosts.isEmpty()) {
                             throw new Exception("No servers to which to upload.");
                         }
-
-                        Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
-                        Set<String> uploadedCoreHosts = new HashSet<String>();
                         
-                        if (isCheckExistingChunks) {
-                            Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-                            Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
-                            uploadedCoreHosts.addAll(hostsWithCopy);
-                            toUploadCoreHosts.removeAll(hostsWithCopy);
-                        }
+                        Set<String> uploadedCoreHosts = new HashSet();
 
-                        // upload to core using the multi server request strategy
-                        Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(coreHosts, Tertiary.DONT_CARE, Tertiary.TRUE);
-                        if (strategies.isEmpty()) {
-                            throw new Exception("Failed to find an upload strategy for " + dataChunk.hash.toString());
-                        }
-                        debugOut(strategies.size() + " strategies found.");
-                        
-                        for (MultiServerRequestStrategy strategy : strategies) {
-                            // break point
-                            if (stopped || AddFileTool.this.stopped) {
-                                break DOWHILE;
-                            }
-                            
-                            // have we uploaded enough copies?
-                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
-                                break;
-                            }
-                            
-                            // upload
-                            try {
-                                TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
-                                if (ts == null) {
-                                    throw new Exception("Could not connect to " + strategy.getHostReceivingRequest() + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
-                                }
-                                try {
-                                    upload(dataChunk, ts, toUploadCoreHosts.toArray(new String[0]));
-                                } catch (Exception e) {
-                                    debugErr(e);
-                                    ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
-                                } finally {
-                                    ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
-                                }
-                            } catch (Exception e) {
-                                debugErr(e);
-                            }
-                            // verify
-                            Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-                            Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+                        // ----------------------------------------------------------------------------------------
+                        //  Upload core servers option #1: use propagation
+                        // ----------------------------------------------------------------------------------------
+                        {
+//                            Set<String> toUploadCoreHosts = new HashSet<String>(coreHosts);
+//
+//                            if (isCheckExistingChunks) {
+//                                Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+//                                uploadedCoreHosts.addAll(hostsWithCopy);
+//                                toUploadCoreHosts.removeAll(hostsWithCopy);
+//                            }
+//
+//                            // upload to core using the multi server request strategy
+//                            Collection<MultiServerRequestStrategy> strategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(coreHosts, Tertiary.DONT_CARE, Tertiary.TRUE);
+//                            if (strategies.isEmpty()) {
+//                                throw new Exception("Failed to find an upload strategy for " + dataChunk.hash.toString());
+//                            }
+//                            debugOut(strategies.size() + " strategies found.");
+//
+//                            for (MultiServerRequestStrategy strategy : strategies) {
+//                                // break point
+//                                if (stopped || AddFileTool.this.stopped) {
+//                                    break DOWHILE;
+//                                }
+//
+//                                // have we uploaded enough copies?
+//                                if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+//                                    break;
+//                                }
+//
+//                                // upload
+//                                try {
+//                                    TrancheServer ts = ConnectionUtil.connectHost(strategy.getHostReceivingRequest(), true);
+//                                    if (ts == null) {
+//                                        throw new Exception("Could not connect to " + strategy.getHostReceivingRequest() + " to verify the upload of data " + dataChunk.hash.toString().substring(0, 5) + "...");
+//                                    }
+//                                    try {
+//                                        upload(dataChunk, ts, toUploadCoreHosts.toArray(new String[0]));
+//                                    } catch (Exception e) {
+//                                        debugErr(e);
+//                                        ConnectionUtil.reportExceptionHost(strategy.getHostReceivingRequest(), e);
+//                                    } finally {
+//                                        ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
+//                                    }
+//                                } catch (Exception e) {
+//                                    debugErr(e);
+//                                }
+//                                // verify
+//                                Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+//
+//                                // break point
+//                                if (stopped || AddFileTool.this.stopped) {
+//                                    break DOWHILE;
+//                                }
+//
+//                                uploadedCoreHosts.addAll(hostsWithCopy);
+//                                toUploadCoreHosts.removeAll(hostsWithCopy);
+//                            }
+                        } // Upload option #1
 
-                            // break point
-                            if (stopped || AddFileTool.this.stopped) {
-                                break DOWHILE;
-                            }
-                            
-                            uploadedCoreHosts.addAll(hostsWithCopy);
-                            toUploadCoreHosts.removeAll(hostsWithCopy);
-                        }
+                        // ----------------------------------------------------------------------------------------
+                        //  Upload core servers option #2: directly
+                        // ----------------------------------------------------------------------------------------
+                        {
+                            // Upload to core hosts directly. Shuffle list for luck. 
+                            List<String> toUploadCoreHosts = new ArrayList();
+                            toUploadCoreHosts.addAll(coreHosts);
+                            Collections.shuffle(toUploadCoreHosts);
+
+                            ATTEMPT:
+                            for (int attempt = 0; attempt < 3; attempt++) {
+
+                                HOSTS:
+                                for (String host : toUploadCoreHosts) {
+                                    // break point
+                                    if (stopped || AddFileTool.this.stopped) {
+                                        break DOWHILE;
+                                    }
+
+                                    // have we uploaded enough copies?
+                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                                        break;
+                                    }
+
+                                    // Don't upload if already has chunk
+                                    if (uploadedCoreHosts.contains(host)) {
+                                        continue HOSTS;
+                                    }
+
+                                    try {
+                                        TrancheServer ts = ConnectionUtil.connectHost(host, true);
+                                        if (ts == null) {
+                                            throw new Exception("Could not connect to " + host + ".");
+                                        }
+                                        try {
+
+                                            if (isCheckExistingChunks && IOUtil.hasData(ts, dataChunk.hash)) {
+                                                debugOut(ts.getHost() + " already has data chunk " + dataChunk.hash);
+                                                uploadedCoreHosts.add(host);
+                                                fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
+                                                continue HOSTS;
+                                            }
+
+                                            upload(dataChunk, ts, new String[]{host});
+                                            if (IOUtil.hasData(ts, dataChunk.hash)) {
+                                                debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost() + ".");
+                                                uploadedCoreHosts.add(host);
+                                                fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
+                                            }
+                                        } catch (Exception e) {
+                                            debugErr(e);
+                                            ConnectionUtil.reportExceptionHost(host, e);
+                                        } finally {
+                                            ConnectionUtil.unlockConnection(host);
+                                        }
+                                    } catch (Exception e) {
+                                        debugErr(e);
+                                        ConnectionUtil.reportExceptionHost(host, e);
+                                    }
+                                } // for each host to receive a copy
+
+                                // If gets here, waiting is small penalty to give any servers chance to settle
+                                Thread.sleep(100);
+                            } // attempt loop
+
+                        } // Upload option #2
 
                         // upload to non-core hosts directly
                         Set<String> uploadedNonCoreHosts = new HashSet<String>();
