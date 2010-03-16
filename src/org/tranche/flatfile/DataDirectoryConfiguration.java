@@ -73,6 +73,12 @@ public class DataDirectoryConfiguration implements Comparable {
      * @param directory
      */
     public void setDirectory(String directory) {
+        
+        // Fixes bug. Don't let directory end with file separator.
+        while (directory.endsWith("/") || directory.endsWith("\\")) {
+            directory = directory.substring(0, directory.length()-1);
+        }
+        
         // if a new directory if set, reset state info
         if (!directory.equals(this.directory)) {
             this.directory = directory;

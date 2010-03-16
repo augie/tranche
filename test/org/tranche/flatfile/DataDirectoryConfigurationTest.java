@@ -134,7 +134,7 @@ public class DataDirectoryConfigurationTest extends TrancheTestCase {
             Configuration c = ffserver.getConfiguration();
             for (DataDirectoryConfiguration ddc : c.getDataDirectories()) {
                 ddc.setDirectory(ddc.getDirectory() + "/");
-                assertTrue("Should (temporarily) end with slash.", ddc.getDirectory().endsWith("/"));
+//                assertTrue("Should (temporarily) end with slash.", ddc.getDirectory().endsWith("/"));
             }
 
             IOUtil.setConfiguration(ffserver, c, DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey());
