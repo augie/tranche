@@ -2752,10 +2752,11 @@ public class AddFileTool {
          * 
          * @param dataChunk
          * @param toUploadCoreHostsCopy
-         * @param isUploaded
+         * @param isFireUploadedIfHas
+         * @param isStopIfEnough
          * @return
          */
-        private Set<String> getHostsWithDataChunk(DataChunk dataChunk, Collection<String> toUploadCoreHostsCopy, boolean isUploaded) {
+        private Set<String> getHostsWithDataChunk(DataChunk dataChunk, Collection<String> toUploadCoreHostsCopy, boolean isFireUploadedIfHas, boolean isStopIfEnough) {
 
             Set<String> hostsWithCopy = new HashSet();
 
@@ -2763,6 +2764,11 @@ public class AddFileTool {
 
                 // break point
                 if (stopped || AddFileTool.this.stopped) {
+                    return hostsWithCopy;
+                }
+
+                // have we uploaded enough copies?
+                if (isStopIfEnough && hostsWithCopy.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS)) {
                     return hostsWithCopy;
                 }
 
@@ -2775,7 +2781,7 @@ public class AddFileTool {
                         if (IOUtil.hasData(ts, dataChunk.hash)) {
                             hostsWithCopy.add(host);
 
-                            if (isUploaded) {
+                            if (isFireUploadedIfHas) {
                                 fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
                             }
                         }
@@ -2831,7 +2837,7 @@ public class AddFileTool {
                         if (coreHosts.isEmpty() && nonCoreHosts.isEmpty()) {
                             throw new Exception("No servers to which to upload.");
                         }
-                        
+
                         Set<String> uploadedCoreHosts = new HashSet();
 
                         // ----------------------------------------------------------------------------------------
@@ -2842,7 +2848,7 @@ public class AddFileTool {
 //
 //                            if (isCheckExistingChunks) {
 //                                Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true, true);
 //                                uploadedCoreHosts.addAll(hostsWithCopy);
 //                                toUploadCoreHosts.removeAll(hostsWithCopy);
 //                            }
@@ -2884,7 +2890,7 @@ public class AddFileTool {
 //                                }
 //                                // verify
 //                                Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true);
+//                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true, true);
 //
 //                                // break point
 //                                if (stopped || AddFileTool.this.stopped) {
@@ -2905,6 +2911,12 @@ public class AddFileTool {
                             toUploadCoreHosts.addAll(coreHosts);
                             Collections.shuffle(toUploadCoreHosts);
 
+                            if (isCheckExistingChunks) {
+                                Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
+                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true, true);
+                                uploadedCoreHosts.addAll(hostsWithCopy);
+                            }
+
                             ATTEMPT:
                             for (int attempt = 0; attempt < 3; attempt++) {
 
@@ -2917,7 +2929,7 @@ public class AddFileTool {
 
                                     // have we uploaded enough copies?
                                     if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
-                                        break;
+                                        break ATTEMPT;
                                     }
 
                                     // Don't upload if already has chunk
@@ -2931,14 +2943,6 @@ public class AddFileTool {
                                             throw new Exception("Could not connect to " + host + ".");
                                         }
                                         try {
-
-                                            if (isCheckExistingChunks && IOUtil.hasData(ts, dataChunk.hash)) {
-                                                debugOut(ts.getHost() + " already has data chunk " + dataChunk.hash);
-                                                uploadedCoreHosts.add(host);
-                                                fireUploadedData(dataChunk.metaChunk.fileToUpload.relativeName, dataChunk.metaChunk.fileToUpload.getFile(), dataChunk.hash, host);
-                                                continue HOSTS;
-                                            }
-
                                             upload(dataChunk, ts, new String[]{host});
                                             if (IOUtil.hasData(ts, dataChunk.hash)) {
                                                 debugOut("Verified upload of data chunk " + dataChunk.hash + " to " + ts.getHost() + ".");
