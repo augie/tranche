@@ -43,6 +43,7 @@ import org.tranche.util.Text;
 /**
  * <p>Manages the Tranche server connections for the local JVM.</p>
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - bryanesmith@gmail.com
  */
 public class ConnectionUtil {
 
@@ -57,40 +58,7 @@ public class ConnectionUtil {
             keepAliveThread.start();
             NetworkUtil.waitForStartup();
             // listen to the modifications in the master status table
-            NetworkUtil.getStatus().addListener(new StatusTableListener() {
-
-                public void rowsAdded(StatusTableEvent ste) {
-                    adjustConnections();
-                }
-
-                public void rowsUpdated(StatusTableEvent ste) {
-                    boolean adjustConnections = false;
-                    StatusTable table = NetworkUtil.getStatus().clone();
-                    for (String host : ste.getHosts()) {
-                        // if this change affects the connectivity
-                        if (ste.affectedConnectivity(host)) {
-                            StatusTableRow str = table.getRow(host);
-                            if (isConnected(host) && str.isOnline()) {
-                                adjustConnection(str.getHost(), str.getPort(), str.isSSL());
-                            } else {
-                                adjustConnections = true;
-                            }
-                        }
-                        // adjust connections if hash spans changed
-                        if (ste.affectedHashSpans(host)) {
-                            adjustConnections = true;
-                        }
-                    }
-                    // when a server is offline, we need a recalculation of servers to which we connect
-                    if (adjustConnections) {
-                        adjustConnections();
-                    }
-                }
-
-                public void rowsRemoved(StatusTableEvent ste) {
-                    adjustConnections();
-                }
-            });
+            NetworkUtil.getStatus().addListener(new ConnectionUtilStatusTableListener());
         }
     };
 
