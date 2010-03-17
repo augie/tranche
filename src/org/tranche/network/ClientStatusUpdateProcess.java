@@ -79,6 +79,11 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
 
         HOSTS:
         for (final String host : NetworkUtil.getStatus().getHosts()) {
+            
+            // Skip banned servers
+            if (NetworkUtil.isBannedServer(host)) {
+                continue HOSTS;
+            }
 
             ATTEMPTS:
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

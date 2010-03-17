@@ -395,6 +395,9 @@ public class ConnectionUtil {
                                 break;
                             }
                             if (i == getConnection(host).getExceptionCount() - 1) {
+                                // Ban the server so don't connect again
+                                NetworkUtil.addBannedServerHost(host);
+                                
                                 flagOffline(host, e.getClass().getSimpleName()+" (happened at least "+limit+" times.)");
                             }
                         }
