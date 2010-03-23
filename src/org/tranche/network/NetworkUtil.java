@@ -157,28 +157,28 @@ public class NetworkUtil {
     public static void setBannedServerHosts(Collection<String> serverHosts) {
         synchronized (bannedServerHosts) {
             bannedServerHosts.clear();
-            System.err.println("Cleared banned servers.");
+            debugOut("Cleared banned servers.");
             for (String host : serverHosts) {
                 if (host == null) {
                     continue;
                 }
                 String normalizedHost = normalize(host);
                 debugOut("Adding banned server host: " + normalizedHost);
-                
-                System.err.println("BANNED: "+host);
+                debugOut("BANNED: " + host);
+
                 bannedServerHosts.add(normalizedHost);
             }
         }
     }
-    
+
     /**
      * 
      * @param host
      */
     public static void addBannedServerHost(String host) {
-        synchronized(bannedServerHosts) {
+        synchronized (bannedServerHosts) {
             if (bannedServerHosts.add(host)) {
-                System.err.println("BANNED: "+host);
+                debugOut("BANNED: " + host);
             }
         }
     }

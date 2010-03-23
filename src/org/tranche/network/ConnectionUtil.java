@@ -429,7 +429,7 @@ public class ConnectionUtil {
             reason = "none specified";
         }
         
-        System.err.println(host+" flagged offline at "+Text.getFormattedDate(TimeUtil.getTrancheTimestamp())+" (reason: "+reason+")");
+        debugOut(host+" flagged offline at "+Text.getFormattedDate(TimeUtil.getTrancheTimestamp())+" (reason: "+reason+")");
         safeForceClose(host, "Flagged offline");
         // flag the server offline
         StatusTableRow row = NetworkUtil.getStatus().getRow(host);

@@ -1150,6 +1150,11 @@ public class SecurityUtil {
      * @throws GeneralSecurityException
      */
     public static File decryptDiskBacked(String passphrase, File file, BigHash expectedHash) throws WrongPassphraseException, IOException, GeneralSecurityException {
+        if (passphrase == null) {
+            throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
+        }
+        debugOut("Decrypting " + file.getAbsolutePath() + " using passphrase " + passphrase);
+
         // make the AES encryption engine
         AESFastEngine encrypt = new AESFastEngine();
         // make up some params
@@ -1179,7 +1184,7 @@ public class SecurityUtil {
             bos = new BufferedOutputStream(fos);
 
             // make the buffers
-            int round = 0, bufferBlocks = 6;
+            int round = 0, bufferBlocks = 10;
             byte[] data = new byte[blockSize];
             byte[] encrypted = new byte[blockSize];
             byte[] encryptedBuffer = new byte[blockSize * bufferBlocks];
@@ -1218,9 +1223,9 @@ public class SecurityUtil {
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            debugOut("Expected Padding length: " + paddingLength);
-            debugOut("Buffer length: " + encryptedBuffer.length);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
+                debugOut("Expected Padding length: " + paddingLength);
+                debugOut("Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
             }
             bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
@@ -1270,6 +1275,7 @@ public class SecurityUtil {
         if (passphrase == null) {
             throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
         }
+        debugOut("Decrypting file in memory using passphrase " + passphrase);
         // make the AES encryption engine
         AESFastEngine encrypt = new AESFastEngine();
         // make up some params
@@ -1295,7 +1301,7 @@ public class SecurityUtil {
             bos = new ByteArrayOutputStream();
 
             // make the buffers
-            int round = 0, bufferBlocks = 6;
+            int round = 0, bufferBlocks = 10;
             byte[] data = new byte[blockSize];
             byte[] encrypted = new byte[blockSize];
             byte[] encryptedBuffer = new byte[blockSize * bufferBlocks];
@@ -1334,9 +1340,9 @@ public class SecurityUtil {
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            debugOut("Expected Padding length: " + paddingLength);
-            debugOut("Buffer length: " + encryptedBuffer.length);
             if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
+                debugOut("Expected Padding length: " + paddingLength);
+                debugOut("Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
             }
             bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);

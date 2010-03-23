@@ -81,7 +81,7 @@ public class GetFileTool {
      */
     private static String TEMP_FILE_DENOTATION = ".tranche-temp.";
     public static boolean DEFAULT_BATCH = true;
-    public static boolean DEFAULT_VALIDATE = false;
+    public static boolean DEFAULT_VALIDATE = true;
     public static String DEFAULT_REG_EX = ".";
     public static boolean DEFAULT_USE_UNSPECIFIED_SERVERS = true;
     public static Long DEFAULT_UPLOAD_TIMESTAMP = null;
@@ -1429,10 +1429,15 @@ public class GetFileTool {
                 bytes = CompressionUtil.lzmaDecompress(bytes);
             } else if (fe.getName().equals(FileEncoding.AES)) {
                 BigHash nextHash = null;
-                if (i > 0) {
-                    nextHash = encodings.get(i - 1).getHash();
-                } else {
-                    nextHash = fileHash;
+                // temporary check for project file
+                // data has a wacky problem where validating the hash on decryption is invalid: edB5lhN5O6X4bTRc+nKDHNL738Bmm0cjvCVd/plfS5JfB5Ctc4X2Ub/jvgC9BDXugkUyK+q+/LXj3E1k06UDXjyvuaoAAAAAAAHV9g==
+                // have to do this so it still downloads properly
+                if (metaData.isProjectFile()) {
+                    if (i > 0) {
+                        nextHash = encodings.get(i - 1).getHash();
+                    } else {
+                        nextHash = fileHash;
+                    }
                 }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {
@@ -1476,6 +1481,9 @@ public class GetFileTool {
         // decode the file -- rewind the encodings
         List<FileEncoding> encodings = metaData.getEncodings();
         for (int i = encodings.size() - 1; i >= 0; i--) {
+            debugOut(encodings.get(i).toString() + " (" + encodings.get(i).getHash().getLength() + ")");
+        }
+        for (int i = encodings.size() - 1; i >= 0; i--) {
             FileEncoding fe = encodings.get(i);
             if (fe.getName().equals(FileEncoding.GZIP)) {
                 tempFile = CompressionUtil.gzipDecompress(tempFile);
@@ -1483,10 +1491,15 @@ public class GetFileTool {
                 tempFile = CompressionUtil.lzmaDecompress(tempFile);
             } else if (fe.getName().equals(FileEncoding.AES)) {
                 BigHash nextHash = null;
-                if (i > 0) {
-                    nextHash = encodings.get(i - 1).getHash();
-                } else {
-                    nextHash = fileHash;
+                // temporary check for project file
+                // data has a wacky problem where validating the hash on decryption is invalid: edB5lhN5O6X4bTRc+nKDHNL738Bmm0cjvCVd/plfS5JfB5Ctc4X2Ub/jvgC9BDXugkUyK+q+/LXj3E1k06UDXjyvuaoAAAAAAAHV9g==
+                // have to do this so it still downloads properly
+                if (metaData.isProjectFile()) {
+                    if (i > 0) {
+                        nextHash = encodings.get(i - 1).getHash();
+                    } else {
+                        nextHash = fileHash;
+                    }
                 }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {

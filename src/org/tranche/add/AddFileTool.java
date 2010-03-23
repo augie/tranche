@@ -2907,14 +2907,12 @@ public class AddFileTool {
                         // ----------------------------------------------------------------------------------------
                         {
                             // Upload to core hosts directly. Shuffle list for luck. 
-                            List<String> toUploadCoreHosts = new ArrayList();
-                            toUploadCoreHosts.addAll(coreHosts);
+                            List<String> toUploadCoreHosts = new ArrayList(coreHosts);
                             Collections.shuffle(toUploadCoreHosts);
 
                             if (isCheckExistingChunks) {
                                 Collection<String> toUploadCoreHostsCopy = new HashSet<String>(toUploadCoreHosts);
-                                Collection<String> hostsWithCopy = getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true, true);
-                                uploadedCoreHosts.addAll(hostsWithCopy);
+                                uploadedCoreHosts.addAll(getHostsWithDataChunk(dataChunk, toUploadCoreHostsCopy, true, true));
                             }
 
                             ATTEMPT:
@@ -2960,9 +2958,6 @@ public class AddFileTool {
                                         ConnectionUtil.reportExceptionHost(host, e);
                                     }
                                 } // for each host to receive a copy
-
-                                // If gets here, waiting is small penalty to give any servers chance to settle
-                                Thread.sleep(100);
                             } // attempt loop
 
                         } // Upload option #2

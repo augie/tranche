@@ -171,6 +171,7 @@ public class SelectUploaderPanel extends JPanel {
                             if (metaData.getPreviousVersion() != null) {
                                 infoPanel.set("Previous Version", metaData.getPreviousVersion().toString());
                             }
+                            infoPanel.set("Upload Timestamp", String.valueOf(metaData.getTimestampUploaded()));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
