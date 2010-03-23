@@ -161,8 +161,8 @@ public class ServerStartupThread extends Thread {
 
             // Record time took to complete step
             step1Time = TimeUtil.getTrancheTimestamp() - step1Start;
-
-            // ----------------------------------------------------------------------------------------------
+            
+             // ----------------------------------------------------------------------------------------------
             //  STEP 2: Wait for it to load data blocks
             // ----------------------------------------------------------------------------------------------
             debugOut("Step 2: ");
@@ -176,14 +176,25 @@ public class ServerStartupThread extends Thread {
 
             // Record time took to complete step
             step2Time = TimeUtil.getTrancheTimestamp() - step2Start;
-
+            
             // ----------------------------------------------------------------------------------------------
-            //  STEP 3: Check other servers for logs, and see if anything should be deleted.
+            //  STEP 3: Data is now available. Unrestrict.
             // ----------------------------------------------------------------------------------------------
             debugOut("Step 3: ");
-            long step3Start = TimeUtil.getTrancheTimestamp();
+            final long step3Start = TimeUtil.getTrancheTimestamp();
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Putting server in unrestricted mode (read/write) (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
 
-            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Waiting for startup (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+            // Record time took to complete step
+            step3Time = TimeUtil.getTrancheTimestamp() - step3Start;
+
+            // ----------------------------------------------------------------------------------------------
+            //  STEP 4: Check other servers for logs, and see if anything should be deleted.
+            // ----------------------------------------------------------------------------------------------
+            debugOut("Step 4: ");
+            long step4Start = TimeUtil.getTrancheTimestamp();
+
+            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 4: Waiting for startup (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
             if (!TestUtil.isTesting()) {
                 NetworkUtil.waitForStartup();
             }
@@ -191,7 +202,7 @@ public class ServerStartupThread extends Thread {
 
             CHECK_SERVERS_FOR_DELETES:
             for (String host : hostsToUse) {
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 3: Checking " + host + " for chunks to delete (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 4: Checking " + host + " for chunks to delete (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
 
                 boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
                 if (!wasChecked) {
@@ -200,19 +211,19 @@ public class ServerStartupThread extends Thread {
             } // For each server, look for deletes to perform
 
             // Record time took to complete step
-            step3Time = TimeUtil.getTrancheTimestamp() - step3Start;
+            step4Time = TimeUtil.getTrancheTimestamp() - step4Start;
 
             // ----------------------------------------------------------------------------------------------
-            //  STEP 4: Check for replaced meta data.
+            //  STEP 5: Check for replaced meta data.
             // ----------------------------------------------------------------------------------------------
-            debugOut("Step 4: ");
-            final long step4Start = TimeUtil.getTrancheTimestamp();
+            debugOut("Step 5: ");
+            final long step5Start = TimeUtil.getTrancheTimestamp();
 
             List<String> serversToCheckForReplacedMetaData = new LinkedList();
 
             CHECK_SERVERS_FOR_REPLACED_META_DATA:
             for (String host : hostsToUse) {
-                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 4: Checking " + host + " for meta data to replace (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 5: Checking " + host + " for meta data to replace (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
 
                 boolean wasChecked = checkServerForMetaDataToReplace(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, replacedMetaDataCount);
                 if (!wasChecked) {
@@ -220,17 +231,6 @@ public class ServerStartupThread extends Thread {
                 }
             } // For each server, look for deletes to perform
 
-            step4Time = TimeUtil.getTrancheTimestamp() - step4Start;
-
-            // ----------------------------------------------------------------------------------------------
-            //  STEP 5: Data is now available. Unrestrict.
-            // ----------------------------------------------------------------------------------------------
-            debugOut("Step 5: ");
-            final long step5Start = TimeUtil.getTrancheTimestamp();
-            ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("STEP 5: Putting server in unrestricted mode (read/write) (Running: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
-            ffts.getConfiguration().setValue(ConfigKeys.SERVER_MODE_FLAG_SYSTEM, String.valueOf(ServerModeFlag.CAN_READ_WRITE));
-
-            // Record time took to complete step
             step5Time = TimeUtil.getTrancheTimestamp() - step5Start;
 
             // ----------------------------------------------------------------------------------------------
