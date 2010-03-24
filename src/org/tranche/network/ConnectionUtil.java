@@ -30,15 +30,13 @@ import java.util.concurrent.TimeoutException;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
 import org.tranche.exceptions.UnresponsiveServerException;
-import org.tranche.flatfile.FlatFileTrancheServer;
-import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteTrancheServer;
-import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.Text;
+import org.tranche.util.ThreadUtil;
 
 /**
  * <p>Manages the Tranche server connections for the local JVM.</p>
@@ -61,7 +59,6 @@ public class ConnectionUtil {
             NetworkUtil.getStatus().addListener(new ConnectionUtilStatusTableListener());
         }
     };
-
 
     static {
         lazyLoad.setDaemon(true);
@@ -382,7 +379,7 @@ public class ConnectionUtil {
             debugErr(e);
             // connection exceptions mean the server is absolutely offlikne
             if (e instanceof ConnectException || e instanceof NoRouteToHostException) {
-                flagOffline(host,e.getClass().getSimpleName());
+                flagOffline(host, e.getClass().getSimpleName());
             } // timeout exceptions mean that the server is no longer responding for some reason (transmission error, offline, etc)
             else if (e instanceof TimeoutException || e instanceof UnresponsiveServerException) {
                 if (isConnected(host)) {
@@ -397,8 +394,8 @@ public class ConnectionUtil {
                             if (i == getConnection(host).getExceptionCount() - 1) {
                                 // Ban the server so don't connect again
                                 NetworkUtil.addBannedServerHost(host);
-                                
-                                flagOffline(host, e.getClass().getSimpleName()+" (happened at least "+limit+" times.)");
+
+                                flagOffline(host, e.getClass().getSimpleName() + " (happened at least " + limit + " times.)");
                             }
                         }
                     }
@@ -416,7 +413,7 @@ public class ConnectionUtil {
     public static void flagOffline(String host) {
         flagOffline(host, null);
     }
-    
+
     /**
      * <p>Must FIRST safely force the closure of the connection.</p>
      * <p>Sets a server as offline in the network status.</p>
@@ -424,12 +421,12 @@ public class ConnectionUtil {
      * @param reason Brief explanation why flagging offline. Can be null, but any information helps.
      */
     public static void flagOffline(String host, String reason) {
-        
+
         if (reason == null || reason.trim().equals("")) {
             reason = "none specified";
         }
-        
-        debugOut(host+" flagged offline at "+Text.getFormattedDate(TimeUtil.getTrancheTimestamp())+" (reason: "+reason+")");
+
+        debugOut(host + " flagged offline at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " (reason: " + reason + ")");
         safeForceClose(host, "Flagged offline");
         // flag the server offline
         StatusTableRow row = NetworkUtil.getStatus().getRow(host);
@@ -576,9 +573,8 @@ public class ConnectionUtil {
             // track the connections determined necessary
             Set<StatusTableRow> requiredConnections = new HashSet<StatusTableRow>();
             // the local instance is just a client
-            if (NetworkUtil.getLocalServer() == null) {
+//            if (NetworkUtil.getLocalServer() == null) {
 
-                debugOut("Getting a full hash span.");
                 // repository must be x servers in size before connecting only to a full hash span
                 int threshold = ConfigureTranche.getInt(ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
                 Set<StatusTableRow> onlineRows = new HashSet<StatusTableRow>();
@@ -589,6 +585,7 @@ public class ConnectionUtil {
                     onlineRows.add(row);
                 }
                 if (onlineRows.size() > threshold) {
+                    debugOut("Getting a full hash span.");
                     // calculate a full hash span -- seeding with the currently connected rows
                     requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), table.getRows()));
                 } else {
@@ -610,74 +607,75 @@ public class ConnectionUtil {
                         }
                     }
                 }
-            } else {
-                // start with the servers from which to get network status updates
-                debugOut("Determining status table row ranges.");
-                // have the server status update process modify its own ranges based on the network
-                ServerStatusUpdateProcess.adjustStatusTableRowRanges();
-                // connect to all the servers to which we are supposed to be connected to for updates
-                for (StatusTableRowRange range : ServerStatusUpdateProcess.getStatusTableRowRanges()) {
-                    requiredConnections.add(table.getRow(range.getConnectionHost()));
+//            } else {
+                // alternative to above, connect to select
+                {
+//                // start with the servers from which to get network status updates
+//                debugOut("Determining status table row ranges.");
+//                // have the server status update process modify its own ranges based on the network
+//                ServerStatusUpdateProcess.adjustStatusTableRowRanges();
+//                // connect to all the servers to which we are supposed to be connected to for updates
+//                for (StatusTableRowRange range : ServerStatusUpdateProcess.getStatusTableRowRanges()) {
+//                    requiredConnections.add(table.getRow(range.getConnectionHost()));
+//                }
+//                // connect to all the non-core servers we are supposed to be connected to for individual updates
+//                for (StatusTableRowRange range : ServerStatusUpdateProcess.getNonCoreServersToUpdate()) {
+//                    requiredConnections.add(table.getRow(range.getConnectionHost()));
+//                }
+//
+//                if (NetworkUtil.getLocalServer().getTrancheServer() instanceof FlatFileTrancheServer) {
+//                    debugOut("Local server is a FlatFileTrancheServer");
+//
+//                    // always connect with the local server
+//                    debugOut("Connecting to the local data server.");
+//                    requiredConnections.add(NetworkUtil.getLocalServerRow());
+//
+//                    // next get all servers with overlapping hash spans
+//                    debugOut("Getting all servers with overlapping hash spans");
+//                    Map<Collection<HashSpan>, String> overlappingHashSpanHosts = new HashMap<Collection<HashSpan>, String>();
+//                    debugOut("Starting to check servers with overlapping hash spans.");
+//                    for (StatusTableRow row : table.getRows()) {
+//                        debugOut("Starting to check for overlapping hashspans with " + row.getURL());
+//                        // do not connect to self, offline servers, non-data servers, and non-core servers for overlapping hash spans
+//                        if (row.isLocalServer() || !row.isOnline() || !row.isCore() || !row.isDataStore()) {
+//                            continue;
+//                        }
+//                        debugOut("Checking for overlapping hashspans with " + row.getURL());
+//                        // determine if the servers have overlapping hashspans
+//                        rowLoop:
+//                        for (HashSpan hs1 : row.getHashSpans()) {
+//                            for (HashSpan hs2 : NetworkUtil.getLocalServerRow().getHashSpans()) {
+//                                if (hs1.overlaps(hs2)) {
+//                                    overlappingHashSpanHosts.put(row.getHashSpans(), row.getHost());
+//                                    requiredConnections.add(row);
+//                                    break rowLoop;
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                    // tell the flat file tranche server to work with the given servers for updating
+//                    ((FlatFileTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).setHostsToUseWithOverlappingHashSpans(overlappingHashSpanHosts);
+//                    // working with sticky chunks means that data servers must connect with a full hash span
+//                    Collection<StatusTableRow> fullHashSpanSeedRows = new HashSet<StatusTableRow>(requiredConnections);
+//                    // also seed with the current connections
+//                    fullHashSpanSeedRows.addAll(getConnectedRows());
+//                    // calculate a full hash span
+//                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, table.getRows()));
+//                } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
+//                    debugOut("Local server is a RoutingTrancheServer");
+//                    // connect to all servers being routed to
+//                    Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
+//                    for (String host : hosts) {
+//                        requiredConnections.add(table.getRow(host));
+//                    }
+//                }
                 }
-                // connect to all the non-core servers we are supposed to be connected to for individual updates
-                for (StatusTableRowRange range : ServerStatusUpdateProcess.getNonCoreServersToUpdate()) {
-                    requiredConnections.add(table.getRow(range.getConnectionHost()));
-                }
-
-                if (NetworkUtil.getLocalServer().getTrancheServer() instanceof FlatFileTrancheServer) {
-                    debugOut("Local server is a FlatFileTrancheServer");
-
-                    // always connect with the local server
-                    debugOut("Connecting to the local data server.");
-                    requiredConnections.add(NetworkUtil.getLocalServerRow());
-
-                    // next get all servers with overlapping hash spans
-                    debugOut("Getting all servers with overlapping hash spans");
-                    Map<Collection<HashSpan>, String> overlappingHashSpanHosts = new HashMap<Collection<HashSpan>, String>();
-                    debugOut("Starting to check servers with overlapping hash spans.");
-                    for (StatusTableRow row : table.getRows()) {
-                        debugOut("Starting to check for overlapping hashspans with " + row.getURL());
-                        // do not connect to self, offline servers, non-data servers, and non-core servers for overlapping hash spans
-                        if (row.isLocalServer() || !row.isOnline() || !row.isCore() || !row.isDataStore()) {
-                            continue;
-                        }
-                        debugOut("Checking for overlapping hashspans with " + row.getURL());
-                        // determine if the servers have overlapping hashspans
-                        rowLoop:
-                        for (HashSpan hs1 : row.getHashSpans()) {
-                            for (HashSpan hs2 : NetworkUtil.getLocalServerRow().getHashSpans()) {
-                                if (hs1.overlaps(hs2)) {
-                                    overlappingHashSpanHosts.put(row.getHashSpans(), row.getHost());
-                                    requiredConnections.add(row);
-                                    break rowLoop;
-                                }
-                            }
-                        }
-                    }
-
-                    // tell the flat file tranche server to work with the given servers for updating
-                    ((FlatFileTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).setHostsToUseWithOverlappingHashSpans(overlappingHashSpanHosts);
-                    // working with sticky chunks means that data servers must connect with a full hash span
-                    Collection<StatusTableRow> fullHashSpanSeedRows = new HashSet<StatusTableRow>(requiredConnections);
-                    // also seed with the current connections
-                    fullHashSpanSeedRows.addAll(getConnectedRows());
-                    // calculate a full hash span
-                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, table.getRows()));
-                } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
-                    debugOut("Local server is a RoutingTrancheServer");
-                    // connect to all servers being routed to
-                    Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
-                    for (String host : hosts) {
-                        requiredConnections.add(table.getRow(host));
-                    }
-                }
-            }
+//            }
 
             // connect if not already connected - connect 5 at a time
             Set<Thread> threads = new HashSet<Thread>();
-            StatusTableRow[] requiredConnectionsArray = requiredConnections.toArray(new StatusTableRow[0]);
-            for (int i = 0; i < requiredConnections.size(); i++) {
-                final StatusTableRow row = requiredConnectionsArray[i];
+            for (final StatusTableRow row : requiredConnections) {
                 // connect if not already connected -- reporting exceptions may readjust connections again if there is a problem
                 if (!isConnected(row.getHost())) {
                     Thread t = new Thread("Connecting to " + row.getHost()) {
@@ -693,18 +691,12 @@ public class ConnectionUtil {
                         }
                     };
                     t.setDaemon(true);
+                    t.start();
                     threads.add(t);
                 }
-                if (i + 1 == requiredConnections.size() || (i + 1) % 5 == 0) {
-                    for (Thread t : threads) {
-                        t.start();
-                    }
-                    for (Thread t : threads) {
-                        t.join();
-                    }
-                    threads.clear();
-                }
             }
+            // wait for connections
+            ThreadUtil.wait(threads, 10000);
 
             debugOut("Killing unnecessary connections");
             // kill the unneeded connections

@@ -162,7 +162,6 @@ public class StatusTable extends Object implements Serializable {
                         urlList.add(index, row.getURL());
                     }
                     addedHosts.add(row.getHost());
-                    debugOut("Added server: " + row.getHost());
                 } else {
                     // update the list
                     int index = -1;
@@ -181,7 +180,6 @@ public class StatusTable extends Object implements Serializable {
                         updatedHosts.put(row.getHost(), affectsConnectivity);
                         updatedHashSpans.put(row.getHost(), affectsHashSpans);
                     }
-                    debugOut("Updated server: " + row.getHost() + " (affects connectivity? " + affectsConnectivity + ", affects hash spans? " + affectsHashSpans + ")");
                 }
             }
         }
@@ -230,7 +228,6 @@ public class StatusTable extends Object implements Serializable {
                 synchronized (urlList) {
                     urlList.add(index, row.getURL());
                 }
-                debugOut("Added server: " + row.getHost());
             } else {
                 // update the list
                 int index = -1;
@@ -245,7 +242,6 @@ public class StatusTable extends Object implements Serializable {
                     urlList.remove(index);
                     urlList.add(index, row.getURL());
                 }
-                debugOut("Updated server: " + row.getHost() + " (affects connectivity? " + affectsConnectivity + ", affects hash spans? " + affectsHashSpans + ")");
             }
         }
         // fire events outside modification lock

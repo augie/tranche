@@ -116,6 +116,7 @@ public class Server extends Thread {
         addItem(new GetActivityLogEntriesCountItem(this));
         addItem(new GetActivityLogEntriesItem(this));
         addItem(new GetConfigurationItem(this));
+        addItem(new GetConfigurationNoSigItem(this));
         addItem(new GetDataHashesItem(this));
         addItem(new GetDataItem(this));
         addItem(new GetMetaDataHashesItem(this));

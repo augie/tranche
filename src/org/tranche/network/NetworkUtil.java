@@ -26,6 +26,7 @@ import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
 import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.routing.RoutingTrancheServerListener;
+import org.tranche.security.SecurityUtil;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
 import org.tranche.util.DebugUtil;
@@ -33,6 +34,7 @@ import org.tranche.util.IOUtil;
 import org.tranche.util.RandomUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TestUtilListener;
+import org.tranche.util.ThreadUtil;
 
 /**
  * <p>Manages the representation of the Tranche network.</p>
@@ -327,33 +329,20 @@ public class NetworkUtil {
                         return;
                     }
                     ConfigureTranche.waitForStartup();
-                    // keep track of the servers tried
-                    Set<String> serversTried = new HashSet<String>();
                     debugOut("# startup server URLs: " + getStartupServerURLs().size());
-                    WHILE:
-                    while (serversTried.size() < getStartupServerURLs().size()) {
-                        // go to three random startup servers to request the network status
-                        Collection<String> serversToAsk = getRandomStartupServerURLs(10, serversTried);
-                        // dummy check
-                        if (serversToAsk.isEmpty()) {
-                            break;
-                        }
-                        final Boolean[] success = {false, false, false, false, false, false, false, false, false, false};
+
+                    // combine the status table of all startup servers
+                    {
                         Set<Thread> threads = new HashSet<Thread>();
-                        FOR:
-                        for (int i = 0; i < serversToAsk.size(); i++) {
-                            // get the URL from which to request
-                            final String serverURL = serversToAsk.toArray(new String[0])[i];
-                            final int j = i;
-                            // we tried this server
-                            serversTried.add(serverURL);
+                        for (final String serverURL : getStartupServerURLs()) {
                             // do not get from local server
                             if (NetworkUtil.getLocalServer() != null) {
                                 try {
                                     if (IOUtil.parseHost(serverURL).equals(NetworkUtil.getLocalServer().getHostName())) {
-                                        continue FOR;
+                                        continue;
                                     }
                                 } catch (Exception e) {
+                                    debugErr(e);
                                 }
                             }
                             Thread t = new Thread("Getting Network Status From " + serverURL) {
@@ -368,7 +357,9 @@ public class NetworkUtil {
                                             StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
                                             table.removeDefunctRows();
                                             masterStatusTable.setRows(table.getRows());
-                                            success[j] = true;
+                                            StatusTableRow row = table.getRow(IOUtil.parseHost(serverURL));
+                                            row.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                                            masterStatusTable.setRow(row);
                                             debugOut("Retreived the network status table from " + serverURL);
                                         }
                                     } catch (Exception e) {
@@ -381,18 +372,82 @@ public class NetworkUtil {
                             t.start();
                             threads.add(t);
                         }
-                        for (Thread t : threads) {
-                            try {
-                                t.join(5000);
-                            } catch (Exception e) {
-                                debugErr(e);
+                        // wait for returns
+                        int returnedCount = 0;
+                        do {
+                            returnedCount = 0;
+                            ThreadUtil.safeSleep(250);
+                            for (Thread t : threads) {
+                                if (!t.isAlive()) {
+                                    returnedCount++;
+                                }
                             }
-                        }
-                        // TODO: uncomment when the online status in the network status table is stablized
-//                        for (boolean s : success) {
-//                            if (s) {
-//                                break WHILE;
+                        } while (returnedCount < Math.floor(threads.size() / 2));
+                    }
+
+                    // alternative to above... only get the status table from some servers
+                    {
+//                        // keep track of the servers tried
+//                        Set<String> serversTried = new HashSet<String>();
+//                        WHILE:
+//                        while (serversTried.size() < getStartupServerURLs().size()) {
+//                            // go to random startup servers to request the network status
+//                            Collection<String> serversToAsk = getRandomStartupServerURLs(10, serversTried);
+//                            // dummy check
+//                            if (serversToAsk.isEmpty()) {
+//                                break;
 //                            }
+//
+//                        final Boolean[] success = {false, false, false, false, false, false, false, false, false, false};
+//                        Set<Thread> threads = new HashSet<Thread>();
+//                        FOR:
+//                        for (int i = 0; i < serversToAsk.size(); i++) {
+//                            // get the URL from which to request
+//                            final String serverURL = serversToAsk.toArray(new String[0])[i];
+//                            final int j = i;
+//                            // we tried this server
+//                            serversTried.add(serverURL);
+//                            // do not get from local server
+//                            if (NetworkUtil.getLocalServer() != null) {
+//                                try {
+//                                    if (IOUtil.parseHost(serverURL).equals(NetworkUtil.getLocalServer().getHostName())) {
+//                                        continue FOR;
+//                                    }
+//                                } catch (Exception e) {
+//                                }
+//                            }
+//                            Thread t = new Thread("Getting Network Status From " + serverURL) {
+//
+//                                @Override
+//                                public void run() {
+//                                    debugOut("Trying to get the network status from " + serverURL);
+//                                    // catch connection errors
+//                                    try {
+//                                        TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
+//                                        if (ts != null) {
+//                                            StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+//                                            table.removeDefunctRows();
+//                                            masterStatusTable.setRows(table.getRows());
+//                                            success[j] = true;
+//                                            debugOut("Retreived the network status table from " + serverURL);
+//                                        }
+//                                    } catch (Exception e) {
+//                                        debugErr(e);
+//                                        ConnectionUtil.reportExceptionURL(serverURL, e);
+//                                    }
+//                                }
+//                            };
+//                            t.setDaemon(true);
+//                            t.start();
+//                            threads.add(t);
+//                        }
+//                        for (Thread t : threads) {
+//                            try {
+//                                t.join(5000);
+//                            } catch (Exception e) {
+//                                debugErr(e);
+//                            }
+//                        }
 //                        }
                     }
                     // adjust the connections

@@ -17,9 +17,10 @@ package org.tranche.network;
 
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
-import org.tranche.exceptions.AssertionFailedException;
+import org.tranche.security.SecurityUtil;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.util.DebugUtil;
+import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.ThreadUtil;
 
@@ -61,7 +62,6 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
      * 
      */
     private void updateDirectly() {
-
         // If testing manual network status table, then don't do anything!
         if (TestUtil.isTestingManualNetworkStatusTable()) {
             return;
@@ -70,84 +70,45 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
         debugOut("Starting to perform an update.");
 
         // Internet outage -- try to reload the network
-        if (NetworkUtil.getStatus().size() > 1 && ConnectionUtil.size() == 0) {
+        if (NetworkUtil.getStatus().size() > 0 && ConnectionUtil.size() == 0) {
             NetworkUtil.reload();
             return;
         }
 
-        final int MAX_ATTEMPTS = 3;
+        for (final StatusTableRow row : NetworkUtil.getStatus().getRows()) {
 
-        HOSTS:
-        for (final String host : NetworkUtil.getStatus().getHosts()) {
-            
-            // Skip banned servers
-            if (NetworkUtil.isBannedServer(host)) {
-                continue HOSTS;
+            if (NetworkUtil.isBannedServer(row.getHost()) || !row.isOnline()) {
+                continue;
             }
 
-            ATTEMPTS:
-            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            Thread t = new Thread() {
 
-                final boolean[] isCompleted = {false};
-
-                Thread t = new Thread() {
-
-                    @Override()
-                    public void run() {
-                        debugOut("Trying to update network status from last checked: " + host);
-                        TrancheServer ts = null;
-                        try {
-                            ts = ConnectionUtil.getHost(host);
-                            // server connection no longer in pool
-                            if (ts != null) {
-                                ConnectionUtil.lockConnection(host);
-                                StatusTable table = ts.getNetworkStatusPortion(host, host);
-
-                                StatusTableRow row = table.getRow(host);
-
-                                if (row == null) {
-                                    throw new AssertionFailedException("Expect to find row for host, instead null.");
-                                }
-
-                                NetworkUtil.getStatus().setRow(row);
-                                isCompleted[0] = true;
-                            }
-                        } catch (Exception e) {
-                            debugErr(e);
-                        } finally {
-                            ConnectionUtil.unlockConnection(host);
+                @Override()
+                public void run() {
+                    debugOut("Trying to update network status from: " + row.getHost());
+                    try {
+                        TrancheServer ts = ConnectionUtil.connect(row, true);
+                        if (ts != null) {
+                            StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+                            NetworkUtil.updateRows(table.getRows());
+                            StatusTableRow primaryRow = table.getRow(row.getHost());
+                            primaryRow.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                            NetworkUtil.updateRow(primaryRow);
+                            debugOut("Updated status of " + row.getHost() + ": " + primaryRow.toString());
                         }
-                    }
-                };
-                t.setDaemon(true);
-                t.setPriority(Thread.MIN_PRIORITY);
-                t.start();
-
-                try {
-                    // Give it a little time only
-                    t.join(5 * 1000);
-                } catch (Exception e) {
-                    // nope
-                }
-
-                if (t.isAlive() && !isCompleted[0]) {
-                    t.interrupt();
-                }
-
-                // Success, continue
-                if (isCompleted[0]) {
-                    continue HOSTS;
-                }
-
-                // Did if fail? Flag it as offline
-                if (!isCompleted[0] && attempt == MAX_ATTEMPTS) {
-                    StatusTableRow row = NetworkUtil.getStatus().getRow(host);
-                    if (row == null && row.isOnline()) {
-                        ConnectionUtil.flagOffline(host);
+                    } catch (Exception e) {
+                        debugErr(e);
+                        ConnectionUtil.reportException(row, e);
+                    } finally {
+                        ConnectionUtil.unlockConnection(row.getHost());
                     }
                 }
-            }
-        } // attempt
+            };
+            t.setDaemon(true);
+            t.setPriority(Thread.MIN_PRIORITY);
+            t.start();
+            Thread.yield();
+        }
     } // updateDirectly
 
     /**

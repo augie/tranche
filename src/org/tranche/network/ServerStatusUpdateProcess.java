@@ -23,10 +23,13 @@ import java.util.Set;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
 import org.tranche.logs.LogUtil;
+import org.tranche.security.SecurityUtil;
+import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.EmailUtil;
+import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.Text;
 import org.tranche.util.ThreadUtil;
@@ -67,7 +70,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
         while (isRunning) {
             try {
                 ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_FREQUENCY));
-                
+
                 if (NetworkUtil.getLocalServer() != null && NetworkUtil.getLocalServerRow() != null) {
                     // update the local server info -- do not let a problem here stop the updates
                     try {
@@ -106,83 +109,125 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                         continue;
                     }
                     // check status table row ranges
-                    if (getStatusTableRowRanges().size() == 0) {
-                        ConnectionUtil.adjustConnections();
-                        continue;
-                    }
+//                    if (getStatusTableRowRanges().size() == 0) {
+//                        ConnectionUtil.adjustConnections();
+//                        continue;
+//                    }
                 }
 
-                // perform the update from ranges
-                for (final StatusTableRowRange range : getStatusTableRowRanges()) {
-                    try {
-                        final TrancheServer ts = ConnectionUtil.connectHost(range.getConnectionHost(), true);
-                        // this connection died at some point
-                        if (ts == null) {
-                            throw new Exception("Could not establish connection with " + range.getConnectionHost() + " for range from " + range.getFrom() + " to " + range.getTo());
-                        }
-                        try {
-                            debugOut("Updating from " + range.getConnectionHost() + " with range " + range.getFrom() + " to " + range.getTo());
+                // check in the same way as the client
+                debugOut("Starting to perform an update.");
+
+                for (final StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+
+                    if (NetworkUtil.isBannedServer(row.getHost()) || !row.isOnline() || row.isLocalServer()) {
+                        continue;
+                    }
+
+                    Thread t = new Thread() {
+
+                        @Override()
+                        public void run() {
+                            debugOut("Trying to update network status from: " + row.getHost());
                             try {
-                                StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
-                                // reregister this server if the status table says the local server is offline
-                                try {
-                                    for (StatusTableRow row : table.getRows()) {
-                                        debugOut("Is " + row.getHost() + " the local server and offline? " + (row.getHost().equals(NetworkUtil.getLocalServerRow().getHost()) && !row.isOnline()));
-                                        if (row.getHost().equals(NetworkUtil.getLocalServerRow().getHost()) && !row.isOnline()) {
-                                            range.setRegistrationStatus(false);
-                                            break;
-                                        }
-                                    }
-                                } catch (Exception e) {
-                                    debugErr(e);
+                                TrancheServer ts = ConnectionUtil.connect(row, true);
+                                if (ts != null) {
+                                    StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+                                    NetworkUtil.updateRows(table.getRows());
+                                    StatusTableRow primaryRow = table.getRow(row.getHost());
+                                    primaryRow.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                                    NetworkUtil.updateRow(primaryRow);
+                                    debugOut("Updated status of " + row.getHost() + ": " + primaryRow.toString());
+                                    ts.registerServer(NetworkUtil.getLocalServerRow().getURL());
                                 }
-                                table.removeDefunctRows();
-                                NetworkUtil.updateRows(table.getRows());
                             } catch (Exception e) {
                                 debugErr(e);
-                                ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
+                                ConnectionUtil.reportException(row, e);
+                            } finally {
+                                ConnectionUtil.unlockConnection(row.getHost());
                             }
-                            // policy: need to register once with each server we connect to for status update info
-                            //  because of the possibility of servers going offline during the time after being registered with
-                            //  and before propogating that registration
-                            if (!range.isRegisteredWithConnectionHost()) {
-                                debugOut("Registering local server with " + range.getConnectionHost());
-                                try {
-                                    ts.registerServer(NetworkUtil.getLocalServerRow().getURL());
-                                    range.setRegistrationStatus(true);
-                                    debugOut("Successfully registered local server with " + range.getConnectionHost());
-                                } catch (Exception e) {
-                                    debugErr(e);
-                                    ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
-                                }
-                            }
-                        } finally {
-                            ConnectionUtil.unlockConnection(range.getConnectionHost());
                         }
-                    } catch (Exception e) {
-                        debugErr(e);
-                        ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
-                    }
+                    };
+                    t.setDaemon(true);
+                    t.setPriority(Thread.MIN_PRIORITY);
+                    t.start();
+                    Thread.yield();
                 }
-                // perform the update from non-core servers that are listed immediately after the local server
-                for (final StatusTableRowRange range : getNonCoreServersToUpdate()) {
-                    try {
-                        TrancheServer ts = ConnectionUtil.connectHost(range.getConnectionHost(), true);
-                        if (ts == null) {
-                            throw new Exception("Could not establish connection with non-core server " + range.getFrom());
-                        }
-                        try {
-                            debugOut("Updating from non-core server " + range.getConnectionHost());
-                            StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
-                            table.removeDefunctRows();
-                            NetworkUtil.updateRows(table.getRows());
-                        } finally {
-                            ConnectionUtil.unlockConnection(range.getConnectionHost());
-                        }
-                    } catch (Exception e) {
-                        debugErr(e);
-                        ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
-                    }
+
+                // alternative to the above
+                {
+//                // perform the update from ranges
+//                for (final StatusTableRowRange range : getStatusTableRowRanges()) {
+//                    try {
+//                        final TrancheServer ts = ConnectionUtil.connectHost(range.getConnectionHost(), true);
+//                        // this connection died at some point
+//                        if (ts == null) {
+//                            throw new Exception("Could not establish connection with " + range.getConnectionHost() + " for range from " + range.getFrom() + " to " + range.getTo());
+//                        }
+//                        try {
+//                            debugOut("Updating from " + range.getConnectionHost() + " with range " + range.getFrom() + " to " + range.getTo());
+//                            try {
+//                                StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
+//                                // reregister this server if the status table says the local server is offline
+//                                try {
+//                                    for (StatusTableRow row : table.getRows()) {
+//                                        debugOut("Is " + row.getHost() + " the local server and offline? " + (row.getHost().equals(NetworkUtil.getLocalServerRow().getHost()) && !row.isOnline()));
+//                                        if (row.getHost().equals(NetworkUtil.getLocalServerRow().getHost()) && !row.isOnline()) {
+//                                            range.setRegistrationStatus(false);
+//                                            break;
+//                                        }
+//                                    }
+//                                } catch (Exception e) {
+//                                    debugErr(e);
+//                                }
+//                                table.removeDefunctRows();
+//                                NetworkUtil.updateRows(table.getRows());
+//                            } catch (Exception e) {
+//                                debugErr(e);
+//                                ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
+//                            }
+//                            // policy: need to register once with each server we connect to for status update info
+//                            //  because of the possibility of servers going offline during the time after being registered with
+//                            //  and before propogating that registration
+//                            if (!range.isRegisteredWithConnectionHost()) {
+//                                debugOut("Registering local server with " + range.getConnectionHost());
+//                                try {
+//                                    ts.registerServer(NetworkUtil.getLocalServerRow().getURL());
+//                                    range.setRegistrationStatus(true);
+//                                    debugOut("Successfully registered local server with " + range.getConnectionHost());
+//                                } catch (Exception e) {
+//                                    debugErr(e);
+//                                    ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
+//                                }
+//                            }
+//                        } finally {
+//                            ConnectionUtil.unlockConnection(range.getConnectionHost());
+//                        }
+//                    } catch (Exception e) {
+//                        debugErr(e);
+//                        ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
+//                    }
+//                }
+//                // perform the update from non-core servers that are listed immediately after the local server
+//                for (final StatusTableRowRange range : getNonCoreServersToUpdate()) {
+//                    try {
+//                        TrancheServer ts = ConnectionUtil.connectHost(range.getConnectionHost(), true);
+//                        if (ts == null) {
+//                            throw new Exception("Could not establish connection with non-core server " + range.getFrom());
+//                        }
+//                        try {
+//                            debugOut("Updating from non-core server " + range.getConnectionHost());
+//                            StatusTable table = ts.getNetworkStatusPortion(range.getFrom(), range.getTo());
+//                            table.removeDefunctRows();
+//                            NetworkUtil.updateRows(table.getRows());
+//                        } finally {
+//                            ConnectionUtil.unlockConnection(range.getConnectionHost());
+//                        }
+//                    } catch (Exception e) {
+//                        debugErr(e);
+//                        ConnectionUtil.reportExceptionHost(range.getConnectionHost(), e);
+//                    }
+//                }
                 }
                 // the online server at the top of the list is responsible for notifying the administration team that servers are offline
                 try {
