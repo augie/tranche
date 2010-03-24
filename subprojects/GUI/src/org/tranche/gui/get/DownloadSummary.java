@@ -549,6 +549,9 @@ public class DownloadSummary implements ClipboardOwner {
         boolean reportNotNull = RemoteUtil.readBoolean(in);
         if (reportNotNull) {
             report = new GetFileToolReport(in);
+            if (report.isFailed()) {
+                progressBar.errorCount++;
+            }
         }
         // parameters
         getFileTool.setHash(RemoteUtil.readBigHash(in));

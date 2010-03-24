@@ -44,7 +44,7 @@ import org.tranche.util.ThreadUtil;
 public class GetFileToolProgressBar extends JPanel implements GetFileToolListener {
 
     private GetFileTool gft;
-    private int errorCount = 0;
+    public int errorCount = 0;
     private BufferedImage buffer;
     private RepaintThread repaintThread = new RepaintThread();
 

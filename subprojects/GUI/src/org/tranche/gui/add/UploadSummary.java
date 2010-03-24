@@ -680,6 +680,9 @@ public class UploadSummary implements ClipboardOwner {
         boolean reportNotNull = RemoteUtil.readBoolean(in);
         if (reportNotNull) {
             report = new AddFileToolReport(in);
+            if (report.isFailed()) {
+                progressBar.errorCount++;
+            }
         }
         // parameters
         addFileTool.setFile(new File(RemoteUtil.readLine(in)));
