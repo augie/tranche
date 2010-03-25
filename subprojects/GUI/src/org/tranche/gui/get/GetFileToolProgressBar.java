@@ -46,7 +46,8 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
     private GetFileTool gft;
     public int errorCount = 0;
     private BufferedImage buffer;
-    private RepaintThread repaintThread = new RepaintThread();
+    public RepaintThread repaintThread = new RepaintThread();
+    public boolean queued = false, finished = false, paused = false, stopped = false;
 
     /**
      * 
@@ -242,17 +243,33 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
         if (gft == null) {
             string = "Waiting to start...";
         } else if (!gft.isExecuting()) {
-            if (errorCount == 0) {
-                string = "Finished";
+            if (finished) {
+                if (errorCount == 0) {
+                    string = "Finished";
+                } else {
+                    string = "Failed";
+                }
+                pixelsWide = buffer.getWidth();
             } else {
-                string = "Failed";
+                if (queued) {
+                    string = "Queued";
+                } else if (stopped) {
+                    string = "Stopped";
+                } else if (paused) {
+                    string = "Paused";
+                } else {
+                    string = "Starting";
+                }
+                pixelsWide = 0;
             }
-            pixelsWide = buffer.getWidth();
         } else {
             if (progress == 100) {
                 string = "Finishing...";
             } else {
                 string = GUIUtil.floatFormat.format(Math.abs(progress)) + "%; ";
+                if (gft.isStopped()) {
+                    string = string + "Stopped";
+                }
                 if (gft.isPaused()) {
                     string = string + "Paused";
                 } else if (gft.getTimeEstimator() != null) {
@@ -294,10 +311,14 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
 
         Color fillColor;
         if (!gft.isExecuting()) {
-            if (errorCount == 0) {
-                fillColor = new Color(0.7f, 1, 0.7f);
+            if (finished) {
+                if (errorCount == 0) {
+                    fillColor = new Color(0.7f, 1, 0.7f);
+                } else {
+                    fillColor = new Color(1, 0.7f, 0.7f);
+                }
             } else {
-                fillColor = new Color(1, 0.7f, 0.7f);
+                fillColor = Color.WHITE;
             }
         } else {
             float redComponent = 1;
@@ -307,7 +328,6 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
             }
             fillColor = new Color(redComponent, 1, 0.7f);
         }
-        //g.setColor(Styles.COLOR_PROGRESS_BAR_FOREGROUND);
         g.setColor(fillColor);
         g.fillRect(0, 0, pixelsWide, buffer.getHeight());
 
@@ -327,9 +347,9 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
         graphics.drawImage(buffer, 0, 0, null);
     }
 
-    private class RepaintThread extends Thread {
+    public class RepaintThread extends Thread {
 
-        private boolean closed = false,  paintRequested = false;
+        private boolean closed = false, paintRequested = false;
 
         public RepaintThread() {
             setName("Get File Tool Progress Bar Repaint Thread");

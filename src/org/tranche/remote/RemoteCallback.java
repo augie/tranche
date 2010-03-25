@@ -17,6 +17,7 @@ package org.tranche.remote;
 
 import java.util.concurrent.TimeoutException;
 import org.tranche.exceptions.UnresponsiveServerException;
+import org.tranche.network.ConnectionUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DebugUtil;
 import org.tranche.util.Text;
@@ -91,6 +92,8 @@ public abstract class RemoteCallback {
             if (timeCompleted == RemoteCallback.NOT_COMPLETED && cachedException == null) {
                 final long finish = TimeUtil.getTrancheTimestamp();
                 cachedException = new TimeoutException("Callback #" + id + " timed out. Server: " + this.rts.getHost() + ". Waited: " + Text.getPrettyEllapsedTimeString(finish - start) + " (Start: " + Text.getFormattedDate(start) + ", Finish: " + Text.getFormattedDate(finish) + ")");
+            } else {
+                ConnectionUtil.clearExceptionsHost(rts.getHost());
             }
         }
         debugOut("Exiting wait method after " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start) + " (ID = " + id + ", Time completed = " + timeCompleted + ", Name = " + name + ", Description = " + description + ")");

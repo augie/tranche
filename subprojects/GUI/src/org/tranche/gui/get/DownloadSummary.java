@@ -419,6 +419,26 @@ public class DownloadSummary implements ClipboardOwner {
 
     public void setStatus(String _status) {
         status = _status;
+        if (status.equals(STATUS_QUEUED)) {
+            progressBar.queued = true;
+        } else {
+            progressBar.queued = false;
+        }
+        if (status.equals(STATUS_PAUSED)) {
+            progressBar.paused = true;
+        } else {
+            progressBar.paused = false;
+        }
+        if (status.equals(STATUS_STOPPED)) {
+            progressBar.stopped = true;
+        } else {
+            progressBar.stopped = false;
+        }
+        if (status.equals(STATUS_FAILED) || status.equals(STATUS_FINISHED)) {
+            progressBar.finished = true;
+        } else {
+            progressBar.finished = false;
+        }
         // notify the download pool of a significant change
         DownloadPool.set(this);
     }
@@ -531,47 +551,71 @@ public class DownloadSummary implements ClipboardOwner {
 
     public void deserialize(InputStream in) throws Exception {
         version = RemoteUtil.readInt(in);
-        // status
-        status = RemoteUtil.readLine(in);
-        // action map
-        int actionMapSize = RemoteUtil.readInt(in);
-        for (int i = 0; i < actionMapSize; i++) {
-            String key = RemoteUtil.readLine(in);
-            actionMap.put(key, new HashMap<String, Integer>());
-            int actionMapInnerSize = RemoteUtil.readInt(in);
-            for (int j = 0; j < actionMapInnerSize; j++) {
-                String key2 = RemoteUtil.readLine(in);
-                int value = RemoteUtil.readInt(in);
-                actionMap.get(key).put(key2, value);
+
+        // VERSION ONE
+        {
+            // status
+            status = RemoteUtil.readLine(in);
+            if (status.equals(STATUS_QUEUED)) {
+                progressBar.queued = true;
+            } else {
+                progressBar.queued = false;
             }
-        }
-        // report
-        boolean reportNotNull = RemoteUtil.readBoolean(in);
-        if (reportNotNull) {
-            report = new GetFileToolReport(in);
-            if (report.isFailed()) {
-                progressBar.errorCount++;
+            if (status.equals(STATUS_PAUSED)) {
+                progressBar.paused = true;
+            } else {
+                progressBar.paused = false;
             }
+            if (status.equals(STATUS_STOPPED)) {
+                progressBar.stopped = true;
+            } else {
+                progressBar.stopped = false;
+            }
+            if (status.equals(STATUS_FINISHED) || status.equals(STATUS_FAILED)) {
+                progressBar.finished = true;
+            } else {
+                progressBar.finished = false;
+            }
+            // action map
+            int actionMapSize = RemoteUtil.readInt(in);
+            for (int i = 0; i < actionMapSize; i++) {
+                String key = RemoteUtil.readLine(in);
+                actionMap.put(key, new HashMap<String, Integer>());
+                int actionMapInnerSize = RemoteUtil.readInt(in);
+                for (int j = 0; j < actionMapInnerSize; j++) {
+                    String key2 = RemoteUtil.readLine(in);
+                    int value = RemoteUtil.readInt(in);
+                    actionMap.get(key).put(key2, value);
+                }
+            }
+            // report
+            boolean reportNotNull = RemoteUtil.readBoolean(in);
+            if (reportNotNull) {
+                report = new GetFileToolReport(in);
+                if (report.isFailed()) {
+                    progressBar.errorCount++;
+                }
+            }
+            // parameters
+            getFileTool.setHash(RemoteUtil.readBigHash(in));
+            getFileTool.setPassphrase(RemoteUtil.readLine(in));
+            getFileTool.setSaveFile(new File(RemoteUtil.readLine(in)));
+            getFileTool.setRegEx(RemoteUtil.readLine(in));
+            getFileTool.setUploadRelativePath(RemoteUtil.readLine(in));
+            getFileTool.setUploaderName(RemoteUtil.readLine(in));
+            getFileTool.setUploadTimestamp(RemoteUtil.readLong(in));
+            getFileTool.setThreadCount(RemoteUtil.readInt(in));
+            getFileTool.setBatch(RemoteUtil.readBoolean(in));
+            getFileTool.setContinueOnFailure(RemoteUtil.readBoolean(in));
+            getFileTool.setUseUnspecifiedServers(RemoteUtil.readBoolean(in));
+            getFileTool.setValidate(RemoteUtil.readBoolean(in));
+            int serversCount = RemoteUtil.readInt(in);
+            for (int i = 0; i < serversCount; i++) {
+                getFileTool.addServerToUse(RemoteUtil.readLine(in));
+            }
+            bytesToDownload = RemoteUtil.readLong(in);
+            filesToDownload = RemoteUtil.readLong(in);
         }
-        // parameters
-        getFileTool.setHash(RemoteUtil.readBigHash(in));
-        getFileTool.setPassphrase(RemoteUtil.readLine(in));
-        getFileTool.setSaveFile(new File(RemoteUtil.readLine(in)));
-        getFileTool.setRegEx(RemoteUtil.readLine(in));
-        getFileTool.setUploadRelativePath(RemoteUtil.readLine(in));
-        getFileTool.setUploaderName(RemoteUtil.readLine(in));
-        getFileTool.setUploadTimestamp(RemoteUtil.readLong(in));
-        getFileTool.setThreadCount(RemoteUtil.readInt(in));
-        getFileTool.setBatch(RemoteUtil.readBoolean(in));
-        getFileTool.setContinueOnFailure(RemoteUtil.readBoolean(in));
-        getFileTool.setUseUnspecifiedServers(RemoteUtil.readBoolean(in));
-        getFileTool.setValidate(RemoteUtil.readBoolean(in));
-        int serversCount = RemoteUtil.readInt(in);
-        for (int i = 0; i < serversCount; i++) {
-            getFileTool.addServerToUse(RemoteUtil.readLine(in));
-        }
-        bytesToDownload = RemoteUtil.readLong(in);
-        filesToDownload = RemoteUtil.readLong(in);
     }
 
     // the following are for the clipboardowner abstract

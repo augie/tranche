@@ -384,7 +384,7 @@ public class ConnectionUtil {
             else if (e instanceof TimeoutException || e instanceof UnresponsiveServerException) {
                 if (isConnected(host)) {
                     // three timeouts in a row = offline
-                    final int limit = 3;
+                    int limit = 3;
                     if (getConnection(host).getExceptionCount() >= limit) {
                         for (int i = getConnection(host).getExceptionCount() - 3; i < getConnection(host).getExceptionCount(); i++) {
                             Exception x = getConnection(host).getException(i);
@@ -394,14 +394,29 @@ public class ConnectionUtil {
                             if (i == getConnection(host).getExceptionCount() - 1) {
                                 // Ban the server so don't connect again
                                 NetworkUtil.addBannedServerHost(host);
-
-                                flagOffline(host, e.getClass().getSimpleName() + " (happened at least " + limit + " times.)");
+                                flagOffline(host, e.getClass().getSimpleName());
                             }
                         }
                     }
                 }
             }
         } catch (Exception ex) {
+            debugErr(ex);
+        }
+    }
+
+    /**
+     * 
+     * @param host
+     */
+    public static void clearExceptionsHost(String host) {
+        try {
+            host = normalize(host);
+            if (isConnected(host)) {
+                getConnection(host).clearExceptions();
+            }
+        } catch (Exception e) {
+            debugErr(e);
         }
     }
 
@@ -575,41 +590,41 @@ public class ConnectionUtil {
             // the local instance is just a client
 //            if (NetworkUtil.getLocalServer() == null) {
 
-                // repository must be x servers in size before connecting only to a full hash span
-                int threshold = ConfigureTranche.getInt(ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
-                Set<StatusTableRow> onlineRows = new HashSet<StatusTableRow>();
-                for (StatusTableRow row : table.getRows()) {
-                    if (!row.isOnline()) {
-                        continue;
-                    }
-                    onlineRows.add(row);
+            // repository must be x servers in size before connecting only to a full hash span
+            int threshold = ConfigureTranche.getInt(ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
+            Set<StatusTableRow> onlineRows = new HashSet<StatusTableRow>();
+            for (StatusTableRow row : table.getRows()) {
+                if (!row.isOnline()) {
+                    continue;
                 }
-                if (onlineRows.size() > threshold) {
-                    debugOut("Getting a full hash span.");
-                    // calculate a full hash span -- seeding with the currently connected rows
-                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), table.getRows()));
+                onlineRows.add(row);
+            }
+            if (onlineRows.size() > threshold) {
+                debugOut("Getting a full hash span.");
+                // calculate a full hash span -- seeding with the currently connected rows
+                requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), table.getRows()));
+            } else {
+                requiredConnections.addAll(onlineRows);
+            }
+            // need to keep the update connection
+            if (requiredConnections.isEmpty()) {
+                // use an existing connection
+                if (size() != 0) {
+                    requiredConnections.add(table.getRow(getConnectedHosts().toArray(new String[0])[0]));
                 } else {
-                    requiredConnections.addAll(onlineRows);
-                }
-                // need to keep the update connection
-                if (requiredConnections.isEmpty()) {
-                    // use an existing connection
-                    if (size() != 0) {
-                        requiredConnections.add(table.getRow(getConnectedHosts().toArray(new String[0])[0]));
-                    } else {
-                        // need to make a connection with a random row
-                        for (StatusTableRow row : table.getRows()) {
-                            if (!row.isOnline() && row.isCore()) {
-                                continue;
-                            }
-                            requiredConnections.add(row);
-                            break;
+                    // need to make a connection with a random row
+                    for (StatusTableRow row : table.getRows()) {
+                        if (!row.isOnline() && row.isCore()) {
+                            continue;
                         }
+                        requiredConnections.add(row);
+                        break;
                     }
                 }
+            }
 //            } else {
-                // alternative to above, connect to select
-                {
+            // alternative to above, connect to select
+            {
 //                // start with the servers from which to get network status updates
 //                debugOut("Determining status table row ranges.");
 //                // have the server status update process modify its own ranges based on the network
@@ -670,7 +685,7 @@ public class ConnectionUtil {
 //                        requiredConnections.add(table.getRow(host));
 //                    }
 //                }
-                }
+            }
 //            }
 
             // connect if not already connected - connect 5 at a time

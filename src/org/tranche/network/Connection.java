@@ -107,6 +107,15 @@ public class Connection {
     }
 
     /**
+     * 
+     */
+    public void clearExceptions() {
+        synchronized (exceptions) {
+            exceptions.clear();
+        }
+    }
+
+    /**
      *
      * @return
      */
