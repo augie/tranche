@@ -132,22 +132,6 @@ public class DiskBackedBigHashSet {
      * @return Number of BigHash's in set
      */
     public synchronized int size() {
-//
-//        /**
-//         * Check to see whether should write out buffers first
-//         */
-//        if (autoWriteBeforeCriticalOperation) {
-//            checkBuffers(true);
-//        }
-//
-//        int size = diskCount + toAdd.size() - toDelete.size();
-//
-//        if (size < 0) {
-//            return 0;
-//        }
-//
-//        return size;
-
         boolean isAllowedEstimate = !autoWriteBeforeCriticalOperation;
         return size(isAllowedEstimate);
     }

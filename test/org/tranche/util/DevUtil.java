@@ -49,6 +49,7 @@ import org.tranche.security.Signature;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.DataDirectoryConfiguration;
 import org.tranche.hash.Base64;
+import org.tranche.hash.BigHashPair;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.meta.MetaData;
 import org.tranche.meta.MetaDataAnnotation;
@@ -294,6 +295,14 @@ public class DevUtil {
      */
     public static BigHash getRandomBigHash() {
         return getRandomBigHash(1024 * 1024);
+    }
+    
+    /**
+     * Creates a random BigHashPair.
+     * @return
+     */
+    public static BigHashPair getRandomBigHashPair() {
+        return new BigHashPair(getRandomBigHash(), getRandomBigHash());
     }
 
     /**

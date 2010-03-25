@@ -17,6 +17,7 @@ package org.tranche.license;
 
 import java.io.*;
 import java.util.*;
+import org.tranche.hash.BigHash;
 import org.tranche.util.*;
 
 /**
@@ -87,6 +88,42 @@ public class LicenseUtil {
                     writer.newLine();
                 }
             }
+        } finally {
+            IOUtil.safeClose(writer);
+        }
+
+        return outputFile;
+    }
+    
+    /**
+     * 
+     * @param outputFile
+     * @param license
+     * @param additionalAgreements
+     * @param optionalNotes
+     * @return
+     * @throws java.lang.Exception
+     */
+    public static File buildLicenseMultiLicenseExplanationFile(File outputFile, Map<String,BigHash> pathsToParentHash) throws Exception {
+        if (!outputFile.exists()) {
+            outputFile.createNewFile();
+        }
+
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new FileWriter(outputFile));
+
+            // title
+            writer.write("This data set is created from files from multiple sources, which might use different licenses. For license information for each file, please check with the license file associated with each of the following hashes:");
+            writer.newLine();
+            
+            for (String path : pathsToParentHash.keySet()) {
+                BigHash parentHash = pathsToParentHash.get(path);
+                writer.write("  * "+path+": "+parentHash);
+                writer.newLine();
+            }
+            
+            writer.newLine();
         } finally {
             IOUtil.safeClose(writer);
         }

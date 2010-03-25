@@ -236,18 +236,13 @@ public class RemoteTrancheServer extends TrancheServer {
         // Purge all previous callbacks. They are no longer valid.
         notifyPreviousCallbacks(Long.MAX_VALUE, "Server is reconnecting");
 
-        try {
-            if (!secure) {
-                dataSocket = SocketFactory.getDefault().createSocket(host, port);
-            } else {
-                // make an SSL socket and set it
-                SSLSocket ssls = (SSLSocket) SSLSocketFactory.getDefault().createSocket(host, port);
-                ssls.setEnabledCipherSuites(ssls.getSupportedCipherSuites());
-                dataSocket = ssls;
-            }
-        } catch (NoRouteToHostException nre) {
-            System.err.println(nre.getClass().getSimpleName() + " happened for " + IOUtil.createURL(host, port, secure) + ": " + nre.getMessage());
-            throw nre;
+        if (!secure) {
+            dataSocket = SocketFactory.getDefault().createSocket(host, port);
+        } else {
+            // make an SSL socket and set it
+            SSLSocket ssls = (SSLSocket) SSLSocketFactory.getDefault().createSocket(host, port);
+            ssls.setEnabledCipherSuites(ssls.getSupportedCipherSuites());
+            dataSocket = ssls;
         }
 
         // disable nagle's algorithm

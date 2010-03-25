@@ -64,9 +64,6 @@ public class DiskBackedBigHashList extends AbstractList<BigHash> {
         TMP_DIR = TempFileUtil.createTemporaryDirectory("cache");
         diskPartitions = new ArrayList();
 
-        // Make sure deleted on exit
-        TMP_DIR.deleteOnExit();
-
         if (!TMP_DIR.mkdirs() && !TMP_DIR.exists()) {
             throw new IOException("Can't create temporary directory " + TMP_DIR.getPath());
         }
@@ -79,12 +76,11 @@ public class DiskBackedBigHashList extends AbstractList<BigHash> {
     protected void finalize() throws Throwable {
         destroy();
     }
-
+    
     /**
-     * Explicity destroy the disk-backed collection. If don't, GC will garbage collect OR temp dir cleaned out when tool reran.
+     * 
      */
-    public void destroy() {
-
+    public void close() {
         if (isDestroyed) {
             return;
         }
@@ -104,6 +100,15 @@ public class DiskBackedBigHashList extends AbstractList<BigHash> {
 
         // Shouldn't delete perchance other DiskBackedHashLists in use
         IOUtil.recursiveDeleteWithWarning(this.TMP_DIR);
+    }
+
+    /**
+     * Explicity destroy the disk-backed collection. If don't, GC will garbage collect OR temp dir cleaned out when tool reran.
+     * @deprecated Use close
+     */
+    public void destroy() {
+
+        close();
     }
 
     /**
@@ -273,7 +278,6 @@ public class DiskBackedBigHashList extends AbstractList<BigHash> {
      */
     @Override()
     public BigHash remove(int index) {
-
         throw new UnsupportedOperationException("remove() not implemented.");
     }
 

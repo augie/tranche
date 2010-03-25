@@ -20,14 +20,17 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.tranche.ConfigureTranche;
 import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
@@ -37,20 +40,24 @@ import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolReport;
 import org.tranche.hash.BigHash;
-import org.tranche.hash.DiskBackedBigHashSet;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.license.LicenseUtil;
+import org.tranche.logs.ConnectionDiagnosticsLog;
 import org.tranche.meta.MetaData;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTable;
 import org.tranche.network.StatusTableRow;
+import org.tranche.remote.RemoteTrancheServer;
+import org.tranche.remote.RemoteTrancheServerPerformanceListener;
 import org.tranche.security.SecurityUtil;
 import org.tranche.security.Signature;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.time.TimeUtil;
+import org.tranche.users.UserZipFile;
+import org.tranche.users.UserZipFileUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.Text;
@@ -64,20 +71,205 @@ import org.tranche.util.Text;
 })
 public class ArbitraryProjectBuildingTool {
 
+    public static boolean isPrintServerPerformanceSummary() {
+        return isPrintServerPerformanceSummary;
+    }
+
+    public static void setIsPrintServerPerformanceSummary(boolean aIsPrintServerPerformanceSummary) {
+        isPrintServerPerformanceSummary = aIsPrintServerPerformanceSummary;
+    }
+
     private final DiskBackedProjectFilePartSet pfpSet;
-    private final DiskBackedProjectFilePartSet projectFilePartsToAdd;
-    private final DiskBackedBigHashSet fileHashesFromProjectsToAdd;
-    private final DiskBackedBigHashSet projectHashesFromProjectsToAdd;
-    private final DiskBackedBigHashSet individualFilesToAdd;
-    private final DiskBackedBigHashSet dataSetsToAdd;
-    private String title;
-    private String description;
+    private final Set<String> paths = new HashSet();
+    private final Map<ProjectFilePart, BigHash> projectFilePartsToAdd;
+    private final Map<BigHash, BigHash> filesFromProjectsToAdd;
+    private final Set<BigHash> individualFilesToAdd;
+    private final Set<BigHash> dataSetsToAdd;
+    private String title = "No title was specified";
+    private String description = "No description was specified";
     private final X509Certificate cert;
     private final PrivateKey key;
     private List<String> serversToUse;
     private final String directoryName;
     private List<ProjectFileCacheItem> projectFileCache = new LinkedList();
     private static final int MAX_CACHE_SIZE = 20;
+    private static final boolean DEFAULT_EXCLUDE_LICENSES_FROM_DATA_SETS = true;
+    private static boolean isExcludeLicensesFromDataSets = DEFAULT_EXCLUDE_LICENSES_FROM_DATA_SETS;
+    
+    private static boolean DEFAULT_PRINT_SERVER_PERFORMANCE_SUMMARY = false;
+    private static boolean isPrintServerPerformanceSummary = DEFAULT_PRINT_SERVER_PERFORMANCE_SUMMARY;
+    
+    private final Map<String, RemoteTrancheServerPerformanceListener> rtsListenerMap;
+    private final ConnectionDiagnosticsLog rtsDiagnosticsLog;
+
+    /**
+     * 
+     * @param args
+     */
+    public static void main(String[] args) {
+
+        try {
+
+            ConfigureTranche.load(args);
+
+            // Replace args to simplify logic
+            List<String> newArgs = new ArrayList(args.length - 1);
+            for (int i = 1; i < args.length; i++) {
+                newArgs.add(args[i]);
+            }
+
+            args = newArgs.toArray(new String[0]);
+
+            String username = null, password = null;
+            String userFilePath = null, userFilePassword = null;
+            String directoryPath = null;
+
+            final String[] validArgs = {
+                "-u", "-p", "-U", "-P", "-D", "-t", "-d", "-h", "-H", "-s"
+            };
+            final Set<String> validArgsSet = new HashSet();
+            for (String validArg : validArgs) {
+                validArgsSet.add(validArg);
+            }
+
+            // Get user file first
+            for (int i = 0; i < args.length; i += 2) {
+                String name = args[i];
+                String value = args[i + 1];
+
+                if (name.equals("-u")) {
+                    username = value;
+                } else if (name.equals("-p")) {
+                    password = value;
+                } else if (name.equals("-U")) {
+                    userFilePath = value;
+                } else if (name.equals("-P")) {
+                    userFilePassword = value;
+                } else if (name.equals("-D")) {
+                    directoryPath = value;
+                } else if (name.equals("-h")) {
+                    // This argument has two parameters, but skip for now
+                    i++;
+                } else if (!validArgsSet.contains(name)) {
+                    System.err.println("Unrecognized parameter: " + name);
+                    printUsage(System.err);
+                    System.exit(1);
+                }
+            }
+
+            // Verify: authentication
+            UserZipFile uzf = null;
+
+            try {
+                if (username != null && password != null) {
+                    uzf = UserZipFileUtil.getUserZipFile(username, password);
+                } else if (userFilePath != null && userFilePassword != null) {
+                    uzf = new UserZipFile(new File(userFilePath));
+                    uzf.setPassphrase(userFilePassword);
+
+                    // Trigger an error early if passphrase incorrect
+                    uzf.getPrivateKey();
+                } else {
+                    throw new Exception("Did not include enough information to authenticate. Must include one of the two options. See USAGE for more information.");
+                }
+            } catch (Exception e) {
+                System.err.println("Cannot authenticate -- " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                e.printStackTrace(System.err);
+                printUsage(System.err);
+                System.exit(1);
+            }
+
+            // Verify: directory path
+            if (directoryPath == null) {
+                System.err.println("You must provide a directory path. See USAGE for more information.");
+                printUsage(System.err);
+                System.exit(1);
+            }
+
+            ArbitraryProjectBuildingTool tool = new ArbitraryProjectBuildingTool(uzf.getCertificate(), uzf.getPrivateKey(), directoryPath);
+
+            for (int i = 0; i < args.length; i += 2) {
+                String name = args[i];
+                String value = args[i + 1];
+
+                if (name.equals("-t")) {
+                    tool.setTitle(value);
+                } else if (name.equals("-d")) {
+                    tool.setDescription(value);
+                } else if (name.equals("-h")) {
+
+                    BigHash fileHash = BigHash.createHashFromString(value);
+                    BigHash dataSetHash = BigHash.createHashFromString(args[i + 2]);
+
+                    tool.addFileFromProject(dataSetHash, fileHash);
+
+                    // This argument has two parameters
+                    i++;
+
+                } else if (name.equals("-H")) {
+                    BigHash dataSetHash = BigHash.createHashFromString(value);
+                    tool.addDataSet(dataSetHash);
+                } else if (name.equals("-s")) {
+                    BigHash dataSetHash = BigHash.createHashFromString(value);
+                    tool.addDataSet(dataSetHash);
+                } else if (!validArgsSet.contains(name)) {
+                    System.err.println("Unrecognized parameter: " + name);
+                    printUsage(System.err);
+                    System.exit(1);
+                }
+            }
+
+            BigHash hash = tool.run();
+
+            if (hash == null) {
+                throw new NullPointerException("Tool didn't throw an exception, but didn't return a hash.");
+            }
+
+            System.out.println(hash);
+
+        } catch (Exception e) {
+            System.err.println("UNKNOWN ERROR -- " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace(System.err);
+            printUsage(System.err);
+            System.exit(2);
+        }
+    }
+
+    /**
+     * 
+     * @param out
+     */
+    private static void printUsage(PrintStream out) {
+        out.println();
+        out.println("DESCRIPTION");
+        out.println("   Combines one or more files into a single data set.");
+        out.println();
+        out.println("AUTHENTICATION PARAMETERS");
+        out.println("   -u      String        ProteomeCommons.org Tranche user name.");
+        out.println("   -p      String        ProteomeCommons.org Tranche user's password.");
+        out.println("OR");
+        out.println("   -U      String        Path to user file.");
+        out.println("   -P      String        User file's password.");
+        out.println();
+        out.println("Also, the tool will fail if at least one file is not provided. See PARAMETERS for more details.");
+        out.println();
+        out.println("PARAMETERS");
+        out.println();
+        out.println("These are optional unless noted otherwide with the caveat that at least one file must be included. Also, must provide authentication. See AUTHENTICATION PARAMETERS for more details.");
+        out.println();
+        out.println("   -D      String        Directory name (required). Must provide a name for directory to include files. E.g., my-data-set, my-data-set/, stuff, stuff/, etc., are all valid examples.");
+        out.println("   -t      String        Title for new data set.");
+        out.println("   -d      String        Description for new data set.");
+        out.println("   -h      hash1 hash2   File hash (hash1) from an unencrypted data set (hash2). Both hashes must be included to help determine license information.");
+        out.println("   -H      hash          Includes every file from an unecrypted data set. (This will " + (isExcludeLicensesFromDataSets ? "exclude" : "include") + " license files)");
+        out.println("   -s      true/false    Prints out a summary of server activity at end. If having performance issues, please set this to true and send the developers all the output with a brief description of what you are doing.");
+        out.println();
+        out.println("RETURN CODES");
+        out.println("   0: Exited normally");
+        out.println("   1: Missing parameters or problem with parameters");
+        out.println("   2: Unknown error (see standard error)");
+        out.println();
+    }
 
     /**
      * <p>Instantiate.</p>
@@ -94,11 +286,12 @@ public class ArbitraryProjectBuildingTool {
         this.key = key;
         this.serversToUse = new ArrayList();
         pfpSet = new DiskBackedProjectFilePartSet();
-        projectFilePartsToAdd = new DiskBackedProjectFilePartSet();
-        individualFilesToAdd = new DiskBackedBigHashSet();
-        fileHashesFromProjectsToAdd = new DiskBackedBigHashSet();
-        projectHashesFromProjectsToAdd = new DiskBackedBigHashSet();
-        dataSetsToAdd = new DiskBackedBigHashSet();
+        projectFilePartsToAdd = new HashMap();
+        individualFilesToAdd = new HashSet();
+        filesFromProjectsToAdd = new HashMap();
+        dataSetsToAdd = new HashSet();
+        rtsListenerMap = new HashMap();
+        rtsDiagnosticsLog = new ConnectionDiagnosticsLog("Server activity when aggregating tools");
 
         title = "Project packaged on " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
         description = "Default description for a project packaged by the ArbitraryProjectBuildingTool.";
@@ -106,12 +299,14 @@ public class ArbitraryProjectBuildingTool {
 
     /**
      * <p>Add a file that should be added to the project. This file should exist already on network.</p>
+     * @param projectHash
      * @param pfp An existing ProjectFilePart. Could use chunkHash, but if already have this, can save a little time.
      * @return True if added, false otherwise.
      */
-    public boolean addFileFromProject(ProjectFilePart pfp) {
+    public boolean addFileFromProject(BigHash projectHash, ProjectFilePart pfp) {
         synchronized (projectFilePartsToAdd) {
-            return projectFilePartsToAdd.add(pfp);
+            projectFilePartsToAdd.put(pfp, projectHash);
+            return true;
         }
     }
 
@@ -122,17 +317,14 @@ public class ArbitraryProjectBuildingTool {
      * @return
      */
     public boolean addFileFromProject(BigHash projectHash, BigHash fileHash) {
-        synchronized (projectHashesFromProjectsToAdd) {
-            projectHashesFromProjectsToAdd.add(projectHash);
-        }
-        synchronized (fileHashesFromProjectsToAdd) {
-            fileHashesFromProjectsToAdd.add(fileHash);
+        synchronized (filesFromProjectsToAdd) {
+            filesFromProjectsToAdd.put(fileHash, projectHash);
         }
         return true;
     }
 
     /**
-     * <p>Add a file that should be added to the project. This file should exist already on network.</p>
+     * <p>Add a file that should be added to the project. This file should exist already on network and must not be part of a data set.</p>
      * @param chunkHash The BigHash for the file. Will go to network to get MetaData for file. If have ProjectFilePart, use instead to save time.
      * @return True if added, false otherwise.
      */
@@ -142,7 +334,7 @@ public class ArbitraryProjectBuildingTool {
         }
         return true;
     }
-    
+
     /**
      * <p>Add an entire data. This tool will include all its files with other files you specify.</p>
      * <p>The data set should exist on the network.</p>
@@ -150,10 +342,10 @@ public class ArbitraryProjectBuildingTool {
      * @return
      */
     public boolean addDataSet(BigHash hash) {
-        synchronized(this.dataSetsToAdd) {
+        synchronized (this.dataSetsToAdd) {
             this.dataSetsToAdd.add(hash);
         }
-        
+
         return true;
     }
 
@@ -164,20 +356,30 @@ public class ArbitraryProjectBuildingTool {
      */
     public BigHash run() throws Exception {
 
-        final int HASH_BATCH_SIZE = 100;
+        NetworkUtil.waitForStartup();
 
-        // Used later for an assert
-        final int PFP_COUNT = this.projectFilePartsToAdd.size();
-        final int SINGLE_FILE_COUNT = this.individualFilesToAdd.size();
-        final int FILE_PROJECT_COUNT = this.fileHashesFromProjectsToAdd.size();
+        Map<String, BigHash> parentLicenseMap = new HashMap();
+        File tmpFile = null;
 
         try {
             /*
              * Step 1: Note we have some ProjectFilePart's (PFP's) added by user.
              */
-            for (ProjectFilePart pfp : this.projectFilePartsToAdd) {
+            for (ProjectFilePart pfp : this.projectFilePartsToAdd.keySet()) {
+
+                final BigHash projectHash = this.projectFilePartsToAdd.get(key);
+
+                String relativeName = this.directoryName + pfp.getRelativeName();
+
                 // Update relative name
-                pfp.setRelativeName(this.directoryName + pfp.getRelativeName());
+                pfp.setRelativeName(relativeName);
+
+                parentLicenseMap.put(relativeName, projectHash);
+
+                if (paths.contains(relativeName)) {
+                    throw new Exception("More than one file included with the same path, which is not permitted: " + relativeName);
+                }
+                paths.add(relativeName);
 
                 // Add to collection
                 this.pfpSet.add(pfp);
@@ -186,99 +388,167 @@ public class ArbitraryProjectBuildingTool {
             /*
              * Step 2: Gether PFP's for files from projects.
              */
-            // Assert collections are of same size.
-            if (projectHashesFromProjectsToAdd.size() != fileHashesFromProjectsToAdd.size()) {
-                throw new AssertionFailedException("Sizes of projectHashesFromProjects<" + projectHashesFromProjectsToAdd.size() + "> and fileHashesFromProjects<" + fileHashesFromProjectsToAdd.size() + "> are not equal. Please file bug report.");
-            }
 
-            for (int i = 0; i < this.projectHashesFromProjectsToAdd.size(); i += HASH_BATCH_SIZE) {
-                List<BigHash> fileHashBatch = this.fileHashesFromProjectsToAdd.get(i, HASH_BATCH_SIZE);
-                List<BigHash> projectHashBatch = this.projectHashesFromProjectsToAdd.get(i, HASH_BATCH_SIZE);
+            for (final BigHash fileHash : this.filesFromProjectsToAdd.keySet()) {
+                final BigHash projectHash = this.filesFromProjectsToAdd.get(fileHash);
 
-                // Assert batches are of same size.
-                if (projectHashBatch.size() != fileHashBatch.size()) {
-                    throw new AssertionFailedException("Sizes of projectHashBatch<" + projectHashBatch.size() + "> and fileHashBatch<" + fileHashBatch.size() + "> are not equal. Please file bug report.");
+                ProjectFile pf = getProjectFile(projectHash);
+
+                ProjectFilePart matchingPfp = null;
+
+                // Find the PFP
+                for (ProjectFilePart pfp : pf.getParts()) {
+                    if (pfp.getHash().equals(fileHash)) {
+                        matchingPfp = pfp;
+                        break;
+                    }
                 }
 
-                for (int j = 0; j < projectHashBatch.size(); j++) {
-                    final BigHash projectHash = projectHashBatch.get(j);
-                    final BigHash fileHash = fileHashBatch.get(j);
-
-                    ProjectFile pf = getProjectFile(projectHash);
-
-                    ProjectFilePart matchingPfp = null;
-
-                    // Find the PFP
-                    for (ProjectFilePart pfp : pf.getParts()) {
-                        if (pfp.getHash().equals(fileHash)) {
-                            matchingPfp = pfp;
-                            break;
-                        }
-                    }
-
-                    if (matchingPfp == null) {
-                        throw new Exception("Could not find file<" + fileHash.toString().substring(0, 12) + "...> in project<" + projectHash.toString().substring(0, 12) + "...>. If you think this is an error, contact us.");
-                    }
-
-                    // Update relative name
-                    matchingPfp.setRelativeName(this.directoryName + matchingPfp.getRelativeName());
-
-                    // Add to collection
-                    this.pfpSet.add(matchingPfp);
+                if (matchingPfp == null) {
+                    throw new Exception("Could not find file<" + fileHash.toString().substring(0, 12) + "...> in project<" + projectHash.toString().substring(0, 12) + "...>. If you think this is an error, contact us.");
                 }
+
+                // Update relative name
+                final String relativeName = this.directoryName + matchingPfp.getRelativeName();
+                matchingPfp.setRelativeName(relativeName);
+
+                parentLicenseMap.put(relativeName, projectHash);
+
+                if (paths.contains(relativeName)) {
+                    throw new Exception("More than one file included with the same path, which is not permitted: " + relativeName);
+                }
+                paths.add(relativeName);
+
+                // Add to collection
+                this.pfpSet.add(matchingPfp);
             }
+
 
             /*
              * Step 3: Add any individual files (not from projects), and add
              */
-            for (int i = 0; i < this.individualFilesToAdd.size(); i += HASH_BATCH_SIZE) {
-                List<BigHash> fileHashBatch = this.individualFilesToAdd.get(i, HASH_BATCH_SIZE);
+            for (BigHash h : this.individualFilesToAdd) {
+                GetFileTool gft = new GetFileTool();
+                gft.setHash(h);
+                MetaData md = gft.getMetaData();
 
-                for (BigHash h : fileHashBatch) {
-                    GetFileTool gft = new GetFileTool();
-                    gft.setHash(h);
-                    MetaData md = gft.getMetaData();
+                // How to handle padding? For now, don't support already encrypted
+                // files, so nothing. When support encrypted files on the network,
+                // do same thing as AFT: use passphrase, get bytes!
+                byte[] padding = new byte[0];
 
-                    // How to handle padding? For now, don't support already encrypted
-                    // files, so nothing. When support encrypted files on the network,
-                    // do same thing as AFT: use passphrase, get bytes!
-                    byte[] padding = new byte[0];
+                // Create the ProjectFilePart
+                final String relativeName = this.directoryName + md.getName();
+                ProjectFilePart pfp = new ProjectFilePart(relativeName, h, padding);
 
-                    // Create the ProjectFilePart
-                    ProjectFilePart pfp = new ProjectFilePart(this.directoryName + md.getName(), h, padding);
+                parentLicenseMap.put(relativeName, h);
 
-                    // Add to collection
-                    this.pfpSet.add(pfp);
+                if (paths.contains(relativeName)) {
+                    throw new Exception("More than one file included with the same path, which is not permitted: " + relativeName);
                 }
+                paths.add(relativeName);
+
+                // Add to collection
+                this.pfpSet.add(pfp);
             }
 
             /*
              * Step 4: Add entire data sets
              */
+            for (final BigHash projectHash : dataSetsToAdd) {
 
-            for (int i = 0; i < this.dataSetsToAdd.size(); i++) {
-                List<BigHash> dataSetBatch = this.dataSetsToAdd.get(i, HASH_BATCH_SIZE);
+                ProjectFile pf = getProjectFile(projectHash);
 
-                for (final BigHash projectHash : dataSetBatch) {
+                // Find the PFP
+                String directory = null;
+                for (ProjectFilePart pfp : pf.getParts()) {
 
-                    ProjectFile pf = getProjectFile(projectHash);
+                    // Skip if not including licenses
+                    if (isExcludeLicensesFromDataSets && pfp.getRelativeName().equals(LicenseUtil.RECOMMENDED_LICENSE_FILE_NAME)) {
+                        continue;
+                    }
 
-
-                    // Find the PFP
-                    for (ProjectFilePart pfp : pf.getParts()) {
-                        if (!pfp.getRelativeName().equals(LicenseUtil.RECOMMENDED_LICENSE_FILE_NAME)) {
-                            this.pfpSet.add(pfp);
+                    // Find the directory name
+                    if (directory == null) {
+                        String path = pfp.getRelativeName();
+                        if (path.contains("/")) {
+                            directory = path.substring(0, path.indexOf("/"));
+                        } else if (path.contains("\\")) {
+                            directory = path.substring(0, path.indexOf("\\"));
                         }
                     }
+
+                    // Update the path
+                    final String relativeName = this.directoryName + pfp.getRelativeName();
+
+                    // Adjust relative name so in same path
+                    pfp.setRelativeName(relativeName);
+                    this.pfpSet.add(pfp);
+
+                    if (paths.contains(relativeName)) {
+                        throw new Exception("More than one file included with the same path, which is not permitted: " + relativeName);
+                    }
+                    paths.add(relativeName);
+
+
+                }
+
+                // Only add if any files were included
+                if (directory != null) {
+                    final String relativeName = this.directoryName + directory;
+                    parentLicenseMap.put(relativeName, projectHash);
                 }
             }
-            
+
             // Assert: at least one pfp
             if (pfpSet.size() == 0) {
                 throw new RuntimeException("You did not specify any files or data sets to include. Tool requires at least one file.");
             }
-            
+
             // Assert: no files with exact same path
+
+            // Add: license file
+            {
+                tmpFile = TempFileUtil.createTempFileWithName(LicenseUtil.RECOMMENDED_LICENSE_FILE_NAME);
+
+                LicenseUtil.buildLicenseMultiLicenseExplanationFile(tmpFile, parentLicenseMap);
+
+                final BigHash licenseHash = new BigHash(tmpFile);
+
+                final String relativePath = this.directoryName + tmpFile.getName();
+
+                Map<String, String> properties = new HashMap<String, String>();
+                properties.put(MetaData.PROP_NAME, tmpFile.getName());
+                properties.put(MetaData.PROP_TIMESTAMP_UPLOADED, String.valueOf(TimeUtil.getTrancheTimestamp()));
+                properties.put(MetaData.PROP_TIMESTAMP_FILE, String.valueOf(tmpFile.lastModified()));
+                properties.put(MetaData.PROP_PATH_IN_DATA_SET, relativePath);
+
+                // create a signature for the file
+                Signature signature = new Signature(SecurityUtil.sign(tmpFile, this.key), SecurityUtil.getSignatureAlgorithm(this.key), this.cert);
+
+                MetaData licenseMD = new MetaData();
+                licenseMD.setIsProjectFile(false);
+                ArrayList<FileEncoding> encodings = new ArrayList<FileEncoding>();
+                encodings.add(new FileEncoding(FileEncoding.NONE, licenseHash));
+
+                final ArrayList<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
+
+                licenseMD.addUploader(signature, encodings, properties, metaDataAnnotations);
+
+                uploadDataChunks(tmpFile, licenseMD);
+                uploadMetaData(licenseMD, licenseHash);
+
+                // How to handle padding? For now, don't support already encrypted
+                // files, so nothing. When support encrypted files on the network,
+                // do same thing as AFT: use passphrase, get bytes!
+                byte[] padding = new byte[0];
+
+                // Create the ProjectFilePart
+                ProjectFilePart pfp = new ProjectFilePart(relativePath, licenseHash, padding);
+
+                // Add to collection
+                this.pfpSet.add(pfp);
+            }
 
             /**
              * Step 4. Create the project file and upload.
@@ -290,15 +560,56 @@ public class ArbitraryProjectBuildingTool {
 
             return uploadEverything(pf);
         } finally {
-            projectFilePartsToAdd.destroy();
-            fileHashesFromProjectsToAdd.close();
-            projectHashesFromProjectsToAdd.close();
-            individualFilesToAdd.close();
-            dataSetsToAdd.close();
+            
+            if (isPrintServerPerformanceSummary()) {
+                rtsDiagnosticsLog.printSummary(System.err);
+            }
 
             // Close off any ProjectFile's in cache
             for (ProjectFileCacheItem cacheItem : this.projectFileCache) {
                 IOUtil.safeClose(cacheItem.pf);
+            }
+
+            IOUtil.safeDelete(tmpFile);
+        }
+    }
+    
+    /**
+     * 
+     * @param host
+     */
+    private void lazyAttachRemoteTrancheServerListener(String host) {
+
+        // Won't always be a host
+        if (host == null) {
+            return;
+        }
+
+        synchronized (rtsListenerMap) {
+            RemoteTrancheServerPerformanceListener l = rtsListenerMap.get(host);
+
+            if (l == null) {
+
+                TrancheServer ts = ConnectionUtil.getHost(host);
+
+                if (ts != null) {
+
+                    // Note: If ConnectionUtil.getHost(String) returns RemoteTrancheServer only,
+                    //       then the method should not return TrancheServer. Right now,
+                    //       assume its not safe to typecast without checking. However,
+                    //       not sure how to handle non-RemoteTrancheServer items
+                    if (ts instanceof RemoteTrancheServer) {
+
+                        RemoteTrancheServer rts = (RemoteTrancheServer) ts;
+
+                        l = new RemoteTrancheServerPerformanceListener(rtsDiagnosticsLog, host, 1);
+                        rts.addListener(l);
+                        rtsListenerMap.put(host, l);
+                    } else {
+                        System.err.println("WARNING (in " + this.getClass().getName() + "): Tranche server not a RemoteTrancheServer. Please notify developers so can fix.");
+                    }
+                }
+
             }
         }
     }
@@ -383,7 +694,7 @@ public class ArbitraryProjectBuildingTool {
 
     /**
      * 
-     * @param md
+     * @param licenseMD
      */
     private void uploadMetaData(MetaData md, BigHash mdHash) throws Exception {
         uploadChunk(md.toByteArray(), mdHash, true);
@@ -457,7 +768,7 @@ public class ArbitraryProjectBuildingTool {
             if (!(row.isCore() && row.isOnline())) {
                 continue;
             }
-            
+
             // If this is an upload, server must be writable
             if (isUpload && !row.isWritable()) {
                 continue;
@@ -504,17 +815,19 @@ public class ArbitraryProjectBuildingTool {
         // simple rather than optimizing performance since so little to upload and this tool will be
         // changed a lot over time
         for (String host : hosts) {
+            
+            lazyAttachRemoteTrancheServerListener(host);
 
             ATTEMPTS:
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 
                 TrancheServer ts = null;
                 try {
+                    
                     ts = ConnectionUtil.connectHost(host, true);
                     if (ts == null) {
                         throw new Exception("Could not connect to " + host);
                     }
-
 
                     if (isMetaData) {
                         // Assume might need to merge, so don't check for existance
@@ -522,15 +835,16 @@ public class ArbitraryProjectBuildingTool {
 
                         // Throw any exceptions
                         for (PropagationExceptionWrapper pew : prw.getErrors()) {
+                            System.err.println("A problem has occurred while setting meta data for server: "+host);
                             throw pew.exception;
                         }
                     } else {
                         if (!IOUtil.hasData(ts, hash)) {
                             PropagationReturnWrapper prw = IOUtil.setData(ts, cert, key, hash, chunk);
 
-
                             // Throw any exceptions
                             for (PropagationExceptionWrapper pew : prw.getErrors()) {
+                                System.err.println("A problem has occurred while setting data for server: "+host);
                                 throw pew.exception;
                             }
                         }
@@ -605,57 +919,62 @@ public class ArbitraryProjectBuildingTool {
      */
     private synchronized ProjectFile getProjectFile(BigHash projectHash) throws Exception {
 
-        // Check cache first
-        for (ProjectFileCacheItem pfci : projectFileCache) {
-            if (pfci.hash.equals(projectHash)) {
-                return pfci.pf;
-            }
-        }
-
-        ProjectFile pf = null;
-
-        // Nope, download
-        File f = null;
         try {
-            f = TempFileUtil.createTemporaryFile(".pf");
-
-            GetFileTool gft = new GetFileTool();
-            gft.setServersToUse(getHostsForDownloads());
-            gft.setHash(projectHash);
-            gft.setSaveFile(f);
-            GetFileToolReport gftr = gft.getFile();
-
-            if (gftr.isFailed()) {
-                System.err.println("The download of project file <" + projectHash + "> failed with the following " + gftr.getFailureExceptions().size() + " error(s):");
-                for (PropagationExceptionWrapper pew : gftr.getFailureExceptions()) {
-                    System.err.println("    * " + pew.exception.getMessage() + " <" + pew.host + ">: " + pew.exception.getMessage());
+            // Check cache first
+            for (ProjectFileCacheItem pfci : projectFileCache) {
+                if (pfci.hash.equals(projectHash)) {
+                    return pfci.pf;
                 }
-                throw new Exception("Download of project file <" + projectHash + "> failed with " + gftr.getFailureExceptions().size() + " exception(s).");
             }
 
-            BufferedInputStream bis = null;
+            ProjectFile pf = null;
+
+            // Nope, download
+            File f = null;
             try {
-                bis = new BufferedInputStream(new FileInputStream(f));
-                pf = ProjectFileUtil.read(bis);
+                f = TempFileUtil.createTemporaryFile(".pf");
+
+                GetFileTool gft = new GetFileTool();
+                gft.setServersToUse(getHostsForDownloads());
+                gft.setHash(projectHash);
+                gft.setSaveFile(f);
+                GetFileToolReport gftr = gft.getFile();
+
+                if (gftr.isFailed()) {
+                    System.err.println("The download of project file <" + projectHash + "> failed with the following " + gftr.getFailureExceptions().size() + " error(s):");
+                    for (PropagationExceptionWrapper pew : gftr.getFailureExceptions()) {
+                        System.err.println("    * " + pew.exception.getMessage() + " <" + pew.host + ">: " + pew.exception.getMessage());
+                    }
+                    throw new Exception("Download of project file <" + projectHash + "> failed with " + gftr.getFailureExceptions().size() + " exception(s).");
+                }
+
+                BufferedInputStream bis = null;
+                try {
+                    bis = new BufferedInputStream(new FileInputStream(f));
+                    pf = ProjectFileUtil.read(bis);
+                } finally {
+                    IOUtil.safeClose(bis);
+                }
             } finally {
-                IOUtil.safeClose(bis);
+                IOUtil.safeDelete(f);
             }
-        } finally {
-            IOUtil.safeDelete(f);
-        }
 
-        if (pf == null) {
-            throw new AssertionFailedException("Project file is null, should have thrown an exception. Please file bug report.");
-        }
+            if (pf == null) {
+                throw new AssertionFailedException("Project file is null, should have thrown an exception. Please file bug report.");
+            }
 
-        // Add to cache. If already at cache size limit, remove head (oldest)
-        while (projectFileCache.size() >= MAX_CACHE_SIZE) {
-            ProjectFileCacheItem tmp = projectFileCache.remove(0);
-            IOUtil.safeClose(tmp.pf);
-        }
-        projectFileCache.add(new ProjectFileCacheItem(pf, projectHash));
+            // Add to cache. If already at cache size limit, remove head (oldest)
+            while (projectFileCache.size() >= MAX_CACHE_SIZE) {
+                ProjectFileCacheItem tmp = projectFileCache.remove(0);
+                IOUtil.safeClose(tmp.pf);
+            }
+            projectFileCache.add(new ProjectFileCacheItem(pf, projectHash));
 
-        return pf;
+            return pf;
+        } catch (Exception e) {
+            System.err.println("Problem with ProjectFile for data set <"+projectHash+">: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**

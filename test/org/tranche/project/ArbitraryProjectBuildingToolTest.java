@@ -31,6 +31,7 @@ import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolReport;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
+import org.tranche.license.LicenseUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
@@ -153,8 +154,8 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             gft.setUseUnspecifiedServers(false);
             gft.setHash(hash2);
             gft.setSaveFile(f);
-            GetFileToolReport gftReport1 = gft.getFile();
-            assertSuccess(gftReport1);
+            GetFileToolReport gftReport2 = gft.getFile();
+            assertSuccess(gftReport2);
 
             BufferedInputStream bis = null;
             try {
@@ -170,10 +171,10 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             gft = new GetFileTool();
             gft.addServerToUse(HOST1);
             gft.setUseUnspecifiedServers(false);
-            gft.setHash(hash2);
+            gft.setHash(hash3);
             gft.setSaveFile(f);
-            GetFileToolReport gftReport2 = gft.getFile();
-            assertSuccess(gftReport2);
+            GetFileToolReport gftReport3 = gft.getFile();
+            assertSuccess(gftReport3);
 
             try {
                 bis = new BufferedInputStream(new FileInputStream(f));
@@ -211,7 +212,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             
             // Let's mix it up. Use one ProjectFilePart and one hash
             apbt.addFileFromProject(hash2, firstFileToUse.getHash());
-            apbt.addFileFromProject(secondFileToUse);
+            apbt.addFileFromProject(hash2, secondFileToUse);
             apbt.addIndividualFile(hash4);
 
             BigHash projectHash = apbt.run();
@@ -244,11 +245,11 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
                     for (File depthFirstFile : nextFile.listFiles()) {
                         filesToCheck.add(0, depthFirstFile);
                     }
-                } else {
+                } else if (!nextFile.getName().equals(LicenseUtil.RECOMMENDED_LICENSE_FILE_NAME)) {
                     regularFilesFound.add(nextFile);
                 }
             }
-
+            
             // These are the regular files that were downloaded
             final File[] downloadedFiles = regularFilesFound.toArray(new File[0]);
 
@@ -332,6 +333,8 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             assertSuccess(report1);
             BigHash hash1 = report1.getHash();
 
+            Text.printRecursiveDirectoryStructure(testDir1);
+            
             aft = new AddFileTool();
             aft.setUserCertificate(DevUtil.getDevAuthority());
             aft.setUserPrivateKey(DevUtil.getDevPrivateKey());
@@ -438,13 +441,13 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
                     for (File depthFirstFile : nextFile.listFiles()) {
                         filesToCheck.add(0, depthFirstFile);
                     }
-                } else {
+                } else if (!nextFile.getName().equals(LicenseUtil.RECOMMENDED_LICENSE_FILE_NAME)) {
                     assertTrue("File should be expected.", expectedFileNames.contains(nextFile.getName()));
                     regularFilesFound.add(nextFile);
                 }
             }
             
-            assertEquals("Expecting three files.",  3, regularFilesFound.size());
+            assertEquals("Expecting three files plus license.",  3, regularFilesFound.size());
         } finally {
             testNetwork.stop();
             ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, oldReplicationsVal);
