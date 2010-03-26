@@ -194,7 +194,7 @@ public class ConfigureTranche {
     /**
      * <p>The default number of milliseconds between updating the network status table on a client.</p>
      */
-    public static final String DEFAULT_STATUS_UPDATE_CLIENT_FREQUENCY = "60000";
+    public static final String DEFAULT_STATUS_UPDATE_CLIENT_FREQUENCY = "300000";
     /**
      * <p>The number of milliseconds between updating the network status table on a server.</p>
      */
@@ -202,7 +202,7 @@ public class ConfigureTranche {
     /**
      * <p>The default number of milliseconds between updating the network status table on a server.</p>
      */
-    public static final String DEFAULT_STATUS_UPDATE_SERVER_FREQUENCY = "30000";
+    public static final String DEFAULT_STATUS_UPDATE_SERVER_FREQUENCY = "300000";
     /**
      * <p>The number of servers in a network status table group. Used in server status propagation.</p>
      */

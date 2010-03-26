@@ -269,8 +269,7 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
                 string = GUIUtil.floatFormat.format(Math.abs(progress)) + "%; ";
                 if (gft.isStopped()) {
                     string = string + "Stopped";
-                }
-                if (gft.isPaused()) {
+                } else if (gft.isPaused()) {
                     string = string + "Paused";
                 } else if (gft.getTimeEstimator() != null) {
                     if (gft.getTimeEstimator().getHours() > 5000) {

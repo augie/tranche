@@ -351,6 +351,138 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         assertTrue(HashSpanCollection.areEqual(hashSpans, str.getTargetHashSpans()));
     }
 
+    public void testUpdateUsingStatusTableRow() throws Exception {
+        TestUtil.printTitle("StatusTableRowTest:testUpdateUsingStatusTableRow()");
+
+        // variables
+        // host should always be lowercase, and will be converted to lowercase in the code
+        String host = RandomUtil.getString(10).toLowerCase();
+        boolean ssl = RandomUtil.getBoolean(), dataStore = RandomUtil.getBoolean(), online = RandomUtil.getBoolean(), readable = RandomUtil.getBoolean(), writable = RandomUtil.getBoolean();
+        Set<HashSpan> hashSpans = DevUtil.createRandomHashSpanSet(10), targetHashSpans = DevUtil.createRandomHashSpanSet(10);
+        String name = RandomUtil.getString(10), group = RandomUtil.getString(10);
+        int port = RandomUtil.getInt(100000) + 1;
+        long updateTimestamp = RandomUtil.getInt(100000) + 1, responseTimestamp = RandomUtil.getInt(100000) + 1;
+
+        // set up original
+        StatusTableRow original = new StatusTableRow(host);
+        original.setGroup(group);
+        assertEquals(group, original.getGroup());
+        original.setIsDataStore(dataStore);
+        assertEquals(dataStore, original.isDataStore());
+        original.setIsOnline(online);
+        assertEquals(online, original.isOnline());
+        original.setIsReadable(readable);
+        assertEquals(readable, original.isReadable());
+        original.setIsSSL(ssl);
+        assertEquals(ssl, original.isSSL());
+        original.setIsWritable(writable);
+        assertEquals(writable, original.isWritable());
+        original.setName(name);
+        assertEquals(name, original.getName());
+        original.setPort(port);
+        assertEquals(port, original.getPort());
+        original.setResponseTimestamp(responseTimestamp);
+        assertEquals(responseTimestamp, original.getResponseTimestamp());
+        original.setUpdateTimestamp(updateTimestamp);
+        assertEquals(updateTimestamp, original.getUpdateTimestamp());
+        original.setHashSpans(hashSpans);
+        assertTrue(HashSpanCollection.areEqual(hashSpans, original.getHashSpans()));
+        original.setTargetHashSpans(targetHashSpans);
+        assertTrue(HashSpanCollection.areEqual(targetHashSpans, original.getTargetHashSpans()));
+
+        // change
+        boolean _ssl = !ssl, _dataStore = !dataStore, _online = !online, _readable = !readable, _writable = !writable;
+        Set<HashSpan> _hashSpans = DevUtil.createRandomHashSpanSet(11), _targetHashSpans = DevUtil.createRandomHashSpanSet(11);
+        String _name = RandomUtil.getString(11), _group = RandomUtil.getString(11);
+        int _port = port + 1;
+        long _updateTimestamp = updateTimestamp + 1, _responseTimestamp = responseTimestamp + 1;
+        StatusTableRow replacement = new StatusTableRow(host);
+        replacement.setGroup(_group);
+        assertEquals(_group, replacement.getGroup());
+        replacement.setIsDataStore(_dataStore);
+        assertEquals(_dataStore, replacement.isDataStore());
+        replacement.setIsOnline(_online);
+        assertEquals(_online, replacement.isOnline());
+        replacement.setIsReadable(_readable);
+        assertEquals(_readable, replacement.isReadable());
+        replacement.setIsSSL(_ssl);
+        assertEquals(_ssl, replacement.isSSL());
+        replacement.setIsWritable(_writable);
+        assertEquals(_writable, replacement.isWritable());
+        replacement.setName(_name);
+        assertEquals(_name, replacement.getName());
+        replacement.setPort(_port);
+        assertEquals(_port, replacement.getPort());
+        replacement.setResponseTimestamp(_responseTimestamp);
+        assertEquals(_responseTimestamp, replacement.getResponseTimestamp());
+        replacement.setUpdateTimestamp(_updateTimestamp);
+        assertEquals(_updateTimestamp, replacement.getUpdateTimestamp());
+        replacement.setHashSpans(_hashSpans);
+        assertTrue(HashSpanCollection.areEqual(_hashSpans, replacement.getHashSpans()));
+        replacement.setTargetHashSpans(_targetHashSpans);
+        assertTrue(HashSpanCollection.areEqual(_targetHashSpans, replacement.getTargetHashSpans()));
+
+        // replacement with a lower update timestamp
+        StatusTableRow replacementWithLowerTimstamps = replacement.clone();
+        replacementWithLowerTimstamps.setUpdateTimestamp(0);
+        replacementWithLowerTimstamps.setResponseTimestamp(0);
+        assertEquals(0, replacementWithLowerTimstamps.getUpdateTimestamp());
+        assertEquals(0, replacementWithLowerTimstamps.getResponseTimestamp());
+
+        // should not update the original if the timestamps are lower
+        assertFalse(original.update(replacementWithLowerTimstamps));
+        assertEquals(group, original.getGroup());
+        assertEquals(dataStore, original.isDataStore());
+        assertEquals(online, original.isOnline());
+        assertEquals(readable, original.isReadable());
+        assertEquals(ssl, original.isSSL());
+        assertEquals(writable, original.isWritable());
+        assertEquals(name, original.getName());
+        assertEquals(port, original.getPort());
+        assertEquals(responseTimestamp, original.getResponseTimestamp());
+        assertEquals(updateTimestamp, original.getUpdateTimestamp());
+        assertTrue(HashSpanCollection.areEqual(hashSpans, original.getHashSpans()));
+        assertTrue(HashSpanCollection.areEqual(targetHashSpans, original.getTargetHashSpans()));
+
+        // replacement with a different host
+        StatusTableRow replacementWithDifferentHost = replacement.clone();
+        // hosts are always in lowercase
+        String _host = RandomUtil.getString(12).toLowerCase();
+        replacementWithDifferentHost.setHost(_host);
+        assertEquals(_host, replacementWithDifferentHost.getHost());
+
+        // should not update the original if the host is different
+        assertFalse(original.update(replacementWithDifferentHost));
+        assertEquals(host, original.getHost());
+        assertEquals(group, original.getGroup());
+        assertEquals(dataStore, original.isDataStore());
+        assertEquals(online, original.isOnline());
+        assertEquals(readable, original.isReadable());
+        assertEquals(ssl, original.isSSL());
+        assertEquals(writable, original.isWritable());
+        assertEquals(name, original.getName());
+        assertEquals(port, original.getPort());
+        assertEquals(responseTimestamp, original.getResponseTimestamp());
+        assertEquals(updateTimestamp, original.getUpdateTimestamp());
+        assertTrue(HashSpanCollection.areEqual(hashSpans, original.getHashSpans()));
+        assertTrue(HashSpanCollection.areEqual(targetHashSpans, original.getTargetHashSpans()));
+
+        // should replace all values with the new values
+        assertTrue(original.update(replacement));
+        assertEquals(_group, original.getGroup());
+        assertEquals(_dataStore, original.isDataStore());
+        assertEquals(_online, original.isOnline());
+        assertEquals(_readable, original.isReadable());
+        assertEquals(_ssl, original.isSSL());
+        assertEquals(_writable, original.isWritable());
+        assertEquals(_name, original.getName());
+        assertEquals(_port, original.getPort());
+        assertEquals(_responseTimestamp, original.getResponseTimestamp());
+        assertEquals(_updateTimestamp, original.getUpdateTimestamp());
+        assertTrue(HashSpanCollection.areEqual(_hashSpans, original.getHashSpans()));
+        assertTrue(HashSpanCollection.areEqual(_targetHashSpans, original.getTargetHashSpans()));
+    }
+
     public void testCalculateFullHashSpan() throws Exception {
         TestUtil.printTitle("StatusTableRowTest:testCalculateFullHashSpan()");
 

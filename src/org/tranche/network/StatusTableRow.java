@@ -86,14 +86,6 @@ public class StatusTableRow implements Serializable {
      */
     public static final long DEFAULT_FLAGS = CAN_READ_BIT | CAN_WRITE_BIT | DATA_STORE_BIT;
     /**
-     * <p>The default name.</p>
-     */
-    public static final String DEFAULT_NAME = "";
-    /**
-     * <p>The default group name.</p>
-     */
-    public static final String DEFAULT_GROUP = "";
-    /**
      * <p>The default set of hash spans.</p>
      */
     public static final Collection<HashSpan> DEFAULT_HASH_SPANS = HashSpan.FULL_SET;
@@ -110,7 +102,7 @@ public class StatusTableRow implements Serializable {
      */
     public static final int LENGTH_MAX_GROUP = 100;
     private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS), targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
-    private String host, name = DEFAULT_NAME, group = DEFAULT_GROUP;
+    private String host, name = "", group = "";
     private int version = VERSION_LATEST, port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
     private long flags = DEFAULT_FLAGS, updateTimestamp = 0, responseTimestamp = 0;
 
@@ -212,19 +204,25 @@ public class StatusTableRow implements Serializable {
      * @return Whether any information was changed.
      */
     protected boolean update(StatusTableRow row) {
-        if (row == null) {
+        if (row == null || !row.getHost().equals(getHost())) {
             return false;
         }
         boolean changed = false;
         if (row.getUpdateTimestamp() > getUpdateTimestamp()) {
             setUpdateTimestamp(row.getUpdateTimestamp());
-            changed = changed || setPort(row.getPort()) || setIsSSL(row.isSSL()) || setIsReadable(row.isReadable()) || setIsWritable(row.isWritable()) || setIsDataStore(row.isDataStore()) || setName(row.getName()) || setGroup(row.getGroup()) || setHashSpans(row.getHashSpans()) || setTargetHashSpans(row.getTargetHashSpans());
+            changed = setPort(row.getPort()) || changed;
+            changed = setIsSSL(row.isSSL()) || changed;
+            changed = setIsReadable(row.isReadable()) || changed;
+            changed = setIsWritable(row.isWritable()) || changed;
+            changed = setIsDataStore(row.isDataStore()) || changed;
+            changed = setName(row.getName()) || changed;
+            changed = setGroup(row.getGroup()) || changed;
+            changed = setHashSpans(row.getHashSpans()) || changed;
+            changed = setTargetHashSpans(row.getTargetHashSpans()) || changed;
         }
         if (row.getResponseTimestamp() > getResponseTimestamp()) {
             setResponseTimestamp(row.getResponseTimestamp());
-            changed = changed || setIsOnline(row.isOnline());
-        } else if (!row.isOnline()) {
-            changed = changed || setIsOnline(row.isOnline());
+            changed = setIsOnline(row.isOnline()) || changed;
         }
         return changed;
     }
@@ -408,7 +406,7 @@ public class StatusTableRow implements Serializable {
      */
     protected boolean setName(String name) {
         if (name == null) {
-            name = DEFAULT_NAME;
+            name = "";
         }
         name = name.trim();
         if (name.length() > LENGTH_MAX_NAME) {
@@ -436,7 +434,7 @@ public class StatusTableRow implements Serializable {
      */
     protected boolean setGroup(String group) {
         if (group == null) {
-            group = DEFAULT_GROUP;
+            group = "";
         }
         group = group.trim();
         if (group.length() > LENGTH_MAX_GROUP) {

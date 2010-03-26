@@ -350,16 +350,17 @@ public class NetworkUtil {
                                 @Override
                                 public void run() {
                                     debugOut("Trying to get the network status from " + serverURL);
-                                    // catch connection errors
                                     try {
                                         TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
                                         if (ts != null) {
                                             StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
                                             table.removeDefunctRows();
-                                            masterStatusTable.setRows(table.getRows());
-                                            StatusTableRow row = table.getRow(IOUtil.parseHost(serverURL));
-                                            row.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
-                                            masterStatusTable.setRow(row);
+                                            table.getRow(IOUtil.parseHost(serverURL)).update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                                            for (StatusTableRow row : table.getRows()) {
+                                                if (!masterStatusTable.contains(row.getHost()) || row.getHost().equals(IOUtil.parseHost(serverURL))) {
+                                                    masterStatusTable.setRow(row);
+                                                }
+                                            }
                                             debugOut("Retreived the network status table from " + serverURL);
                                         }
                                     } catch (Exception e) {
@@ -376,13 +377,13 @@ public class NetworkUtil {
                         int returnedCount = 0;
                         do {
                             returnedCount = 0;
-                            ThreadUtil.safeSleep(250);
+                            ThreadUtil.safeSleep(200);
                             for (Thread t : threads) {
                                 if (!t.isAlive()) {
                                     returnedCount++;
                                 }
                             }
-                        } while (returnedCount < Math.floor(threads.size() / 2));
+                        } while (returnedCount < Math.ceil(threads.size() / 2));
                     }
 
                     // alternative to above... only get the status table from some servers

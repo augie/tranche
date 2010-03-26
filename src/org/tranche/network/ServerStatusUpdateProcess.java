@@ -92,9 +92,10 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                 if (TestUtil.isTestingManualNetworkStatusTable()) {
                     continue;
                 }
+                final StatusTable networkStatusTable = NetworkUtil.getStatus().clone();
 
                 // Internet outage -- try to reload the network
-                if (NetworkUtil.getStatus().size() > 1) {
+                if (networkStatusTable.size() > 1) {
                     boolean connectedToAnyOtherThanLocal = false;
                     for (String host : ConnectionUtil.getConnectedHosts()) {
                         if (NetworkUtil.getLocalServerRow().getHost().equals(host)) {
@@ -118,7 +119,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                 // check in the same way as the client
                 debugOut("Starting to perform an update.");
 
-                for (final StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+                for (final StatusTableRow row : networkStatusTable.getRows()) {
 
                     if (NetworkUtil.isBannedServer(row.getHost()) || !row.isOnline() || row.isLocalServer()) {
                         continue;
@@ -133,11 +134,13 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                                 TrancheServer ts = ConnectionUtil.connect(row, true);
                                 if (ts != null) {
                                     StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
-                                    NetworkUtil.updateRows(table.getRows());
-                                    StatusTableRow primaryRow = table.getRow(row.getHost());
-                                    primaryRow.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
-                                    NetworkUtil.updateRow(primaryRow);
-                                    debugOut("Updated status of " + row.getHost() + ": " + primaryRow.toString());
+                                    table.removeDefunctRows();
+                                    table.getRow(row.getHost()).update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                                    for (StatusTableRow returnedRow : table.getRows()) {
+                                        if (returnedRow.getHost().equals(row.getHost()) | !networkStatusTable.contains(returnedRow.getHost())) {
+                                            NetworkUtil.updateRow(returnedRow);
+                                        }
+                                    }
                                     ts.registerServer(NetworkUtil.getLocalServerRow().getURL());
                                 }
                             } catch (Exception e) {
@@ -265,7 +268,6 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                 NetworkUtil.getStatus().removeDefunctRows();
             } catch (Exception e) {
                 debugErr(e);
-                setException(e);
             }
         }
     }

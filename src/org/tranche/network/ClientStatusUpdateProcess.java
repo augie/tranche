@@ -49,12 +49,14 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
     @Override
     public void run() {
         debugOut("Started the process");
-
         while (isRunning) {
+            try {
+                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
 //            updateUsingStatusTablePortions();
-            updateDirectly();
-
-            ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
+                updateDirectly();
+            } catch (Exception e) {
+                debugErr(e);
+            }
         }
     }
 
@@ -68,14 +70,15 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
         }
 
         debugOut("Starting to perform an update.");
+        final StatusTable networkStatusTable = NetworkUtil.getStatus().clone();
 
         // Internet outage -- try to reload the network
-        if (NetworkUtil.getStatus().size() > 0 && ConnectionUtil.size() == 0) {
+        if (networkStatusTable.size() > 0 && ConnectionUtil.size() == 0) {
             NetworkUtil.reload();
             return;
         }
 
-        for (final StatusTableRow row : NetworkUtil.getStatus().getRows()) {
+        for (final StatusTableRow row : networkStatusTable.getRows()) {
 
             if (NetworkUtil.isBannedServer(row.getHost()) || !row.isOnline()) {
                 continue;
@@ -90,11 +93,13 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
                         TrancheServer ts = ConnectionUtil.connect(row, true);
                         if (ts != null) {
                             StatusTable table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
-                            NetworkUtil.updateRows(table.getRows());
-                            StatusTableRow primaryRow = table.getRow(row.getHost());
-                            primaryRow.update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
-                            NetworkUtil.updateRow(primaryRow);
-                            debugOut("Updated status of " + row.getHost() + ": " + primaryRow.toString());
+                            table.removeDefunctRows();
+                            table.getRow(row.getHost()).update(IOUtil.getConfiguration(ts, SecurityUtil.getAnonymousCertificate(), SecurityUtil.getAnonymousKey()));
+                            for (StatusTableRow returnedRow : table.getRows()) {
+                                if (returnedRow.getHost().equals(row.getHost()) | !networkStatusTable.contains(returnedRow.getHost())) {
+                                    NetworkUtil.updateRow(returnedRow);
+                                }
+                            }
                         }
                     } catch (Exception e) {
                         debugErr(e);
@@ -115,91 +120,84 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
      * 
      */
     private void updateUsingStatusTablePortions() {
-        try {
+        // If testing manual network status table, then don't do anything!
+        if (TestUtil.isTestingManualNetworkStatusTable()) {
+            return;
+        }
 
+        debugOut("Starting to perform an update.");
 
-            // If testing manual network status table, then don't do anything!
-            if (TestUtil.isTestingManualNetworkStatusTable()) {
-                return;
+        // Internet outage -- try to reload the network
+        if (NetworkUtil.getStatus().size() > 1 && ConnectionUtil.size() == 0) {
+            NetworkUtil.reload();
+            return;
+        }
+
+        // perform the update
+        boolean updated = false;
+        StatusTable table = null;
+        // check the same server again
+        if (lastCheckedHost != null) {
+            debugOut("Trying to update network status from last checked: " + lastCheckedHost);
+            try {
+                // get the whole network from a single server to which we already have a connection
+                TrancheServer ts = ConnectionUtil.getHost(lastCheckedHost);
+                // server connection no longer in pool
+                if (ts != null) {
+                    ConnectionUtil.lockConnection(lastCheckedHost);
+                    try {
+                        // update the status
+                        table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+                        updated = true;
+                    } catch (Exception e) {
+                        debugErr(e);
+                    } finally {
+                        ConnectionUtil.unlockConnection(lastCheckedHost);
+                    }
+                }
+            } catch (Exception e) {
+                debugErr(e);
+                ConnectionUtil.reportExceptionHost(lastCheckedHost, e);
             }
-
-            debugOut("Starting to perform an update.");
-
-            // Internet outage -- try to reload the network
-            if (NetworkUtil.getStatus().size() > 1 && ConnectionUtil.size() == 0) {
-                NetworkUtil.reload();
-                return;
-            }
-
-            // perform the update
-            boolean updated = false;
-            StatusTable table = null;
-            // check the same server again
-            if (lastCheckedHost != null) {
-                debugOut("Trying to update network status from last checked: " + lastCheckedHost);
+        }
+        // could not get status from the same server
+        if (!updated) {
+            // try each of the connections
+            for (String host : ConnectionUtil.getConnectedHosts()) {
+                // already tried this one
+                if (updated || (lastCheckedHost != null && host.equals(lastCheckedHost))) {
+                    return;
+                }
+                debugOut("Trying to update network status from " + host);
                 try {
                     // get the whole network from a single server to which we already have a connection
-                    TrancheServer ts = ConnectionUtil.getHost(lastCheckedHost);
+                    TrancheServer ts = ConnectionUtil.getHost(host);
                     // server connection no longer in pool
                     if (ts != null) {
-                        ConnectionUtil.lockConnection(lastCheckedHost);
+                        ConnectionUtil.lockConnection(host);
                         try {
                             // update the status
                             table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
+                            lastCheckedHost = host;
                             updated = true;
                         } catch (Exception e) {
                             debugErr(e);
                         } finally {
-                            ConnectionUtil.unlockConnection(lastCheckedHost);
+                            ConnectionUtil.unlockConnection(host);
                         }
                     }
                 } catch (Exception e) {
                     debugErr(e);
-                    ConnectionUtil.reportExceptionHost(lastCheckedHost, e);
+                    ConnectionUtil.reportExceptionHost(host, e);
                 }
             }
-            // could not get status from the same server
-            if (!updated) {
-                // try each of the connections
-                for (String host : ConnectionUtil.getConnectedHosts()) {
-                    // already tried this one
-                    if (updated || (lastCheckedHost != null && host.equals(lastCheckedHost))) {
-                        return;
-                    }
-                    debugOut("Trying to update network status from " + host);
-                    try {
-                        // get the whole network from a single server to which we already have a connection
-                        TrancheServer ts = ConnectionUtil.getHost(host);
-                        // server connection no longer in pool
-                        if (ts != null) {
-                            ConnectionUtil.lockConnection(host);
-                            try {
-                                // update the status
-                                table = ts.getNetworkStatusPortion(GetNetworkStatusItem.RETURN_ALL, GetNetworkStatusItem.RETURN_ALL);
-                                lastCheckedHost = host;
-                                updated = true;
-                            } catch (Exception e) {
-                                debugErr(e);
-                            } finally {
-                                ConnectionUtil.unlockConnection(host);
-                            }
-                        }
-                    } catch (Exception e) {
-                        debugErr(e);
-                        ConnectionUtil.reportExceptionHost(host, e);
-                    }
-                }
-            }
-            // remove defunct rows
-            table.removeDefunctRows();
-            // update the master table with the returned table
-            NetworkUtil.updateRows(table.getRows());
-            // check the status table for servers to clear
-            NetworkUtil.getStatus().removeDefunctRows();
-        } catch (Exception e) {
-            debugErr(e);
-            setException(e);
         }
+        // remove defunct rows
+        table.removeDefunctRows();
+        // update the master table with the returned table
+        NetworkUtil.updateRows(table.getRows());
+        // check the status table for servers to clear
+        NetworkUtil.getStatus().removeDefunctRows();
     }
 
     /**

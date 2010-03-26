@@ -21,29 +21,12 @@ package org.tranche.network;
  */
 public abstract class StatusUpdateProcess extends Thread {
 
-    private Exception caughtException;
     protected boolean isRunning = true;
 
     /**
      * <p>Cannot be instantiated by any class outside the network package.</p>
      */
     protected StatusUpdateProcess() {
-    }
-
-    /**
-     * <p>Returns the exception that was thrown to end the status update process.</p>
-     * @return The exception that was thrown to end the status update process.
-     */
-    public Exception getException() {
-        return caughtException;
-    }
-
-    /**
-     * <p>Sets the exception that was thrown to end the status update process.</p>
-     * @param caughtException The exception that was thrown to end the status update process.
-     */
-    protected void setException(Exception caughtException) {
-        this.caughtException = caughtException;
     }
 
     /**

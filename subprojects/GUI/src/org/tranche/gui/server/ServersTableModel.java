@@ -58,21 +58,25 @@ public class ServersTableModel extends SortableTableModel {
             public void rowsAdded(StatusTableEvent event) {
                 for (String host : event.getHosts()) {
                     if (filter(host)) {
-                        add(host);
+                        if (contains(host)) {
+                            update(host);
+                        } else {
+                            add(host);
+                        }
                     }
                 }
             }
 
             public void rowsUpdated(StatusTableEvent event) {
                 for (String host : event.getHosts()) {
-                    if (contains(host)) {
-                        if (filter(host)) {
+                    if (filter(host)) {
+                        if (contains(host)) {
                             update(host);
                         } else {
-                            remove(host);
+                            add(host);
                         }
-                    } else if (filter(host)) {
-                        add(host);
+                    } else {
+                        remove(host);
                     }
                 }
             }
