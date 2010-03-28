@@ -223,6 +223,8 @@ public class StatusTableRow implements Serializable {
         if (row.getResponseTimestamp() > getResponseTimestamp()) {
             setResponseTimestamp(row.getResponseTimestamp());
             changed = setIsOnline(row.isOnline()) || changed;
+        } else if (!row.isOnline()) {
+            changed = setIsOnline(row.isOnline()) || changed;
         }
         return changed;
     }

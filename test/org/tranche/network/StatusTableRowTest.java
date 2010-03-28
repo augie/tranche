@@ -50,7 +50,7 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
 
     public void testRecreate() throws Exception {
         TestUtil.printTitle("StatusTableRowTest:testRecreate()");
-        
+
         // create
         StatusTableRow str1 = NetworkRandomUtil.createRandomStatusTableRow();
 
@@ -328,7 +328,7 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // verify
         assertTrue(HashSpanCollection.areEqual(hashSpans, str.getHashSpans()));
     }
-    
+
     public void testTargetHashSpans() throws Exception {
         TestUtil.printTitle("StatusTableRowTest:testTargetHashSpans()");
 
@@ -357,7 +357,8 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         // variables
         // host should always be lowercase, and will be converted to lowercase in the code
         String host = RandomUtil.getString(10).toLowerCase();
-        boolean ssl = RandomUtil.getBoolean(), dataStore = RandomUtil.getBoolean(), online = RandomUtil.getBoolean(), readable = RandomUtil.getBoolean(), writable = RandomUtil.getBoolean();
+        // online is a special case -- should be able to set it to offline, but not to online without a newer response timestamp
+        boolean ssl = RandomUtil.getBoolean(), dataStore = RandomUtil.getBoolean(), online = false, readable = RandomUtil.getBoolean(), writable = RandomUtil.getBoolean();
         Set<HashSpan> hashSpans = DevUtil.createRandomHashSpanSet(10), targetHashSpans = DevUtil.createRandomHashSpanSet(10);
         String name = RandomUtil.getString(10), group = RandomUtil.getString(10);
         int port = RandomUtil.getInt(100000) + 1;
@@ -433,7 +434,6 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         assertFalse(original.update(replacementWithLowerTimstamps));
         assertEquals(group, original.getGroup());
         assertEquals(dataStore, original.isDataStore());
-        assertEquals(online, original.isOnline());
         assertEquals(readable, original.isReadable());
         assertEquals(ssl, original.isSSL());
         assertEquals(writable, original.isWritable());
@@ -443,6 +443,29 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
         assertEquals(updateTimestamp, original.getUpdateTimestamp());
         assertTrue(HashSpanCollection.areEqual(hashSpans, original.getHashSpans()));
         assertTrue(HashSpanCollection.areEqual(targetHashSpans, original.getTargetHashSpans()));
+        assertEquals(online, original.isOnline());
+
+        // should be able to set the online status to false at any point
+        original.setIsOnline(true);
+        replacementWithLowerTimstamps.setIsOnline(false);
+        assertTrue(original.update(replacementWithLowerTimstamps));
+        // everything should be the same except online status
+        assertEquals(false, original.isOnline());
+        assertEquals(host, original.getHost());
+        assertEquals(group, original.getGroup());
+        assertEquals(dataStore, original.isDataStore());
+        assertEquals(readable, original.isReadable());
+        assertEquals(ssl, original.isSSL());
+        assertEquals(writable, original.isWritable());
+        assertEquals(name, original.getName());
+        assertEquals(port, original.getPort());
+        assertEquals(responseTimestamp, original.getResponseTimestamp());
+        assertEquals(updateTimestamp, original.getUpdateTimestamp());
+        assertTrue(HashSpanCollection.areEqual(hashSpans, original.getHashSpans()));
+        assertTrue(HashSpanCollection.areEqual(targetHashSpans, original.getTargetHashSpans()));
+        // put back
+        original.setIsOnline(online);
+        replacementWithLowerTimstamps.setIsOnline(replacement.isOnline());
 
         // replacement with a different host
         StatusTableRow replacementWithDifferentHost = replacement.clone();
