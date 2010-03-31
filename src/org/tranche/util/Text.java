@@ -90,6 +90,25 @@ public class Text {
             NEWLINE = "\n";
         }
     }
+    
+    /**
+     * <p>Creates a comma-separated string from a list of strings.</p>
+     * @param items Strings
+     * @return A single string with the strings in the list separated by commas
+     */
+    public static String getCommaSeparatedString(List<String> items) {
+        StringBuffer buffer = new StringBuffer();
+        
+        for (int i=0; i<items.size(); i++) {
+            buffer.append(items.get(i));
+            
+            if (i < items.size() - 1) {
+                buffer.append(", ");
+            }
+        }
+        
+        return buffer.toString();
+    }
 
     /**
      * <p>Get platform-independent newline character.</p>
