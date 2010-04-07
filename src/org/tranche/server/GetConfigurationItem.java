@@ -72,8 +72,6 @@ public class GetConfigurationItem extends ServerItem {
         // write results
         RemoteUtil.writeLine(Token.OK_STRING, out);
         RemoteUtil.writeData(baos.toByteArray(), out);
-        // log
-        server.getSubmitter().logGetConfiguration(clientIP);
     }
 
     /**

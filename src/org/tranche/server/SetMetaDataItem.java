@@ -186,8 +186,6 @@ public class SetMetaDataItem extends ServerItem {
             }
         }
         GetBytesCallback.writeResponse(new PropagationReturnWrapper(exceptions).toByteArray(), out);
-        // log
-        server.getSubmitter().logSetMetaData(hash, sig, clientIP);
     }
 
     /**

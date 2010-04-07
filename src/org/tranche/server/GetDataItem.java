@@ -161,8 +161,6 @@ public class GetDataItem extends ServerItem {
         }
         // write the response
         GetBytesCallback.writeResponse(new PropagationReturnWrapper(exceptionSet, dataBytes).toByteArray(), out);
-        // log
-        server.getSubmitter().logBatchGetData(hashes, clientIP);
     }
 
     /**

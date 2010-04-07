@@ -59,7 +59,7 @@ public class LogSubmitter {
      * Create a log submitter for submitting logs.
      * @param ip
      */
-    public LogSubmitter(String ip) {
+    private LogSubmitter(String ip) {
         this.serverURL = ip;
 
         try {

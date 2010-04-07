@@ -69,7 +69,6 @@ public class Server extends Thread {
     private final Map<String, ServerItem> items = new HashMap<String, ServerItem>();
     private final Set<ServerWorkerThread> workers = new HashSet<ServerWorkerThread>();
     private ServerSocket socket;
-    private LogSubmitter submitter;
     private boolean ssl, stopped = false, isShuttingDown = false;
     private long maxRequestSize = DEFAULT_MAX_REQUEST_SIZE;
     private int port, rejectedClients = 0;
@@ -148,9 +147,6 @@ public class Server extends Thread {
             socket = ServerSocketFactory.getDefault().createServerSocket(getPort());
         }
 
-        // URL changed -- also change log submitter
-        submitter = LogSubmitter.getSubmitter(getURL());
-
         // dump the server URL to the FFTS config -- needed by HashSpanFixingThread
         if (ts instanceof FlatFileTrancheServer) {
             // manually set the server URL information
@@ -201,14 +197,6 @@ public class Server extends Thread {
         // (since uses this method to find correct test host)
         URL = URL + "tranche://" + localHostName + ":" + getPort();
         return URL;
-    }
-
-    /**
-     * 
-     * @return
-     */
-    public LogSubmitter getSubmitter() {
-        return submitter;
     }
 
     /**
@@ -408,13 +396,6 @@ public class Server extends Thread {
 
             // notify the network util
             NetworkUtil.clearLocalServer();
-
-            // Close the log submitter. It must finish all pending writes.
-            try {
-                submitter.close();
-            } catch (Exception e) {
-                debugErr(e);
-            }
         }
     }
 

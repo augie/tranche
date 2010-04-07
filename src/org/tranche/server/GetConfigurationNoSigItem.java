@@ -58,8 +58,6 @@ public class GetConfigurationNoSigItem extends ServerItem {
         } finally {
             IOUtil.safeClose(baos);
         }
-        // log
-        server.getSubmitter().logGetConfiguration(clientIP);
         // write results
         RemoteUtil.writeLine(Token.OK_STRING, out);
         RemoteUtil.writeData(baos.toByteArray(), out);

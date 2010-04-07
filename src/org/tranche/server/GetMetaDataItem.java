@@ -174,8 +174,6 @@ public class GetMetaDataItem extends ServerItem {
             exceptionSet.add(new PropagationExceptionWrapper(e, server.getHostName()));
         }
         GetBytesCallback.writeResponse(new PropagationReturnWrapper(exceptionSet, metaDataBytes).toByteArray(), out);
-        // log
-        server.getSubmitter().logBatchGetMetaData(hashes, clientIP);
     }
 
     /**

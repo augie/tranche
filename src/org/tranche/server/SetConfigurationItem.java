@@ -58,9 +58,6 @@ public class SetConfigurationItem extends ServerItem {
         // execute the set
         server.getTrancheServer().setConfiguration(data, sig, nonce);
         RemoteUtil.writeLine(Token.OK_STRING, out);
-
-        // log
-        server.getSubmitter().logSetConfiguration(sig, clientIP);
     }
 
     /**

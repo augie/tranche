@@ -186,8 +186,6 @@ public class SetDataItem extends ServerItem {
             }
         }
         GetBytesCallback.writeResponse(new PropagationReturnWrapper(exceptions).toByteArray(), out);
-        // log
-        server.getSubmitter().logSetData(hash, sig, clientIP);
     }
 
     /**
