@@ -4,13 +4,13 @@
 
 =Features=
 
-These are the user features. *Bold* text denotes a minimum feature.
+These are the user features. Please also delineate any features you think may be implied by one of the features shown. *Bold* text denotes a minimum feature.
 
   * *Upload a file or directory of files (data set)*
     * *Default permissions: private*
     * *Default license: copyright*
   * Delete a file or data set as long as it's not published
-    * Concrete ability to establish when a data set is part of a published journal article.
+    * Requires concrete ability to establish when a data set is part of a published journal article.
   * Segment an existing data set for easier download.
   * *Modify at any time the permissions for which users or groups of users can access a data set.*
   * *Modify at any time the license for use of a data set.*
@@ -28,3 +28,5 @@ These are the user features. *Bold* text denotes a minimum feature.
 =Design=
 
 The internal software design. It should be robust, scalable, and meet all user features.
+
+For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info). Use only standard protocols for upload and download (SFTP, HTTP[S]).
