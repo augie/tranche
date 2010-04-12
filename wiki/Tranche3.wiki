@@ -1,13 +1,24 @@
   * [Tranche3#Features Features]
+  * [Tranche3#Design Design]
 
 
 =Features=
 
 These are the user features. *Bold* text denotes a minimum feature.
 
-  * *Upload a file*
-  * *Upload a directory of files (data set)*
-  * Delete a file as long as it's not published
-  * Delete a directory of files as long as it's not published
-  * Reorganize files into a data set
-  
+  * *Upload a file or directory of files (data set)*
+    * *Default permissions: private*
+    * *Default license: copyright*
+  * Delete a file or data set as long as it's not published
+  * Segment an existing data set for easier download.
+  * *Modify at any time the permissions for which users or groups of users can access a data set.*
+  * *Modify at any time the license for use of a data set.*
+  * Machine-readable license information.
+  * *Ability to independently validate the downloaded content using common hashing algorithms.*
+  * *Ability to cite the data set unambiguously along with a hash that can be used to validate its contents.*
+
+
+
+=Design=
+
+The internal software design. It should be robust, scalable, and meet all user features.
