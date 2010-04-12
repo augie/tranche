@@ -1,0 +1,13 @@
+  * [Tranche3#Features Features]
+
+
+=Features=
+
+These are the user features. *Bold* text denotes a minimum feature.
+
+  * *Upload a file*
+  * *Upload a directory of files (data set)*
+  * Delete a file as long as it's not published
+  * Delete a directory of files as long as it's not published
+  * Reorganize files into a data set
+  
