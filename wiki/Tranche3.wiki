@@ -10,13 +10,15 @@ These are the user features. *Bold* text denotes a minimum feature.
     * *Default permissions: private*
     * *Default license: copyright*
   * Delete a file or data set as long as it's not published
-    * Concrete ability to establish when a data set is part of a published data set.
+    * Concrete ability to establish when a data set is part of a published journal article.
   * Segment an existing data set for easier download.
   * *Modify at any time the permissions for which users or groups of users can access a data set.*
   * *Modify at any time the license for use of a data set.*
   * Machine-readable license information.
   * *Ability to independently validate the downloaded content using common hashing algorithms.*
   * *Ability to cite the data set unambiguously along with a hash that can be used to validate its contents.*
+  * *Backwards compatibility with the existing Tranche repository features and content*
+  * *Java Web Start Swing-based GUI for uploading, modifying permissions/licensing*
   * *Upload/download via SFTP*
   * HTTP(S) uploading, downloading, modifying permissions/licensing, browsing, searching
 
