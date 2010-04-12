@@ -21,6 +21,7 @@ These are the user features. *Bold* text denotes a minimum feature.
   * *Java Web Start Swing-based GUI for uploading, modifying permissions/licensing*
   * *Upload/download via SFTP*
   * HTTP(S) uploading, downloading, modifying permissions/licensing, browsing, searching
+  * Data set versioning
 
 
 
