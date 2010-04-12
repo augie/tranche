@@ -29,4 +29,4 @@ These are the user features. Please also delineate any features you think may be
 
 The internal software design. It should be robust, scalable, and meet all user features.
 
-For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info). Use only standard protocols for upload and download (SFTP, HTTP[S]).
+For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info). Use only standard protocols for upload and download (SFTP, HTTP`[`S`]`).
