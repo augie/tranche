@@ -9,19 +9,19 @@ These are the user features. Please also delineate any features you think may be
   * *Upload a file or directory of files (data set)*
     * *Default permissions: private*
     * *Default license: copyright*
-  * Delete a file or data set as long as it's not published
-    * Requires concrete ability to establish when a data set is part of a published journal article.
-  * Segment an existing data set for easier download.
-  * *Modify at any time the permissions for which users or groups of users can access a data set.*
+  * *Modify at any time the permissions for which users or groups of users can view/download/modify a data set.*
   * *Modify at any time the license for use of a data set.*
-  * Machine-readable license information.
   * *Ability to independently validate the downloaded content using common hashing algorithms.*
   * *Ability to cite the data set unambiguously along with a hash that can be used to validate its contents.*
   * *Backwards compatibility with the existing Tranche repository features and content*
   * *Java Web Start Swing-based GUI for uploading, modifying permissions/licensing*
-  * *Upload/download via SFTP*
-  * HTTP(S) uploading, downloading, modifying permissions/licensing, browsing, searching
+  * *Upload/download via FTP*
+  * Machine-readable license information.
+  * HTTP uploading, downloading, modifying permissions/licensing, browsing, searching
   * Data set versioning
+  * Delete a file or data set as long as it's not published
+    * Requires concrete ability to establish when a data set is part of a published journal article.
+  * Segment an existing data set for easier download.
 
 
 
@@ -29,4 +29,6 @@ These are the user features. Please also delineate any features you think may be
 
 The internal software design. It should be robust, scalable, and meet all user features.
 
-For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info). Use only standard protocols for upload and download (SFTP, HTTP`[`S`]`).
+For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info). 
+
+Use only standard protocols for upload and download (FTP, HTTP).
