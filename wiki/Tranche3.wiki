@@ -17,10 +17,11 @@ Please also add any features you think may be implied by one of the features sho
   * *Ability to independently validate the downloaded content using common hashing algorithms.*
   * *Ability to cite the data set unambiguously along with a hash that can be used to validate its contents.*
   * *Backwards compatibility with the existing Tranche repository features and content*
-    * *Download and upload all data sets*
+    * *Download from existing repository and upload to iRODS-backed repository.*
     * *Map all old Tranche hashes to new unique identifiers*
   * *Java Web Start Swing-based GUI for uploading, modifying permissions/licensing*
   * *Upload/download via FTP*
+  * *Download is a folder containing the original upload, the license*, and annotations.
   * *Monitoring abilities*
     * *Traffic*
     * *Usage/load statistics*
@@ -33,6 +34,7 @@ Please also add any features you think may be implied by one of the features sho
   * Data set versioning
   * Delete a file or data set as long as it's not published
   * Segment an existing data set for easier download.
+  * GridFTP
 
 
 
