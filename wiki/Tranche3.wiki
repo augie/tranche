@@ -32,11 +32,10 @@ Please also add any features you think may be implied by one of the features sho
     * Mining
   * GridFTP support
   * ALex Annotation
-    * Storage / HTTP Modification
-    * Search
+    * RESTful access and management
     * Serve XML files containing the current annotation sets with downloaded data set
   * Machine-readable licensing
-  * HTTP(S) upload, download, modify permissions/licensing, browsing, searching
+  * HTTP(S) upload, download, modify permissions/licensing, browse, search
   * Data set versioning
   * Delete a file or data set as long as it's not locked
   * Segment an existing data set for easier download
