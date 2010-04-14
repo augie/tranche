@@ -8,11 +8,11 @@ Please also add any features you think may be implied by one of the features sho
 
   * *Upload a file or directory of files (data set)*
   * *Modify at any time the permissions for which users or groups of users can view/download/modify a data set.*
-  * *Set/modify meta data for a data set if permitted. Track ownership of meta data name/value pairs.*
-  * *Lock parts/all of data set permission.*
+  * *Manage meta data for a data set if permitted. The creator of each meta data name/value pair should be the only user that can modify it.*
+  * *Lock part/all of data set permission.*
   * *Lock a license.*
   * *Lock a data set from deletion.*
-  * *Modify at any time the license for use of a data set. Track these changes.*
+  * *Modify at any time the license for use of a data set. Track these changes and make that information available.*
   * *Independently validate the downloaded content using common hashing algorithms.*
   * *Cite the data set unambiguously along with a hash that can be used to validate its contents.*
   * *Backwards compatibility with the existing Tranche repository features and content*
