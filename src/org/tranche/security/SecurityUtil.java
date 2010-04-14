@@ -1223,10 +1223,12 @@ public class SecurityUtil {
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
+            if (paddingLength < 0) {
                 debugOut("Expected Padding length: " + paddingLength);
                 debugOut("Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
+            } else if (paddingLength > encryptedBuffer.length) {
+                paddingLength = encryptedBuffer.length;
             }
             bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
             bos.flush();
@@ -1340,10 +1342,12 @@ public class SecurityUtil {
             }
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
-            if (paddingLength < 0 || paddingLength > encryptedBuffer.length) {
+            if (paddingLength < 0) {
                 debugOut("Expected Padding length: " + paddingLength);
                 debugOut("Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
+            } else if (paddingLength > encryptedBuffer.length) {
+                paddingLength = encryptedBuffer.length;
             }
             bos.write(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
             bos.flush();
