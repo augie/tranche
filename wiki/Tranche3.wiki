@@ -19,7 +19,8 @@ Please also add any features you think may be implied by one of the features sho
     * *Download from existing repository and upload to iRODS-backed repository*
     * *Map all old Tranche hashes to new unique identifiers*
   * *Java Web Start Swing-based GUI for uploading, modifying permissions/licensing*
-  * *Upload/download via FTP*
+  * *FTP suport*
+  * *SFTP support*
   * *Monitoring abilities*
     * *Traffic*
     * *Usage/load statistics*
@@ -29,16 +30,16 @@ Please also add any features you think may be implied by one of the features sho
     * Graphs
     * Content
     * Mining
+  * GridFTP support
   * ALex Annotation
     * Storage / HTTP Modification
     * Search
     * Serve XML files containing the current annotation sets with downloaded data set
   * Machine-readable licensing
-  * HTTP uploading, downloading, modifying permissions/licensing, browsing, searching
+  * HTTP(S) upload, download, modify permissions/licensing, browsing, searching
   * Data set versioning
   * Delete a file or data set as long as it's not locked
   * Segment an existing data set for easier download
-  * GridFTP support
 
 
 =Design=
@@ -51,6 +52,6 @@ When a data set is uploaded, it can be given a unique identifier that is an auto
 
 Caching may be used to speed up response times, with the trade-off being a small amount of time after a change when some information will need to "propagate".
 
-Use only standard protocols for upload and download (FTP, HTTP).
+Use only standard protocols for upload and download (SFTP, FTP, FTPS, HTTP, HTTPS).
 
 When downloading a data set, create a folder with the name of the data set. In that folder, put the data set as it was uploaded, the associated license file, and annotation files.
