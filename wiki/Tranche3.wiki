@@ -12,6 +12,7 @@ Please also add any features you think may be implied by one of the features sho
   * *Cite the data set unambiguously along with a hash that can be used to validate its contents*
   * *Search*
   * *Manage meta data associated with a data set*
+  * *Delete a file or data set as long as it's not locked*
   * *Modify at any time the permissions for which users or groups of users can view/download/modify a data set*
   * *Lock part/all of data set permission*
   * *Lock a license*
@@ -39,7 +40,6 @@ Please also add any features you think may be implied by one of the features sho
   * Machine-readable licensing
   * HTTP(S) upload, download, modify permissions/licensing, browse, search
   * Data set versioning
-  * Delete a file or data set as long as it's not locked
   * Segment an existing data set for easier download
 
 
