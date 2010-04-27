@@ -15,13 +15,14 @@
  */
 package org.tranche.util;
 
+import org.tranche.commons.Debuggable;
+
 /**
  * <p>Encapsulates identity of operating system.</p>
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
-public class OperatingSystem {
+public class OperatingSystem extends Debuggable {
 
-    private static boolean debug = false;
     private static final String OTHER_TOKEN = "Match anything remaining!!!";
     /**
      * <p>Represents Windows Vista</p>
@@ -183,41 +184,5 @@ public class OperatingSystem {
     @Override()
     public String toString() {
         return this.OS;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        OperatingSystem.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(OperatingSystem.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

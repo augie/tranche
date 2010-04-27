@@ -27,7 +27,7 @@ public class LogEntryQueueItem {
     /**
      * Keys for the action being logged
      */
-    public final static byte NONE = -1,  SET_DATA = 0,  SET_META_DATA = 1,  SET_CONFIG = 2,  GET_DATA = 3,  GET_META_DATA = 4,  GET_CONFIG = 5,  GET_NONCE = 6;
+    public static final byte NONE = -1,  SET_DATA = 0,  SET_META_DATA = 1,  SET_CONFIG = 2,  GET_DATA = 3,  GET_META_DATA = 4,  GET_CONFIG = 5,  GET_NONCE = 6;
     
     /**
      * IP address

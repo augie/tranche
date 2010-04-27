@@ -17,6 +17,7 @@ package org.tranche.project;
 
 import org.tranche.util.*;
 import java.text.DecimalFormat;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.time.TimeUtil;
 
@@ -36,14 +37,14 @@ public class CommandLineProjectReplicationToolListener implements ProjectReplica
     public void fireReplicationStarted(ProjectReplicationTool replicationTool) {
         this.replicationTool = replicationTool;
         this.start = TimeUtil.getTrancheTimestamp();
-        System.out.println("Project replication tool started at " + Text.getFormattedDate(start));
+        System.out.println("Project replication tool started at " + TextUtil.getFormattedDate(start));
     }
 
     /**
      * <p>Event fired when replication failed.</p>
      */
     public void fireReplicationFailed() {
-        System.err.println("Project replication failed at " + Text.getFormattedDate(start) + ", ran for " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+        System.err.println("Project replication failed at " + TextUtil.getFormattedDate(start) + ", ran for " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
         printReplicationStats();
     }
 
@@ -51,7 +52,7 @@ public class CommandLineProjectReplicationToolListener implements ProjectReplica
      * <p>Event fired when replication finished.</p>
      */
     public void fireReplicationFinished() {
-        System.out.println("Project replication finished at " + Text.getFormattedDate(start) + ", ran for " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+        System.out.println("Project replication finished at " + TextUtil.getFormattedDate(start) + ", ran for " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
         printReplicationStats();
     }
 

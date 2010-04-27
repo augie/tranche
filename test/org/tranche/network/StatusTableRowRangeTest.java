@@ -15,7 +15,8 @@
  */
 package org.tranche.network;
 
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -27,13 +28,13 @@ public class StatusTableRowRangeTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        StatusTableRowRange.setDebug(true);
+        DebugUtil.setDebug(StatusTableRowRange.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        StatusTableRowRange.setDebug(false);
+        DebugUtil.setDebug(StatusTableRowRange.class, false);
     }
 
     public void testCreate() throws Exception {

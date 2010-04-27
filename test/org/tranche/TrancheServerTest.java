@@ -54,7 +54,7 @@ import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.util.TempFileUtil;
 import org.tranche.users.User;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**

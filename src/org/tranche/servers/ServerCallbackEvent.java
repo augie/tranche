@@ -15,7 +15,7 @@
  */
 package org.tranche.servers;
 
-import org.tranche.util.Text;
+import org.tranche.commons.TextUtil;
 
 /**
  *
@@ -135,6 +135,6 @@ public class ServerCallbackEvent extends ServerEvent {
      */
     @Override
     public String toString() {
-        return "Callback #: " + id + ";  Date: " + Text.getFormattedDate(getTimestamp()) + ";  Type: " + getTypeString() + ";  Name: " + getName() + ";";
+        return "Callback #: " + id + ";  Date: " + TextUtil.getFormattedDate(getTimestamp()) + ";  Type: " + getTypeString() + ";  Name: " + getName() + ";";
     }
 }

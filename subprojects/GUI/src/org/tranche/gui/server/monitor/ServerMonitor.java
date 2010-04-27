@@ -23,6 +23,7 @@ import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.GenericMenu;
@@ -36,7 +37,6 @@ import org.tranche.servers.ServerMessageDownEvent;
 import org.tranche.servers.ServerMessageUpEvent;
 import org.tranche.servers.ServerUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -234,7 +234,7 @@ public class ServerMonitor extends Monitor {
     public void start() {
         if (!isListening()) {
             log.start();
-            log.addMessage("Listening to communication with " + host + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Listening to communication with " + host + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             ServerUtil.addServerListener(host, serverListener);
             setListening(true);
             general.start();
@@ -249,7 +249,7 @@ public class ServerMonitor extends Monitor {
         if (isListening()) {
             ServerUtil.removeServerListener(host, serverListener);
             setListening(false);
-            log.addMessage("Stopped listening to communication with " + host + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Stopped listening to communication with " + host + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             general.stop();
             setStatus("  NOT LISTENING");
             log.stop();

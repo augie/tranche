@@ -22,12 +22,13 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.tranche.commons.DebugUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.span.HashSpanCollection;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -39,13 +40,13 @@ public class StatusTableRowTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        StatusTableRow.setDebug(true);
+        DebugUtil.setDebug(StatusTableRow.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        StatusTableRow.setDebug(false);
+        DebugUtil.setDebug(StatusTableRow.class, false);
     }
 
     public void testRecreate() throws Exception {

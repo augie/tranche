@@ -26,10 +26,10 @@ import org.tranche.flatfile.DataBlock;
  */
 public class ConfigKeys {
 
-    private final static Permissions CAN_READ_EDIT_DELETE = new Permissions(true, true, true);
-    private final static Permissions CAN_READ_EDIT = new Permissions(true, false, true);
-    private final static Permissions CAN_READ = new Permissions(false, false, true);
-    private final static Permissions NO_PERMISSIONS = new Permissions(false, false, false);
+    private static final Permissions CAN_READ_EDIT_DELETE = new Permissions(true, true, true);
+    private static final Permissions CAN_READ_EDIT = new Permissions(true, false, true);
+    private static final Permissions CAN_READ = new Permissions(false, false, true);
+    private static final Permissions NO_PERMISSIONS = new Permissions(false, false, false);
     /**
      * <p>The version of code the server is running.</p>
      */

@@ -15,6 +15,7 @@
  */
 package org.tranche.flatfile;
 
+import org.tranche.commons.RandomUtil;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -300,7 +301,7 @@ public class DataBlockTest extends TrancheTestCase {
             Thread.sleep(1000);
 
             // Show file system: should be multiple datablocks
-            Text.printRecursiveDirectoryStructure(dir);
+            TestUtil.printRecursiveDirectoryStructure(dir);
 
             // Verify empty chunk is there and is zero bytes
             assertTrue("Better contain empty chunk.", dbu.hasData(emptyChunkHash));
@@ -2288,7 +2289,7 @@ public class DataBlockTest extends TrancheTestCase {
 ////            System.out.println("// Done adding " + numChunkPairsToAdd + ", here's the structure:");
 ////            System.out.println("////////////////////////////////////////////////////////////////////");
 ////            System.out.println();
-////            Text.printRecursiveDirectoryStructure(data1);
+////            TestUtil.printRecursiveDirectoryStructure(data1);
 //
 //            // Add second directory.
 //            dbu.add(ddc2);
@@ -2316,8 +2317,8 @@ public class DataBlockTest extends TrancheTestCase {
 ////            System.out.println("//  Done moving " + dataBlocksToMove + ", here's the structure:   ");
 ////            System.out.println("////////////////////////////////////////////////////////////////////");
 ////            System.out.println();
-////            Text.printRecursiveDirectoryStructure(data1);
-////            Text.printRecursiveDirectoryStructure(data2);
+////            TestUtil.printRecursiveDirectoryStructure(data1);
+////            TestUtil.printRecursiveDirectoryStructure(data2);
 //
 //            assertEquals("Expecting certain number of data blocks moved.", dataBlocksToMove, movedCount);
 //
@@ -2418,9 +2419,9 @@ public class DataBlockTest extends TrancheTestCase {
 ////            System.out.println("//  Done moving " + dataBlocksToMove + ", here's the structure:   ");
 ////            System.out.println("////////////////////////////////////////////////////////////////////");
 ////            System.out.println();
-////            Text.printRecursiveDirectoryStructure(data1);
-////            Text.printRecursiveDirectoryStructure(data2);
-////            Text.printRecursiveDirectoryStructure(data3);
+////            TestUtil.printRecursiveDirectoryStructure(data1);
+////            TestUtil.printRecursiveDirectoryStructure(data2);
+////            TestUtil.printRecursiveDirectoryStructure(data3);
 //
 //            for (BigHash h : hashes) {
 //                assertTrue("Better have data chunk.", dbu.hasData(h));

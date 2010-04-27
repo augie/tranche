@@ -346,6 +346,21 @@
         <delete dir="${tranche-gui}"/>
         <signjar jar="${tranche-gui.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
 
+        <property name="tranche-commons.jar" value="${dist.lib}/tranche-commons.jar" />
+        <property name="tranche-commons" value="${dist.lib}/tranche-commons" />
+        <unzip src="${tranche-commons.jar}" dest="${tranche-commons}">
+            <patternset>
+                <exclude name="**/*.RSA"/>
+                <exclude name="**/*.rsa"/>
+                <exclude name="**/*.sf"/>
+                <exclude name="**/*.SF"/>
+            </patternset>
+        </unzip>
+        <delete file="${tranche-commons.jar}"/>
+        <zip destfile="${tranche-commons.jar}" basedir="${tranche-commons}"/>
+        <delete dir="${tranche-commons}"/>
+        <signjar jar="${tranche-commons.jar}" alias="${keystoreAlias}" keystore="${keystore}" storepass="${keystorePassword}"/>
+
         <property name="bcprov-jdk15-130.jar" value="${dist.lib}/bcprov-jdk15-130.jar" />
         <property name="bcprov-jdk15-130" value="${dist.lib}/bcprov-jdk15-130" />
         <unzip src="${bcprov-jdk15-130.jar}" dest="${bcprov-jdk15-130}">

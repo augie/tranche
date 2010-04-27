@@ -22,24 +22,23 @@ import java.security.cert.CertificateEncodingException;
 import java.util.LinkedList;
 import java.util.List;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.Debuggable;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.hash.BigHash;
 import org.tranche.security.Signature;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Activity log used to log all requests that impact data held by Tranche server.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class ActivityLog {
+public class ActivityLog extends Debuggable {
 
-    private static boolean debug = false;
     public static final String DEFAULT_FILE_NAME_ACTIVITIES = ".activities";
     public static final String DEFAULT_FILE_NAME_SIGNATURES_INDEX = ".signatures-index";
     public static final String DEFAULT_FILE_NAME_SIGNATURES_ENTRIES = ".signatures-entries";
@@ -145,8 +144,6 @@ public class ActivityLog {
     }
 
     public static void main(String[] args) throws Exception {
-        DebugUtil.setDebug(true);
-        setDebug(true);
         ConfigureTranche.load(args);
         File activities = new File("C:/Documents and Settings/James A Hill/Desktop/.activities");
         File signatureIndex = new File("C:/Documents and Settings/James A Hill/Desktop/.signatures-index");
@@ -154,6 +151,7 @@ public class ActivityLog {
         ActivityLog log = null;
         try {
             log = new ActivityLog(activities, signatureIndex, signatures);
+            log.setDebug(true);
             System.out.println(log.getActivityLogEntriesCount());
             List<Activity> list = log.read(0, TimeUtil.getTrancheTimestamp(), 20, Activity.ANY);
             for (Activity a : list) {
@@ -554,7 +552,7 @@ public class ActivityLog {
 
                     long snipPoint = this.activitiesLogRAF.length() - excessActivityLogBytes;
                     this.activitiesLogRAF.setLength(snipPoint);
-                    System.err.println("    ... snipped to " + this.getActivityLogEntriesCount() + " entries <Size: " + Text.getFormattedBytes(snipPoint) + ">");
+                    System.err.println("    ... snipped to " + this.getActivityLogEntriesCount() + " entries <Size: " + TextUtil.formatBytes(snipPoint) + ">");
                 }
             }
 
@@ -1309,42 +1307,6 @@ public class ActivityLog {
             this.activitiesLogRAF.readFully(activityBytes);
             ActivityLogEntry lastEntry = new ActivityLogEntry(activityBytes);
             return lastEntry.getTimestamp();
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ActivityLog.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ActivityLog.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

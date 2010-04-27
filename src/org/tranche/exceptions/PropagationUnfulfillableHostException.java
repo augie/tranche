@@ -23,7 +23,7 @@ import java.io.IOException;
  */
 public class PropagationUnfulfillableHostException extends IOException {
 
-    public final static String MESSAGE = "The host is unreachable. First verify that the server is online, then try a different propagation strategy.";
+    public static final String MESSAGE = "The host is unreachable. First verify that the server is online, then try a different propagation strategy.";
 
     public PropagationUnfulfillableHostException() {
         super(MESSAGE);

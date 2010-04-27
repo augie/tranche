@@ -33,6 +33,7 @@ import org.tranche.TrancheServer;
 import org.tranche.add.AddFileTool;
 import org.tranche.add.AddFileToolReport;
 import org.tranche.add.CommandLineAddFileToolListener;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -51,13 +52,12 @@ import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.UserCertificateUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -69,17 +69,17 @@ public class GetFileToolTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        AddFileTool.setDebug(true);
-        GetFileTool.setDebug(true);
-        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, "1");
+        DebugUtil.setDebug(AddFileTool.class, true);
+        DebugUtil.setDebug(GetFileTool.class, true);
+        ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, "1");
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        AddFileTool.setDebug(false);
-        GetFileTool.setDebug(false);
-        ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, ConfigureTranche.DEFAULT_REPLICATIONS);
+        DebugUtil.setDebug(AddFileTool.class, false);
+        DebugUtil.setDebug(GetFileTool.class, false);
+        ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, ConfigureTranche.getDefault(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS));
     }
 
     /**
@@ -251,10 +251,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(directory);
+            TestUtil.printRecursiveDirectoryStructure(directory);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downDir);
+            TestUtil.printRecursiveDirectoryStructure(downDir);
             assertEquals(2, new File(downDir, directory.getName()).listFiles().length);
 
 
@@ -657,10 +657,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(uploadFile);
+            TestUtil.printRecursiveDirectoryStructure(uploadFile);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir);
+            TestUtil.printRecursiveDirectoryStructure(downloadDir);
             TestUtil.assertDirectoriesEquivalent(uploadFile, new File(downloadDir, uploadFile.getName()));
         } finally {
             testNetwork.stop();
@@ -696,10 +696,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(uploadFile);
+            TestUtil.printRecursiveDirectoryStructure(uploadFile);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir);
+            TestUtil.printRecursiveDirectoryStructure(downloadDir);
             assertEquals(2, new File(downloadDir, uploadFile.getName()).listFiles().length);
         } finally {
             testNetwork.stop();
@@ -1241,10 +1241,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
                 @Override
                 public void run() {
-                    ThreadUtil.safeSleep(10000);
+                    ThreadUtil.sleep(10000);
                     gft.setPause(true);
                     int eventsFiredCount = eventsFired.size();
-                    ThreadUtil.safeSleep(15000);
+                    ThreadUtil.sleep(15000);
                     int eventsFiredCount2 = eventsFired.size();
                     gft.setPause(false);
                     failed[0] = eventsFiredCount != eventsFiredCount2;
@@ -1305,10 +1305,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(uploadDir);
+            TestUtil.printRecursiveDirectoryStructure(uploadDir);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir);
+            TestUtil.printRecursiveDirectoryStructure(downloadDir);
             TestUtil.assertDirectoriesEquivalent(uploadDir, new File(downloadDir, uploadDir.getName()));
         } finally {
             testNetwork.stop();
@@ -1380,10 +1380,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(upload);
+            TestUtil.printRecursiveDirectoryStructure(upload);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir);
+            TestUtil.printRecursiveDirectoryStructure(downloadDir);
             TestUtil.assertDirectoriesEquivalent(upload, new File(downloadDir, upload.getName()));
 
             // download 2
@@ -1399,10 +1399,10 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // validate
             System.out.println("Printing uploaded directory structure.");
-            Text.printRecursiveDirectoryStructure(upload2);
+            TestUtil.printRecursiveDirectoryStructure(upload2);
             System.out.println("");
             System.out.println("Printing downloaded directory structure.");
-            Text.printRecursiveDirectoryStructure(downloadDir2);
+            TestUtil.printRecursiveDirectoryStructure(downloadDir2);
             TestUtil.assertDirectoriesEquivalent(upload2, new File(downloadDir2, upload2.getName()));
         } finally {
             testNetwork.stop();

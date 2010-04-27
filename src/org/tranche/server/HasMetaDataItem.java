@@ -65,7 +65,7 @@ public class HasMetaDataItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, BigHash[] hashes, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, BigHash[] hashes, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.HAS_META, out);
         }

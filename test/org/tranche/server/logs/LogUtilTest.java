@@ -16,7 +16,7 @@
 package org.tranche.server.logs;
 
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**

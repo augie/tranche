@@ -16,8 +16,7 @@
 package org.tranche.delete;
 
 import org.tranche.exceptions.TodoException;
-import org.tranche.util.DebugUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>This tool is used to delete an upload from the repository.</p>
@@ -38,7 +37,7 @@ public class DeleteFileTool {
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Inernal variables
      */
@@ -83,7 +82,7 @@ public class DeleteFileTool {
      */
     private void waitHereOnPause() {
         while (paused) {
-            ThreadUtil.safeSleep(1000);
+            ThreadUtil.sleep(1000);
         }
     }
 
@@ -112,41 +111,4 @@ public class DeleteFileTool {
         }
         return null;
     }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        DeleteFileTool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(DeleteFileTool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
-    }
-
 }

@@ -19,6 +19,7 @@ import org.tranche.security.Signature;
 import java.math.BigInteger;
 import org.tranche.hash.BigHash;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.Debuggable;
 import org.tranche.logs.activity.Activity;
 import org.tranche.network.StatusTable;
 import org.tranche.remote.Token;
@@ -30,7 +31,7 @@ import org.tranche.server.PropagationReturnWrapper;
  * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public abstract class TrancheServer {
+public abstract class TrancheServer extends Debuggable {
 
     public static final String BAD_NONCE = Token.SECURITY_ERROR + " Nonce doesn't match. Might be a replay.",  BAD_SIG = Token.SECURITY_ERROR + " Signature doesn't match. Ignoring request.";
 

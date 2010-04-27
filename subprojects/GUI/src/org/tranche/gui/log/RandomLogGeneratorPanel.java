@@ -43,8 +43,8 @@ import org.tranche.security.Signature;
 import org.tranche.server.logs.LogEntry;
 import org.tranche.server.logs.LogWriter;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.RandomUtil;
-import org.tranche.util.Text;
+import org.tranche.commons.RandomUtil;
+import org.tranche.commons.TextUtil;
 
 /**
  *
@@ -59,9 +59,9 @@ public class RandomLogGeneratorPanel extends JPanel {
     final public static Dimension RECOMMENDED_DIMENSION = new Dimension(500, 390);
     final private JTextField // The size of the log file in bytes
             logSizeField, // The time delta for the file in milliseconds
-             logDurationField, // The number of client IPs to generate and use
-             logClientsField, // Time offset so can make logs in past or future
-             logTimeOffsetField;
+            logDurationField, // The number of client IPs to generate and use
+            logClientsField, // Time offset so can make logs in past or future
+            logTimeOffsetField;
     final private JButton createLogButton;
 
     /**
@@ -96,7 +96,7 @@ public class RandomLogGeneratorPanel extends JPanel {
         long start = TimeUtil.getTrancheTimestamp() + timeOffset;
         long finish = start + timeDelta;
 
-        System.out.println("The log file will start on " + Text.getFormattedDate(start) + " and finish on " + Text.getFormattedDate(finish));
+        System.out.println("The log file will start on " + TextUtil.getFormattedDate(start) + " and finish on " + TextUtil.getFormattedDate(finish));
 
         // Create the log
         String logName = String.valueOf(finish + 1000) + ".log";
@@ -360,7 +360,7 @@ public class RandomLogGeneratorPanel extends JPanel {
             double estimatedMS = Math.abs(logSize * estimatedMSPerByte);
             int c = GenericOptionPane.showConfirmDialog(
                     RandomLogGeneratorPanel.this.getParent(),
-                    "This would take approximately " + Text.getPrettyEllapsedTimeString(estimatedMS) + " on a 1.33GHz PPC. Continue?",
+                    "This would take approximately " + TextUtil.formatTimeLength((long) estimatedMS) + " on a 1.33GHz PPC. Continue?",
                     "Continue?",
                     JOptionPane.YES_NO_OPTION);
 

@@ -24,7 +24,7 @@ import org.tranche.gui.GenericButton;
 import org.tranche.gui.GenericFrame;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -62,7 +62,7 @@ public class SelectUploaderFrame extends GenericFrame {
             @Override
             public void run() {
                 while (isVisible()) {
-                    ThreadUtil.safeSleep(250);
+                    ThreadUtil.sleep(250);
                 }
             }
         };

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import org.tranche.ConfigureTranche;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.Debuggable;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.AbstractHashSpan;
@@ -37,7 +38,6 @@ import org.tranche.hash.span.HashSpanCollection;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.server.Server;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 
@@ -46,9 +46,8 @@ import org.tranche.security.SecurityUtil;
  * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class StatusTableRow implements Serializable {
+public class StatusTableRow extends Debuggable implements Serializable {
 
-    private static boolean debug = false;
     /**
      * <p>The value for the first version of the object.</p>
      */
@@ -103,7 +102,7 @@ public class StatusTableRow implements Serializable {
     public static final int LENGTH_MAX_GROUP = 100;
     private final Set<HashSpan> hashSpans = new HashSet<HashSpan>(DEFAULT_HASH_SPANS), targetHashSpans = new HashSet<HashSpan>(DEFAULT_TARGET_HASH_SPANS);
     private String host, name = "", group = "";
-    private int version = VERSION_LATEST, port = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT);
+    private int version = VERSION_LATEST, port = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT);
     private long flags = DEFAULT_FLAGS, updateTimestamp = 0, responseTimestamp = 0;
 
     /**
@@ -1013,41 +1012,5 @@ public class StatusTableRow implements Serializable {
             }
         }
         return Collections.unmodifiableCollection(fullHashSpanRows);
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        StatusTableRow.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(StatusTableRow.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

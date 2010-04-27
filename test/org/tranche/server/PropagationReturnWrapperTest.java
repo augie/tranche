@@ -18,7 +18,7 @@ package org.tranche.server;
 import java.util.HashSet;
 import java.util.Set;
 import org.tranche.exceptions.ServerIsNotWritableException;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
 

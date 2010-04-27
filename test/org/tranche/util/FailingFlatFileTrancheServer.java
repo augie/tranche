@@ -5,6 +5,7 @@
 
 package org.tranche.util;
 
+import org.tranche.commons.RandomUtil;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;

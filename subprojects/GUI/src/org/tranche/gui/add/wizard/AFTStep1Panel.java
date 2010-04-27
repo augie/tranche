@@ -38,6 +38,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.GenericLabel;
 import org.tranche.gui.GenericTextArea;
 import org.tranche.gui.GenericTextField;
@@ -50,7 +51,6 @@ import org.tranche.gui.user.SignInUserButton;
 import org.tranche.gui.RandomPassphraseButton;
 import org.tranche.util.PreferencesUtil;
 import org.tranche.gui.Styles;
-import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
 
 /**
@@ -168,12 +168,12 @@ public class AFTStep1Panel extends GenericWizardPanel {
                                     totalFileSize += fileToCount.length();
                                     // if more than 100, update information
                                     if (totalFiles % 100 == 0) {
-                                        estimatedUploadInformation.setText("  " + GUIUtil.integerFormat.format(totalFiles) + " files, " + Text.getFormattedBytes(totalFileSize) + " of data");
+                                        estimatedUploadInformation.setText("  " + GUIUtil.integerFormat.format(totalFiles) + " files, " + TextUtil.formatBytes(totalFileSize) + " of data");
                                     }
                                 }
                             }
                             // set the estimated upload information
-                            estimatedUploadInformation.setText("  " + GUIUtil.integerFormat.format(totalFiles) + " files, " + Text.getFormattedBytes(totalFileSize) + " of data");
+                            estimatedUploadInformation.setText("  " + GUIUtil.integerFormat.format(totalFiles) + " files, " + TextUtil.formatBytes(totalFileSize) + " of data");
                         }
                     };
                     t.setDaemon(true);

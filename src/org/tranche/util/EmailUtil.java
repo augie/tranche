@@ -60,7 +60,7 @@ public class EmailUtil {
      */
     public static void safeSendEmail(final String subject, final String[] recipients, final String message, final File attachment) {
         try {
-            sendEmail(subject, recipients, message, attachment);
+            sendEmailHttp(subject, recipients, message, attachment);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -74,7 +74,7 @@ public class EmailUtil {
      * @throws java.io.IOException
      */
     public static void sendEmail(String subject, String[] recipients, String message) throws IOException {
-        sendEmail(subject, recipients, message, null);
+        sendEmailHttp(subject, recipients, message, null);
     }
 
     /**
@@ -85,7 +85,7 @@ public class EmailUtil {
      * @param attachment
      * @throws java.io.IOException
      */
-    public static void sendEmail(String subject, String[] recipients, String message, File attachment) throws IOException {
+    public static void sendEmailHttp(String subject, String[] recipients, String message, File attachment) throws IOException {
         InputStream is = null;
         try {
             // dummy check - are there recipients?
@@ -101,10 +101,10 @@ public class EmailUtil {
 
             // make a new client
             HttpClient c = new HttpClient();
-            PostMethod pm = new PostMethod(ConfigureTranche.get(ConfigureTranche.PROP_EMAIL_URL));
+            PostMethod pm = new PostMethod(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_EMAIL_URL));
 
             ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
-            params.add(new NameValuePair("network", ConfigureTranche.get(ConfigureTranche.PROP_NAME)));
+            params.add(new NameValuePair("network", ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME)));
 
             // put together the recipients
             String toStr = "";

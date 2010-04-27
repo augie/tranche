@@ -23,7 +23,7 @@ import java.io.IOException;
  */
 public class MetaDataIsCorruptedException extends IOException {
 
-    public final static String MESSAGE = "The meta data is corrupted and cannot be read.";
+    public static final String MESSAGE = "The meta data is corrupted and cannot be read.";
 
     public MetaDataIsCorruptedException() {
         super(MESSAGE);

@@ -23,7 +23,7 @@ import org.tranche.util.IOUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -52,7 +52,7 @@ public class RemoteProtocolTimeoutTest extends TrancheTestCase {
             IOUtil.getNonces(ts, hosts);
 
             // wait until the connection surely timesout
-            ThreadUtil.safeSleep(40 * 1000);
+            ThreadUtil.sleep(40 * 1000);
 
             // get another nonce
             IOUtil.getNonces(ts, hosts);

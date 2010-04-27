@@ -16,6 +16,7 @@
 package org.tranche.server;
 
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -24,7 +25,7 @@ import org.tranche.network.ConnectionUtil;
 import org.tranche.remote.RemoteCallback;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -39,20 +40,20 @@ public class ServerWorkerThreadTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        ServerWorkerThread.setDebug(true);
-        RemoteCallback.setDebug(true);
+        DebugUtil.setDebug(ServerWorkerThread.class, true);
+        DebugUtil.setDebug(RemoteCallback.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        ServerWorkerThread.setDebug(false);
-        RemoteCallback.setDebug(false);
+        DebugUtil.setDebug(ServerWorkerThread.class, false);
+        DebugUtil.setDebug(RemoteCallback.class, false);
     }
 
     public void testKeepAlive() throws Exception {
         TestUtil.printTitle("ServerWorkerThreadTest:testKeepAlive()");
-        
+
         String HOST1 = "server1.com";
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));

@@ -25,7 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
 import org.tranche.exceptions.AssertionFailedException;
 
 /**

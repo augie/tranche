@@ -23,7 +23,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.Configuration;
 import org.tranche.exceptions.AssertionFailedException;
@@ -222,7 +222,7 @@ public class TaskUtil {
      */
     public static void publishPassphrase(BigHash hash, String passphrase, String uploaderName, X509Certificate cert, PrivateKey key, long uploadTimestamp, String relativePathInDataSet, PrintStream out) throws Exception {
         // Set to anything with proper hash span
-        final Set<String> writableHostsToUse = new HashSet(),  writableHostsWithoutHashSpan = new HashSet(),  readOnlyHosts = new HashSet(),  offlineHosts = new HashSet();
+        final Set<String> writableHostsToUse = new HashSet(), writableHostsWithoutHashSpan = new HashSet(), readOnlyHosts = new HashSet(), offlineHosts = new HashSet();
         ROWS:
         for (StatusTableRow row : NetworkUtil.getStatus().getRows()) {
 
@@ -298,10 +298,15 @@ public class TaskUtil {
 
         // Select the appropriate uploader
         out.println("Number of uploaders in meta data: " + metaData.getUploaderCount());
+        for (int i = 0; i < metaData.getUploaderCount(); i++) {
+            metaData.selectUploader(i);
+            out.println(" Uploader #" + (i + 1) + metaData.getSignature().getUserName() + " (" + metaData.getTimestampUploaded() + ")");
+        }
+        out.println();
 
         boolean found = selectUploaderInMetaData(metaData, uploaderName, relativePathInDataSet, uploadTimestamp);
         if (!found) {
-            throw new Exception("Could not find user information in meta data, so cannot delete.");
+            throw new Exception("Could not find user information in meta data, so cannot modify.");
         }
 
         metaData.setPublicPassphrase(passphrase);

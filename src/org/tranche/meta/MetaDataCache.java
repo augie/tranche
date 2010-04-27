@@ -30,8 +30,8 @@ public class MetaDataCache {
 
     public static final int DEFAULT_SIZE_LIMIT = 50;
     private static int sizeLimit = DEFAULT_SIZE_LIMIT;
-    private final static Map<BigHash, MetaData> cache = new HashMap<BigHash, MetaData>();
-    private final static LinkedList<BigHash> cacheAccess = new LinkedList<BigHash>();
+    private static final Map<BigHash, MetaData> cache = new HashMap<BigHash, MetaData>();
+    private static final LinkedList<BigHash> cacheAccess = new LinkedList<BigHash>();
 
     /**
      * 

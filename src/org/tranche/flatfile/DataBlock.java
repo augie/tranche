@@ -23,10 +23,10 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 import org.tranche.annotations.Fix;
+import org.tranche.commons.Debuggable;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.UnexpectedEndOfDataBlockException;
 import org.tranche.hash.BigHash;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 
 /**
@@ -43,9 +43,7 @@ import org.tranche.util.IOUtil;
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
 @Fix(problem = "OutOfMemory due to greater than 450K array of subBlocks instantiated, almost all with 256 null elements. Took around 400MB or more memory.", solution = "Lazily instantiate subBlocks, since only accessed when needed. If servers have a lot of disk space, need substantially more than 512MB.", day = 15, month = 8, year = 2008, author = "Bryan Smith")
-public class DataBlock implements Comparable {
-    
-    private static boolean debug = false;
+public class DataBlock extends Debuggable implements Comparable {
 
     public static BigHash HASH_LENGTH_ZERO = new BigHash(new byte[0]);
     /**
@@ -209,11 +207,11 @@ public class DataBlock implements Comparable {
                 // break out of the loop if the entry size is zero
                 if (s == 0 && o == 0) {
                     break;
-                // if not the same hash, continue
+                    // if not the same hash, continue
                 }
                 if (status != STATUS_OK || type != isMetaDataByte) {
                     continue;                // add the hash to the list
-                // be sure to ditch the reference to the big array via .toByteArray()
+                    // be sure to ditch the reference to the big array via .toByteArray()
                 }
                 hashesToReturn.add(BigHash.createFromBytes(h.toByteArray()));
             }
@@ -336,7 +334,7 @@ public class DataBlock implements Comparable {
             }
 
             // if here, the file doesn't exist
-            throw new FileNotFoundException("Bytes don't exist on this server for data block file; read total of " + entryNumber + " entries before giving up:" + rasFile.getAbsolutePath()+" ["+hash+"]");
+            throw new FileNotFoundException("Bytes don't exist on this server for data block file; read total of " + entryNumber + " entries before giving up:" + rasFile.getAbsolutePath() + " [" + hash + "]");
         } finally {
             ras.close();
         }
@@ -776,7 +774,7 @@ public class DataBlock implements Comparable {
                 }
             }
 
-        // if here, the file doesn't exist -- don't throw an exception
+            // if here, the file doesn't exist -- don't throw an exception
         } finally {
             ras.close();
         }
@@ -914,42 +912,6 @@ public class DataBlock implements Comparable {
                 // Replace DDC refrenece
                 this.ddc = newDDC;
             }
-        }
-    }
-    
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        DataBlock.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     * 
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(DataBlock.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     * 
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

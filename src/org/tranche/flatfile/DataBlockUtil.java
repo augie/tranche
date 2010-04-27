@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import org.tranche.annotations.Fix;
 import org.tranche.configuration.ConfigKeys;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.UnexpectedEndOfDataBlockException;
 import org.tranche.flatfile.logs.DataBlockUtilLogger;
@@ -43,9 +45,7 @@ import org.tranche.hash.DiskBackedBigHashSet;
 import org.tranche.meta.MetaData;
 import org.tranche.meta.MetaDataUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Stores config information in memory, and holds lists of available hashes and resources on disk.</p>
@@ -55,7 +55,6 @@ import org.tranche.util.Text;
 @Fix(problem = "Corrupted DataBlock files, almost certainly due to server process interrupted rudely. These represented dead ends in b-tree, as they would always fail when adding or getting chunks.", solution = "Detect corrupted datablock in DataBlock.fillBytes, and throw as UnexpectedEndOfDataBlockException. Selectly catch and add to DataBlockUtil.repairCorruptedDataBlock, which will salvage.", day = 8, month = 8, year = 2008, author = "Bryan Smith")
 public class DataBlockUtil {
 
-    private static boolean debug = false;
     /**
      * <p>When moving, data block must have this much free space before a move is considered.</p>
      */
@@ -193,7 +192,7 @@ public class DataBlockUtil {
      * @throws java.lang.InterruptedException
      */
     public void waitUntilFinished(final long maxTimeToWaitMillis) throws InterruptedException {
-        Thread t = new Thread("DataBlockUtil.waitUtilFinished thread, started at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp())) {
+        Thread t = new Thread("DataBlockUtil.waitUtilFinished thread, started at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp())) {
 
             @Override()
             public void run() {
@@ -234,9 +233,9 @@ public class DataBlockUtil {
             // set the appropriate parent DataBlockUtil reference. not static so that more than one can be in the same JVM
             ddc.dbu = this;
             ddcs.add(ddc);
-            debugOut("Add data directory configuration: " + ddc.getDirectory() + " <reason: " + reason + ">");
+            DebugUtil.debugOut(DataBlockUtil.class, "Add data directory configuration: " + ddc.getDirectory() + " <reason: " + reason + ">");
         } else {
-            debugOut("Ha-ha! Tried to a DDC that I already had!: " + ddc.getDirectory() + " <reason: " + reason + ">");
+            DebugUtil.debugOut(DataBlockUtil.class, "Ha-ha! Tried to a DDC that I already had!: " + ddc.getDirectory() + " <reason: " + reason + ">");
         }
     }
 
@@ -337,6 +336,7 @@ public class DataBlockUtil {
 //            }
 //        }
 //    }
+
     /**
      * <p>Helper method to get the file/dir that matches the given hash.</p>
      * @param hash
@@ -525,7 +525,7 @@ public class DataBlockUtil {
             return null;
 
         } finally {
-            printTracerBalancing("Time to find a DataBlock<found=" + found + "> for DDC<" + ddc.getDirectoryFile().getAbsolutePath() + ">: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+            printTracerBalancing("Time to find a DataBlock<found=" + found + "> for DDC<" + ddc.getDirectoryFile().getAbsolutePath() + ">: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
         }
 
 
@@ -538,7 +538,7 @@ public class DataBlockUtil {
      */
     private final DataBlock searchForExistingDataBlock(String test) {
 
-        debugOut("Searching for data block<" + test + ">: " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+        DebugUtil.debugOut(DataBlockUtil.class, "Searching for data block<" + test + ">: " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 
         // find the directory with the most space
         ArrayList<File> existingFiles = new ArrayList();
@@ -552,7 +552,7 @@ public class DataBlockUtil {
         int iteration = 0;
         for (DataDirectoryConfiguration ddc : ddcs) {
 
-            debugOut("Checking DDC: " + ddc.getDirectory() + ", iteration: " + iteration);
+            DebugUtil.debugOut(DataBlockUtil.class, "Checking DDC: " + ddc.getDirectory() + ", iteration: " + iteration);
             iteration++;
 
             // first check if this ddc already has the block
@@ -562,11 +562,11 @@ public class DataBlockUtil {
                 if (checkFile.isFile()) {
                     existingFiles.add(checkFile);
                     existingFilesDDCs.add(ddc);
-                    debugOut("  - Found regular file: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
+                    DebugUtil.debugOut(DataBlockUtil.class, "  - Found regular file: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
                 } else {
                     existingDirectories.add(checkFile);
                     existingDirectoriesDDCs.add(ddc);
-                    debugOut("  - Found directory: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
+                    DebugUtil.debugOut(DataBlockUtil.class, "  - Found directory: " + checkFile.getAbsolutePath() + ", iteration: " + iteration);
                 }
             }
 
@@ -579,7 +579,7 @@ public class DataBlockUtil {
             }
         }
 
-        debugOut("Total exiting files <" + existingFiles.size() + ">, total existing directories <" + existingDirectories.size() + ">, test <" + test + ">");
+        DebugUtil.debugOut(DataBlockUtil.class, "Total exiting files <" + existingFiles.size() + ">, total existing directories <" + existingDirectories.size() + ">, test <" + test + ">");
 
         // start with a null data block
         DataBlock block = null;
@@ -616,10 +616,10 @@ public class DataBlockUtil {
         // this should never normally happen! It is just a logical bit of code to prevent most any error in the b-tree
         if (existingFiles.size() > 0) {
 
-            debugOut("Uh-oh! Found " + existingFiles.size() + " existing file(s). Need to merge. Here are the files:");
+            DebugUtil.debugOut(DataBlockUtil.class, "Uh-oh! Found " + existingFiles.size() + " existing file(s). Need to merge. Here are the files:");
 
             for (File existingFile : existingFiles) {
-                debugOut("  - " + existingFile.getAbsolutePath());
+                DebugUtil.debugOut(DataBlockUtil.class, "  - " + existingFile.getAbsolutePath());
             }
 
             // keep track of the moved files
@@ -904,7 +904,7 @@ public class DataBlockUtil {
 
         logDeletion(bh, desc, true);
     }
-    private BufferedWriter dataDeletionWriter = null,  metaDataDeletionWriter = null,  corruptedDataBlockWriter = null;
+    private BufferedWriter dataDeletionWriter = null, metaDataDeletionWriter = null, corruptedDataBlockWriter = null;
 
     /**
      * 
@@ -913,11 +913,11 @@ public class DataBlockUtil {
      */
     private void logCorruptedDataBlock(String path, String msg) {
         try {
-            final String date = Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+            final String date = TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
 
             lazyLoadCorruptedDataBlockWriter();
 
-            corruptedDataBlockWriter.write(date + ", \"" + path + "\", \"" + msg + "\"" + Text.getNewLine());
+            corruptedDataBlockWriter.write(date + ", \"" + path + "\", \"" + msg + "\"" + "\n");
         } catch (Exception e) {
             System.err.println(e.getClass().getSimpleName() + " occurred while trying to log corrupted data block: " + e.getMessage() + "; " + "path: " + path + "; msg: " + msg);
             e.printStackTrace(System.err);
@@ -932,7 +932,7 @@ public class DataBlockUtil {
     private void logDeletion(final BigHash hash, final String reason, final boolean isMetaData) {
 
         try {
-            final String date = Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+            final String date = TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
 
             if (!isMetaData) {
 
@@ -944,7 +944,7 @@ public class DataBlockUtil {
 
                 synchronized (dataDeletionWriter) {
                     // Date, reason, hash
-                    dataDeletionWriter.write(date + ", \"" + reason + "\", " + hash + Text.getNewLine());
+                    dataDeletionWriter.write(date + ", \"" + reason + "\", " + hash + "\n");
                 }
 
             } else {
@@ -957,7 +957,7 @@ public class DataBlockUtil {
 
                 synchronized (metaDataDeletionWriter) {
                     // Date, reason, hash
-                    metaDataDeletionWriter.write(date + ", \"" + reason + "\", " + hash + Text.getNewLine());
+                    metaDataDeletionWriter.write(date + ", \"" + reason + "\", " + hash + "\n");
                 }
             }
 
@@ -1056,7 +1056,7 @@ public class DataBlockUtil {
         } catch (Exception nope) { /* Skip -- either none or parse error */ }
 
         if (shouldLog != lastLogDataDeletions) {
-            printNotice("Changing log data chunk delete from " + lastLogDataDeletions + " to " + shouldLog + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            printNotice("Changing log data chunk delete from " + lastLogDataDeletions + " to " + shouldLog + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             lastLogDataDeletions = shouldLog;
         }
 
@@ -1076,7 +1076,7 @@ public class DataBlockUtil {
         } catch (Exception nope) { /* Skip -- either none or parse error */ }
 
         if (shouldLog != lastLogMetaDataDeletions) {
-            printNotice("Changing log data chunk delete from " + lastLogMetaDataDeletions + " to " + shouldLog + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            printNotice("Changing log data chunk delete from " + lastLogMetaDataDeletions + " to " + shouldLog + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             lastLogMetaDataDeletions = shouldLog;
         }
 
@@ -1292,10 +1292,10 @@ public class DataBlockUtil {
         }
 
         String foundMsg = "Found corrupted data block <" + description + ">, going to attempt to repair.";
-        System.err.println(foundMsg+": " + dataBlockFile.getAbsolutePath());
+        System.err.println(foundMsg + ": " + dataBlockFile.getAbsolutePath());
 
         logCorruptedDataBlock(dataBlockFile.getAbsolutePath(), foundMsg);
-        
+
         File tmpFile = null;
         try {
             // Get data block size so can make sure entirely copied.
@@ -1425,8 +1425,8 @@ public class DataBlockUtil {
             if (wasBodyCorrupted) {
                 this.incrementCorruptedDataBlockBodyCount();
             }
-            
-            String fixMsg = "Was corrupted in header: "+wasHeaderCorrupted+"; Was corrupted in body: "+wasBodyCorrupted+"; data chunks salvaged: "+dataSalvaged+"; meta chunks salvaged: "+metaSalvaged+".";
+
+            String fixMsg = "Was corrupted in header: " + wasHeaderCorrupted + "; Was corrupted in body: " + wasBodyCorrupted + "; data chunks salvaged: " + dataSalvaged + "; meta chunks salvaged: " + metaSalvaged + ".";
             logCorruptedDataBlock(dataBlockFile.getAbsolutePath(), fixMsg);
 
             // Wait a bit for queue to empty. This will alleviate resources as the server
@@ -1659,7 +1659,7 @@ public class DataBlockUtil {
         } catch (Exception nope) { /* Skip -- either none or parse error */ }
 
         if (shouldRepair != lastAllowedToRepairCorruptedDataBlocks) {
-            printNotice("Changing allowed to repair corrupted data blocks from " + lastAllowedToRepairCorruptedDataBlocks + " to " + shouldRepair + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            printNotice("Changing allowed to repair corrupted data blocks from " + lastAllowedToRepairCorruptedDataBlocks + " to " + shouldRepair + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             lastAllowedToRepairCorruptedDataBlocks = shouldRepair;
         }
 
@@ -1794,7 +1794,7 @@ public class DataBlockUtil {
             }
         } finally {
             isBalancing = false;
-            printTracerBalancing("Time to find single data block to move to balance data directories: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start) + (status != null ? "(" + status + ")" : ""));
+            printTracerBalancing("Time to find single data block to move to balance data directories: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start) + (status != null ? "(" + status + ")" : ""));
         }
     }
 
@@ -1840,9 +1840,9 @@ public class DataBlockUtil {
     public void setUseCache(boolean isUseCache) {
         if (isUseCache != lastUseCache) {
             if (isUseCache) {
-                System.out.println("DATA_BLOCK_CACHE$ Turning on caching at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                System.out.println("DATA_BLOCK_CACHE$ Turning on caching at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             } else {
-                System.out.println("DATA_BLOCK_CACHE$ Turning off caching at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                System.out.println("DATA_BLOCK_CACHE$ Turning off caching at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             }
         }
 
@@ -1868,41 +1868,5 @@ public class DataBlockUtil {
      */
     public void setMinSizeAvailableInTargetDataBlockBeforeBalance(int aMinSizeAvailableInTargetDataBlockBeforeBalance) {
         ffts.getConfiguration().setValue(ConfigKeys.HASHSPANFIX_REQUIRED_MIN_USED_BYTES_IN_MAX_DATABLOCK_TO_BALANCE_DATA_DIRECTORIES, String.valueOf(aMinSizeAvailableInTargetDataBlockBeforeBalance));
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        DataBlockUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     * 
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(DataBlockUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     * 
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

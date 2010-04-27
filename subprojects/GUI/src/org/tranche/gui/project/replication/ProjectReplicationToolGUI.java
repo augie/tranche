@@ -45,7 +45,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JPopupMenu;
-
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -57,11 +56,11 @@ import javax.swing.event.PopupMenuListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.TodoException;
 import org.tranche.hash.BigHash;
 import org.tranche.project.ProjectReplicationTool;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
 
 /**
@@ -107,8 +106,8 @@ public class ProjectReplicationToolGUI implements ClipboardOwner {
      * MENU COMPONENTS
      * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      */
-    private final ServersPanel serversToReadPanel,  serversToWritePanel;
-    private final GenericFrame serversToReadFrame,  serversToWriteFrame;
+    private final ServersPanel serversToReadPanel, serversToWritePanel;
+    private final GenericFrame serversToReadFrame, serversToWriteFrame;
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      * TABLE COMPONENTS
      * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -507,7 +506,7 @@ public class ProjectReplicationToolGUI implements ClipboardOwner {
             // Change button to show that tool is running
             this.executeButton.setEnabled(false);
             this.executeButton.setText("Running...");
-            System.out.println("Executing project replication tool at " + Text.getFormattedDate(start) + ":");
+            System.out.println("Executing project replication tool at " + TextUtil.getFormattedDate(start) + ":");
 
             // Get number of replications
             int replications = -1;
@@ -610,8 +609,8 @@ public class ProjectReplicationToolGUI implements ClipboardOwner {
 
         GenericOptionPane.showMessageDialog(
                 frame,
-                "Tool ran for " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start),
-                "Tool finished at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()),
+                "Tool ran for " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start),
+                "Tool finished at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()),
                 JOptionPane.INFORMATION_MESSAGE);
 
     }
@@ -687,7 +686,7 @@ public class ProjectReplicationToolGUI implements ClipboardOwner {
         ProjectsEntry entry = new ProjectsEntry(hash, passphrase);
         projectsTableModel.addProject(entry);
 
-        printTracer("Added project:" + Text.getNewLine() + entry.toString());
+        printTracer("Added project:" + "\n" + entry.toString());
     }
 
     private static void printTracer(String msg) {
@@ -1094,7 +1093,7 @@ class ProjectsEntry {
     public String toString() {
         StringBuffer buffer = new StringBuffer();
 
-        buffer.append("HASH:       " + hash.toString() + Text.getNewLine());
+        buffer.append("HASH:       " + hash.toString() + "\n");
         buffer.append("PASSPHRASE: " + getDisplayablePassphraseMask());
 
         return buffer.toString();

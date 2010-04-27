@@ -31,9 +31,9 @@ import java.util.Date;
 import java.util.Hashtable;
 import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
+import org.tranche.commons.DebugUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -43,7 +43,6 @@ import org.tranche.util.TestUtil;
  */
 public class MakeUserZipFileTool {
 
-    private static boolean debug = false;
     private String name, passphrase;
     private Date startDate;
     private long validDays;
@@ -287,9 +286,8 @@ public class MakeUserZipFileTool {
             // flags first
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
-                    UserZipFile.setDebug(true);
+                    DebugUtil.setDebug(MakeUserZipFileTool.class, true);
+                    DebugUtil.setDebug(UserZipFile.class, true);
                 } else if (args[i].equals("-h") || args[i].equals("--help")) {
                     printUsage();
                     if (!TestUtil.isTesting()) {
@@ -322,7 +320,7 @@ public class MakeUserZipFileTool {
                         i += 2;
                     } catch (Exception e) {
                         System.out.println("ERROR: Could not load signer.");
-                        debugErr(e);
+                        DebugUtil.debugErr(MakeUserZipFileTool.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -339,7 +337,7 @@ public class MakeUserZipFileTool {
                 tool.setValidDays(Integer.valueOf(args[args.length - 2]));
             } catch (Exception e) {
                 System.out.println("ERROR: Invalid value for # of valid days.");
-                debugErr(e);
+                DebugUtil.debugErr(MakeUserZipFileTool.class, e);
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -357,55 +355,12 @@ public class MakeUserZipFileTool {
                 return;
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(MakeUserZipFileTool.class, e);
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
                 return;
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        MakeUserZipFileTool.debug = debug;
-
-
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-
-
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(MakeUserZipFileTool.class.getName() + "> " + line);
-        }
-
-
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-
         }
     }
 }

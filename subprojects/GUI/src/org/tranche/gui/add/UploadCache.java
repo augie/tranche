@@ -20,6 +20,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import org.tranche.commons.DebugUtil;
 import org.tranche.gui.LazyLoadAllSlowStuffAfterGUIRenders;
 import org.tranche.gui.LazyLoadable;
 import org.tranche.gui.user.UserZipFileEvent;
@@ -27,11 +28,10 @@ import org.tranche.gui.user.UserZipFileListener;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.PersistentServerFileUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -39,7 +39,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class UploadCache implements LazyLoadable {
 
-    private static boolean debug = false;
     private static File file;
     private static final Object fileLock = new Object();
     private static boolean saving = false;
@@ -54,7 +53,7 @@ public class UploadCache implements LazyLoadable {
                     try {
                         // load the uploads from the cache
                         file = PersistentServerFileUtil.getPersistentFile("uploads-" + event.getUserZipFile().getUserNameFromCert());
-                        debugOut("Loading upload cache: " + file.getAbsolutePath());
+                        DebugUtil.debugOut(UploadCache.class, "Loading upload cache: " + file.getAbsolutePath());
 
                         // read the file
                         synchronized (fileLock) {
@@ -66,29 +65,29 @@ public class UploadCache implements LazyLoadable {
                                 // read all the preferences from the file
                                 while (bis.available() > 0) {
                                     try {
-                                        debugOut("Loading upload summary.");
+                                        DebugUtil.debugOut(UploadCache.class, "Loading upload summary.");
                                         UploadSummary us = new UploadSummary(bis);
-                                        debugOut("Loaded upload summary.");
+                                        DebugUtil.debugOut(UploadCache.class, "Loaded upload summary.");
                                         if (us.getStatus().equals(UploadSummary.STATUS_UPLOADING)) {
                                             us.pause();
                                             //us.resume();
-                                            debugOut("Paused upload.");
+                                            DebugUtil.debugOut(UploadCache.class, "Paused upload.");
                                         }
                                         UploadPool.set(us);
-                                        debugOut("Set upload summary.");
+                                        DebugUtil.debugOut(UploadCache.class, "Set upload summary.");
                                     } catch (Exception e) {
-                                        debugErr(e);
+                                        DebugUtil.debugErr(UploadCache.class, e);
                                     }
                                 }
                             } catch (Exception e) {
-                                debugErr(e);
+                                DebugUtil.debugErr(UploadCache.class, e);
                             } finally {
                                 IOUtil.safeClose(bis);
                                 IOUtil.safeClose(fis);
                             }
                         }
                     } catch (Exception e) {
-                        debugErr(e);
+                        DebugUtil.debugErr(UploadCache.class, e);
                     }
                 }
 
@@ -145,7 +144,7 @@ public class UploadCache implements LazyLoadable {
 
             @Override
             public void run() {
-                ThreadUtil.safeSleep(2500);
+                ThreadUtil.sleep(2500);
                 // save
                 synchronized (fileLock) {
                     FileOutputStream fos = null;
@@ -176,41 +175,5 @@ public class UploadCache implements LazyLoadable {
             }
         };
         t.start();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        UploadCache.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(UploadCache.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

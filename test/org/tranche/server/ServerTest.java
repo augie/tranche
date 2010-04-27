@@ -15,8 +15,8 @@
  */
 package org.tranche.server;
 
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.TodoException;
-import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -28,13 +28,13 @@ public class ServerTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        Server.setDebug(true);
+        DebugUtil.setDebug(Server.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        Server.setDebug(false);
+        DebugUtil.setDebug(Server.class, false);
     }
 
     public void testTodo() throws Exception {

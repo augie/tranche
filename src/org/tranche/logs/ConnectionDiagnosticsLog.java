@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>A log to help understand and diagnose connections to servers.</p>
@@ -201,9 +201,9 @@ public class ConnectionDiagnosticsLog {
         out.println();
         out.println(">>>>>>>>>>>>>>>>>>>>>>> Start: " + this.description + " <<<<<<<<<<<<<<<<<<<<<<<");
         out.println();
-        out.println("Current time:  " + Text.getFormattedDate(stop));
-        out.println("Started log:   " + Text.getFormattedDate(start));
-        out.println("Ellapsed:      " + Text.getPrettyEllapsedTimeString(stop - start));
+        out.println("Current time:  " + TextUtil.getFormattedDate(stop));
+        out.println("Started log:   " + TextUtil.getFormattedDate(start));
+        out.println("Ellapsed:      " + TextUtil.formatTimeLength(stop - start));
         out.println("Total requests: " + totalRequests);
         out.println();
 
@@ -216,12 +216,12 @@ public class ConnectionDiagnosticsLog {
                 final ServerRecord serverRecord = this.serverRecords.get(host);
 
                 println(out);
-                println(out, "Server:       " + host + " (Started: " + Text.getFormattedDate(serverRecord.start) + ")");
+                println(out, "Server:       " + host + " (Started: " + TextUtil.getFormattedDate(serverRecord.start) + ")");
                 println(out, "------------------------------------------------------------------------------");
                 println(out, "        Total requests: " + requestsCountMap.get(host));
-                println(out, "      Shortest request: " + Text.getPrettyEllapsedTimeString(serverRecord.shortestRequest.getDelta()));
+                println(out, "      Shortest request: " + TextUtil.formatTimeLength(serverRecord.shortestRequest.getDelta()));
                 println(out, "                   -> : " + serverRecord.shortestRequest.getDescription());
-                println(out, "       Longest request: " + Text.getPrettyEllapsedTimeString(serverRecord.longestRequest.getDelta()));
+                println(out, "       Longest request: " + TextUtil.formatTimeLength(serverRecord.longestRequest.getDelta()));
                 println(out, "                   -> : " + serverRecord.longestRequest.getDescription());
                 println(out);
 
@@ -231,14 +231,14 @@ public class ConnectionDiagnosticsLog {
                     println(out);
                     println(out, "  Request description : " + aggregateDescription + " (" + a.totalCount + " request" + (a.totalCount == 1 ? "" : "s") + ")");
                     long avgTime = (long) ((double) a.totalTime / (double) a.totalCount);
-                    println(out, "            Avg. time : " + Text.getPrettyEllapsedTimeString(avgTime));
+                    println(out, "            Avg. time : " + TextUtil.formatTimeLength(avgTime));
 
                     avgServerRequest += avgTime;
                 }
 
                 avgServerRequest = (long) ((double) avgServerRequest / (double) serverRecord.serverAggregates.size());
                 println(out);
-                println(out, "  Avg. server request : " + Text.getPrettyEllapsedTimeString(avgServerRequest));
+                println(out, "  Avg. server request : " + TextUtil.formatTimeLength(avgServerRequest));
 
                 List<SocketActivityWrapper> socketActivityList = this.socketActivityMap.get(host);
 
@@ -252,13 +252,13 @@ public class ConnectionDiagnosticsLog {
                     for (SocketActivityWrapper saw : socketActivityList) {
                         if (saw.activity.equals(SocketActivity.Connect)) {
                             connections++;
-                            println(out, "                   Connected -> : " + Text.getFormattedDate(saw.timestamp));
+                            println(out, "                   Connected -> : " + TextUtil.getFormattedDate(saw.timestamp));
                         } else if (saw.activity.equals(SocketActivity.Banned)) {
                             bans++;
-                            println(out, "                   Banned -> : " + Text.getFormattedDate(saw.timestamp));
+                            println(out, "                   Banned -> : " + TextUtil.getFormattedDate(saw.timestamp));
                         } else if (saw.activity.equals(SocketActivity.Unbanned)) {
                             unbans++;
-                            println(out, "                   Unbanned -> : " + Text.getFormattedDate(saw.timestamp));
+                            println(out, "                   Unbanned -> : " + TextUtil.getFormattedDate(saw.timestamp));
                         }
                     }
                     println(out, "            Total connections: " + connections);
@@ -273,7 +273,7 @@ public class ConnectionDiagnosticsLog {
 
             // Print out aggregate averages
             println(out);
-            println(out, " TOTAL AVERAGE REQUEST TIME FOR ALL SERVERS: " + Text.getPrettyEllapsedTimeString(totalAverageRequest));
+            println(out, " TOTAL AVERAGE REQUEST TIME FOR ALL SERVERS: " + TextUtil.formatTimeLength(totalAverageRequest));
         }
 
         synchronized (this.exceptionRecords) {
@@ -284,7 +284,7 @@ public class ConnectionDiagnosticsLog {
 
             // Print out details of exceptions
             for (ExceptionRecord er : this.exceptionRecords) {
-                println(out, "      " + Text.getFormattedDate(er.getTimestamp()) + ": " + er.getException().getClass().getSimpleName() + " with message <" + er.getException().getMessage() + ">: " + er.getDescription());
+                println(out, "      " + TextUtil.getFormattedDate(er.getTimestamp()) + ": " + er.getException().getClass().getSimpleName() + " with message <" + er.getException().getMessage() + ">: " + er.getDescription());
             }
         }
 
@@ -302,7 +302,7 @@ public class ConnectionDiagnosticsLog {
         /**
          * <p>Keep track of shortest and longest request.</p>
          */
-        protected  Request shortestRequest,   longestRequest ;
+        protected Request shortestRequest, longestRequest;
         /**
          * <p>Map used to store aggregate information about servers' requests
          * so can later produce averages and other statistics.</p>

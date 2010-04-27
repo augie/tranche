@@ -275,9 +275,9 @@ public class ProjectReplicationToolTest extends TrancheTestCase {
 //
 //            } else {
 //                upload = DevUtil.createTestProject(3, 32 * 1024, 2 * 1024 * 1024);
-//                Text.printRecursiveDirectoryStructure(upload);
+//                TestUtil.printRecursiveDirectoryStructure(upload);
 //                uploadDecoy = DevUtil.createTestProject(3, 32 * 1024, 2 * 1024 * 1024);
-//                Text.printRecursiveDirectoryStructure(uploadDecoy);
+//                TestUtil.printRecursiveDirectoryStructure(uploadDecoy);
 //      }
 //
 ////       uploadDecoy = new File("C:\\Users\\Cornbread\\Desktop\\testProjs\\test (2)");
@@ -491,9 +491,9 @@ public class ProjectReplicationToolTest extends TrancheTestCase {
 //
 //            } else {
 //                upload = DevUtil.createTestProject(3, 32 * 1024, 2 * 1024 * 1024);
-//                Text.printRecursiveDirectoryStructure(upload);
+//                TestUtil.printRecursiveDirectoryStructure(upload);
 //                uploadDecoy = DevUtil.createTestProject(3, 32 * 1024, 2 * 1024 * 1024);
-//                Text.printRecursiveDirectoryStructure(uploadDecoy);
+//                TestUtil.printRecursiveDirectoryStructure(uploadDecoy);
 //      }
 //
 ////       uploadDecoy = new File("C:\\Users\\Cornbread\\Desktop\\testProjs\\test (2)");

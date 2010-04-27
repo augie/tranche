@@ -15,7 +15,7 @@
  */
 package org.tranche.meta;
 
-import org.tranche.util.Text;
+import org.tranche.commons.TextUtil;
 
 /**
  * <p>Represents a name/value pair associated with meta-data.</p>
@@ -112,6 +112,7 @@ public class MetaDataAnnotation {
      * <p>The delimiter between the name and value for the annotation.</p>
      */
     public static final String DELIMITER = "<<MDA>>";
+    private static final String NEWLINE_TOKEN = "<<NL>>";
     private String name, value;
 
     /**
@@ -168,7 +169,7 @@ public class MetaDataAnnotation {
      */
     @Override
     public String toString() {
-        return Text.tokenizeNewlines(this.name + DELIMITER + this.value);
+        return String.valueOf(name + DELIMITER + value).replace(TextUtil.TEXT_LINE_BREAK_RN, NEWLINE_TOKEN).replace(TextUtil.TEXT_LINE_BREAK_R, NEWLINE_TOKEN).replace(TextUtil.TEXT_LINE_BREAK_N, NEWLINE_TOKEN);
     }
 
     /**
@@ -177,7 +178,7 @@ public class MetaDataAnnotation {
      * @return
      */
     public static final MetaDataAnnotation createFromString(String string) {
-        String[] items = string.split(Text.detokenizeNewlines(DELIMITER));
+        String[] items = string.replace(NEWLINE_TOKEN, TextUtil.TEXT_LINE_BREAK_N).split(DELIMITER);
         return new MetaDataAnnotation(items[0], items[1]);
     }
 

@@ -49,7 +49,6 @@ import org.tranche.gui.wizard.GenericWizardStep;
 import org.tranche.users.InvalidSignInException;
 import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
-import org.tranche.util.DebugUtil;
 
 /**
  *
@@ -58,10 +57,9 @@ import org.tranche.util.DebugUtil;
  */
 public class AddFileToolWizard extends GenericWizard {
 
-    private static boolean debug = false;
     private AddFileToolWizardMenuBar menuBar = new AddFileToolWizardMenuBar();
     protected AnnotationFrame annotationFrame = new AnnotationFrame();
-    protected ServersFrame serversFrame,  stickyServersFrame;
+    protected ServersFrame serversFrame, stickyServersFrame;
     protected ErrorFrame ef = new ErrorFrame();
     protected UploadSummary summary = new UploadSummary(new AddFileTool());
     protected AFTStep1Panel step1Panel = new AFTStep1Panel(this);
@@ -413,41 +411,5 @@ public class AddFileToolWizard extends GenericWizard {
 
         // lazy load slow stuff
         LazyLoadAllSlowStuffAfterGUIRenders.lazyLoad();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        AddFileToolWizard.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(AddFileToolWizard.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

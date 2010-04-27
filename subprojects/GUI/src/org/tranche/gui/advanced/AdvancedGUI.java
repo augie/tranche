@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebugUtil;
 import org.tranche.gui.ConfigureTrancheGUI;
 import org.tranche.gui.ErrorFrame;
 import org.tranche.gui.GenericFrame;
@@ -41,7 +42,6 @@ import org.tranche.gui.project.ProjectPool;
 import org.tranche.users.InvalidSignInException;
 import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -52,7 +52,6 @@ import org.tranche.util.TestUtil;
  */
 public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
 
-    private static boolean debug = false;
     public TopPanel topPanel;
     private LogoPanel logoPanel;
     public LeftPanel leftPanel;
@@ -61,7 +60,7 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
     public ErrorFrame ef = new ErrorFrame();
 
     public AdvancedGUI() {
-        super(ConfigureTranche.get(ConfigureTranche.PROP_NAME));
+        super(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME));
 
         GUIUtil.setAdvancedGUI(AdvancedGUI.this);
 
@@ -207,8 +206,7 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
             // first debug
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
+                    DebugUtil.setDebug(AdvancedGUI.class, true);
                 } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
                     System.out.println("Tranche, build #@buildNumber");
                     if (!TestUtil.isTesting()) {
@@ -233,7 +231,7 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
                 ConfigureTrancheGUI.load(args);
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
-                debugErr(e);
+                DebugUtil.debugErr(AdvancedGUI.class, e);
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -243,7 +241,7 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
 
             openNewInstance(args);
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(AdvancedGUI.class, e);
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
@@ -257,7 +255,7 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
         try {
             System.setProperty("dock:name", "Tranche");
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(AdvancedGUI.class, e);
         }
 
         // Create the GUI
@@ -291,9 +289,9 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
                             sf.setUser(UserZipFileUtil.getUserZipFile(args[i + 1], args[i + 2]));
                         } catch (InvalidSignInException e) {
                             GenericOptionPane.showMessageDialog(sf, e.getMessage(), "Could Not Sign In", JOptionPane.ERROR_MESSAGE);
-                            debugErr(e);
+                            DebugUtil.debugErr(AdvancedGUI.class, e);
                         } catch (Exception e) {
-                            debugErr(e);
+                            DebugUtil.debugErr(AdvancedGUI.class, e);
                         } finally {
                             i += 2;
                         }
@@ -316,41 +314,5 @@ public class AdvancedGUI extends GenericFrame implements ClipboardOwner {
         };
         workerThread.setDaemon(true);
         workerThread.start();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        AdvancedGUI.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(AdvancedGUI.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

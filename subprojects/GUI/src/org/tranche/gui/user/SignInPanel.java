@@ -88,7 +88,7 @@ public class SignInPanel extends JPanel implements ActionListener {
         gbc.insets = new Insets(7, 7, 7, 7);
         add(signInButton, gbc);
 
-        if (ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) != null && !ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL).equals("")) {
+        if (ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_SIGN_UP_URL) != null && !ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_SIGN_UP_URL).equals("")) {
             JLabel noAccountLabel = new GenericLabel("No Account?");
             noAccountLabel.setFont(Styles.FONT_14PT_BOLD);
             gbc.insets = new Insets(10, 7, 0, 7);
@@ -102,7 +102,7 @@ public class SignInPanel extends JPanel implements ActionListener {
 
                         @Override()
                         public void run() {
-                            GUIUtil.displayURL(ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL));
+                            GUIUtil.displayURL(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_SIGN_UP_URL));
                         }
                     };
                     t.setDaemon(true);

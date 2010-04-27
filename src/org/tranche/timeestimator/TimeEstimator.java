@@ -15,6 +15,7 @@
  */
 package org.tranche.timeestimator;
 
+import org.tranche.commons.Debuggable;
 import org.tranche.time.TimeUtil;
 
 /**
@@ -22,7 +23,7 @@ import org.tranche.time.TimeUtil;
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class TimeEstimator {
+public class TimeEstimator extends Debuggable {
 
     /**
      * <p>Represented the amount of work to do.</p>

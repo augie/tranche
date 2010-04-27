@@ -15,6 +15,7 @@
  */
 package org.tranche.util;
 
+import org.tranche.commons.RandomUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.FileEncoding;
 import org.tranche.users.MakeUserZipFileTool;
@@ -358,7 +359,7 @@ public class DevUtil {
 
         return BigHash.createFromBytes(bigHashBytes);
     }
-    final static String signatureAlgorithm = safeGetSignatureAlg();
+    static final String signatureAlgorithm = safeGetSignatureAlg();
 
     private static String safeGetSignatureAlg() {
         try {

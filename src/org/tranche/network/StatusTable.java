@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.Debuggable;
 import org.tranche.hash.span.HashSpanCollection;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 
 /**
@@ -41,9 +41,8 @@ import org.tranche.util.IOUtil;
  * <p>The table keeps the servers sorted alphabetically by host name.</p>
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class StatusTable extends Object implements Serializable {
+public class StatusTable extends Debuggable implements Serializable {
 
-    private static boolean debug = false;
     /**
      * <p>The value for the first version of the object.</p>
      */
@@ -257,7 +256,7 @@ public class StatusTable extends Object implements Serializable {
      * <p>Also removes banned servers.</p>
      */
     public void removeDefunctRows() {
-        long threshold = ConfigureTranche.getLong(ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
+        long threshold = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DEFUNCT_SERVER_THRESHOLD);
         if (threshold > 0) {
             Set<String> toRemove = new HashSet<String>();
             for (StatusTableRow row : getRows()) {
@@ -706,42 +705,6 @@ public class StatusTable extends Object implements Serializable {
                 l.rowsUpdated(spe);
             } catch (Exception e) {
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        StatusTable.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(StatusTable.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

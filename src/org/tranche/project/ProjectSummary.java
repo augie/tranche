@@ -28,11 +28,11 @@ public class ProjectSummary {
     /**
      * Need a consistent format so can easily test whether data was found. Keeps code cleaner and more consistent behavior.
      */
-    public final static String DEFAULT_STRING_VALUE = "";
+    public static final String DEFAULT_STRING_VALUE = "";
     /**
      * Need a consistent format so can easily test whether data was found. Keeps code cleaner and more consistent behavior.
      */
-    public final static long DEFAULT_NUMERIC_VALUE = -1;
+    public static final long DEFAULT_NUMERIC_VALUE = -1;
     public String title = DEFAULT_STRING_VALUE,  description = DEFAULT_STRING_VALUE,  uploader = DEFAULT_STRING_VALUE,  type = DEFAULT_STRING_VALUE;
     public long size = DEFAULT_NUMERIC_VALUE,  files = DEFAULT_NUMERIC_VALUE,  uploadTimestamp = DEFAULT_NUMERIC_VALUE;
     public BigHash hash = null,  oldVersion = null,  newVersion = null;

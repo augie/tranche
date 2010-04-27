@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebuggableThread;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.ChunkDoesNotBelongException;
 import org.tranche.exceptions.ServerIsNotReadableException;
 import org.tranche.exceptions.ServerIsNotWritableException;
@@ -44,23 +46,20 @@ import org.tranche.logs.SimpleLog;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTableRow;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>Handles a client request.</p>
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class ServerWorkerThread extends Thread {
+public class ServerWorkerThread extends DebuggableThread {
 
-    private static boolean debug = false;
     private static boolean isTestingKeepAlive = false;
     private static final long KEEP_ALIVE_THRESHOLD = RemoteTrancheServer.getResponseTimeout() / 10;
     private final Socket s;
     private final Server server;
-    private final ArrayBlockingQueue<ServerWorkerThreadQueueItem> queue = new ArrayBlockingQueue((ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_QUEUE_SIZE) * 4) + 1);
+    private final ArrayBlockingQueue<ServerWorkerThreadQueueItem> queue = new ArrayBlockingQueue((ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_QUEUE_SIZE) * 4) + 1);
     private final Set<Long> currentlyWorkingItems = new HashSet<Long>();
     private final Set<ServerWorkerOutputThread> outputThreads = new HashSet<ServerWorkerOutputThread>();
     private final ServerWorkerKeepAliveThread keepAliveThread = new ServerWorkerKeepAliveThread();
@@ -96,7 +95,7 @@ public class ServerWorkerThread extends Thread {
      */
     private void sendOutput(long bufferID, byte[] bytes) throws Exception {
         if (dos != null) {
-            Server.debugOut("Server " + IOUtil.createURL(server.getHostName(), server.getPort(), server.isSSL()) + "; sending output (ID = " + bufferID + ", bytes = " + bytes.length + ")");
+            debugOut("Server " + IOUtil.createURL(server.getHostName(), server.getPort(), server.isSSL()) + "; sending output (ID = " + bufferID + ", bytes = " + bytes.length + ")");
             synchronized (dos) {
                 dos.write(RemoteTrancheServer.OK_BYTE);
                 // send back id
@@ -148,11 +147,11 @@ public class ServerWorkerThread extends Thread {
             // start the keep alive thread
             keepAliveThread.start();
             // create some output threads
-            int outputThreadCount = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_USER_SIMULTANEOUS_REQUESTS);
+            int outputThreadCount = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_USER_SIMULTANEOUS_REQUESTS);
             debugOut("Host address: " + s.getInetAddress().getHostAddress() + " (Is startup server? " + NetworkUtil.isStartupServer(s.getInetAddress().getHostAddress()) + ")");
             debugOut("Host name: " + s.getInetAddress().getHostName() + " (Is startup server? " + NetworkUtil.isStartupServer(s.getInetAddress().getHostName()) + ")");
             if (NetworkUtil.isStartupServer(s.getInetAddress().getHostAddress()) || NetworkUtil.isStartupServer(s.getInetAddress().getHostName())) {
-                outputThreadCount = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS);
+                outputThreadCount = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SERVER_SIMULTANEOUS_REQUESTS);
             }
             for (int i = 0; i < outputThreadCount; i++) {
                 ServerWorkerOutputThread thread = new ServerWorkerOutputThread();
@@ -211,7 +210,7 @@ public class ServerWorkerThread extends Thread {
                             bytesRead += dis.read(buffer, bytesRead, buffer.length - bytesRead);
                         }
                         logInput.log("Reading: Finished; ID: " + id + "; Bytes: " + buffer.length + "; Queuing: started");
-                        Server.debugOut("Server " + IOUtil.createURL(server.getHostName(), server.getPort(), server.isSSL()) + "; Received request (ID = " + id + ", bytes = " + buffer.length + ")");
+                        debugOut("Server " + IOUtil.createURL(server.getHostName(), server.getPort(), server.isSSL()) + "; Received request (ID = " + id + ", bytes = " + buffer.length + ")");
 
                         String itemName = null;
                         ByteArrayInputStream bais = null;
@@ -274,7 +273,7 @@ public class ServerWorkerThread extends Thread {
             IOUtil.safeClose(bin);
             IOUtil.safeClose(in);
 
-            LogUnit lu = new LogUnit(SimpleLog.SWT_LOG, "Exiting worker main thread (input thread) for " + s.getInetAddress() + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            LogUnit lu = new LogUnit(SimpleLog.SWT_LOG, "Exiting worker main thread (input thread) for " + s.getInetAddress() + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             SimpleLog.log(lu);
 
             // turn off the output
@@ -290,42 +289,6 @@ public class ServerWorkerThread extends Thread {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        ServerWorkerThread.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ServerWorkerThread.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 
@@ -421,7 +384,7 @@ public class ServerWorkerThread extends Thread {
 
                         // pause here
                         if (isTestingKeepAlive) {
-                            ThreadUtil.safeSleep(1 * RemoteTrancheServer.getResponseTimeout() + 1);
+                            ThreadUtil.sleep(1 * RemoteTrancheServer.getResponseTimeout() + 1);
                         }
 
                         // send a keep-alive signal
@@ -523,7 +486,7 @@ public class ServerWorkerThread extends Thread {
                         sendOutput(id, Token.KEEP_ALIVE);
                     }
 
-                    debugOut("Time since last keep alive signal: " + Text.getShortPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - lastSignalTimestamp));
+                    debugOut("Time since last keep alive signal: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - lastSignalTimestamp));
                     lastSignalTimestamp = TimeUtil.getTrancheTimestamp();
                 } catch (Exception e) {
                     debugErr(e);

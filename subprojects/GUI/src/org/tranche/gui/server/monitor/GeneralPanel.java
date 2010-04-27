@@ -17,9 +17,9 @@ package org.tranche.gui.server.monitor;
 
 import java.awt.Color;
 import java.awt.GridLayout;
-import java.util.Collection;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.monitor.InfoColumn;
 import org.tranche.hash.span.AbstractHashSpan;
 import org.tranche.hash.span.HashSpan;
@@ -27,7 +27,6 @@ import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTableRow;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -111,7 +110,7 @@ public class GeneralPanel extends JPanel {
         StatusTableRow row = NetworkUtil.getStatus().getRow(monitor.getHost());
 
         right.clear();
-        right.put("Last Updated", Text.getFormattedDate(row.getUpdateTimestamp()));
+        right.put("Last Updated", TextUtil.getFormattedDate(row.getUpdateTimestamp()));
         right.put("Trusted", String.valueOf(row.isCore()));
         right.put("Readable", String.valueOf(row.isReadable()));
         right.put("Writable", String.valueOf(row.isWritable()));
@@ -119,7 +118,7 @@ public class GeneralPanel extends JPanel {
         right.put("Online", String.valueOf(row.isOnline()));
         right.put("Connected", String.valueOf(ConnectionUtil.isConnected(row.getHost())));
         if (row.getResponseTimestamp() != 0) {
-            right.put("Last Response", Text.getShortPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - row.getResponseTimestamp()) + " ago");
+            right.put("Last Response", TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - row.getResponseTimestamp()) + " ago");
         } else {
             right.put("Last Response", "");
         }

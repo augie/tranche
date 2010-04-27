@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +38,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
+import org.tranche.commons.TextUtil;
 import org.tranche.security.Signature;
 import org.tranche.hash.BigHash;
 import org.tranche.configuration.Configuration;
@@ -78,8 +78,6 @@ import org.tranche.server.SetMetaDataItem;
 import org.tranche.server.ShutdownItem;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.AssertionUtil;
-import org.tranche.util.DebugUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Handles client socket connection to the server.</p>
@@ -89,30 +87,29 @@ import org.tranche.util.Text;
  */
 public class RemoteTrancheServer extends TrancheServer {
 
-    private static boolean debug = false;
     /**
      * <p>The required difference between the last satisfied callback id and all others before purged.</p>
      * <p>For example, say a callback with id of 5 was just satisfied. Should we purge outstanding callback with id of 3?</p>
      * <p>If this value is 1 or 2, then yes. (0 and 1 are the same since no two callbacks have same id.) However, for anything else, will not purge.</p>
      * <p>This value is experimental -- if less connection problems, then this number should be high.</p>
      */
-    private final static int REQUIRED_CALLBACK_ID_DIFFERENCE_BEFORE_PURGE = 50;
+    private static final int REQUIRED_CALLBACK_ID_DIFFERENCE_BEFORE_PURGE = 50;
     /**
      * <p>Absolute limit for all batch sizes. Likely to change.</p>
      */
-    public final static int BATCH_HAS_LIMIT = 100;
+    public static final int BATCH_HAS_LIMIT = 100;
     /**
      * <p>Limit for batch-get requests.</p>
      */
-    public final static int BATCH_GET_LIMIT = 25;
+    public static final int BATCH_GET_LIMIT = 25;
     /**
      * <p>Limit for batch-set requests.</p>
      */
-    public final static int BATCH_SET_LIMIT = 10;
+    public static final int BATCH_SET_LIMIT = 10;
     /**
      * <p>Limit for batch-nonce requests.</p>
      */
-    public final static int BATCH_NONCE_LIMIT = BATCH_GET_LIMIT;
+    public static final int BATCH_NONCE_LIMIT = BATCH_GET_LIMIT;
     /**
      * <p>Abstract OK byte to keep sync in order</p>
      */
@@ -120,7 +117,7 @@ public class RemoteTrancheServer extends TrancheServer {
     /**
      *
      */
-    public static final long DEFAULT_RESPONSE_TIMEOUT = ConfigureTranche.getLong(ConfigureTranche.PROP_SERVER_TIMEOUT);
+    public static final long DEFAULT_RESPONSE_TIMEOUT = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_TIMEOUT);
     /**
      * 
      */
@@ -206,7 +203,7 @@ public class RemoteTrancheServer extends TrancheServer {
         }
 
         if (lastReconnectedTimestamp != 0 && (lastReconnectedTimestamp + 10) >= TimeUtil.getTrancheTimestamp()) {
-            debugOut("Will not reconnect within 10ms of last reconnect, at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            debugOut("Will not reconnect within 10ms of last reconnect, at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             return;
         }
 
@@ -316,7 +313,7 @@ public class RemoteTrancheServer extends TrancheServer {
      */
     private void addToQueue(OutGoingBytes ogb) throws Exception {
         synchronized (outgoingQueue) {
-            while (!closed && outgoingQueue.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_QUEUE_SIZE)) {
+            while (!closed && outgoingQueue.size() >= ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_QUEUE_SIZE)) {
                 outgoingQueue.wait(1000);
             }
             if (closed) {
@@ -1593,42 +1590,6 @@ public class RemoteTrancheServer extends TrancheServer {
      */
     public static long getResponseTimeout() {
         return responseTimeout;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        RemoteTrancheServer.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(RemoteTrancheServer.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 
     /**

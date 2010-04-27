@@ -18,8 +18,8 @@ package org.tranche.get;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.Collection;
+import org.tranche.commons.TextUtil;
 import org.tranche.server.PropagationExceptionWrapper;
-import org.tranche.util.Text;
 
 /**
  *
@@ -29,7 +29,6 @@ import org.tranche.util.Text;
 public class CommandLineGetFileToolListener implements GetFileToolListener {
 
     private static NumberFormat nf = NumberFormat.getInstance();
-    
 
     static {
         nf.setGroupingUsed(true);
@@ -100,7 +99,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void failedData(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
-        out.println("Data chunk from file <name: "+event.getFileName()+"; hash:" + event.getFileHash() + "> failed: " + event.getChunkHash());
+        out.println("Data chunk from file <name: " + event.getFileName() + "; hash:" + event.getFileHash() + "> failed: " + event.getChunkHash());
     }
 
     /**
@@ -181,7 +180,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void startedDirectory(GetFileToolEvent event) {
-        out.println("Downloading " + event.getFileHash() + ", " + Text.getFormattedBytes(gft.getBytesToDownload()));
+        out.println("Downloading " + event.getFileHash() + ", " + TextUtil.formatBytes(gft.getBytesToDownload()));
     }
 
     /**
@@ -189,7 +188,7 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      * @param event
      */
     public void finishedDirectory(GetFileToolEvent event) {
-        out.println("Finished in " + Text.getPrettyEllapsedTimeString(gft.getTimeEstimator().getTimeRunning()));
+        out.println("Finished in " + TextUtil.formatTimeLength(gft.getTimeEstimator().getTimeRunning()));
     }
 
     /**

@@ -50,9 +50,9 @@ public class SelectableModuleAction {
      * The following variables are for toString(); used to write preferences concerning
      * modules to disk.
      */
-    public final static String FIELD_DELIMITER = "<ACTION_PART>";
-    private final static String POPUP_ANNOTATION = "POPUP_ANNOTATION:";
-    private final static String LEFT_MENU_ANNOTATION = "LEFT_MENU_ANNOTATION:";
+    public static final String FIELD_DELIMITER = "<ACTION_PART>";
+    private static final String POPUP_ANNOTATION = "POPUP_ANNOTATION:";
+    private static final String LEFT_MENU_ANNOTATION = "LEFT_MENU_ANNOTATION:";
 
     public SelectableModuleAction(String moduleName, Method action, String fileExtension, String mdAnnotation, String selectionMode, String label, String description) {
         this.moduleName = moduleName;

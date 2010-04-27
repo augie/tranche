@@ -28,6 +28,7 @@ import org.tranche.TrancheServerTest;
 import org.tranche.add.AddFileTool;
 import org.tranche.add.CommandLineAddFileToolListener;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.NoHostProvidedException;
 import org.tranche.exceptions.TodoException;
 import org.tranche.hash.BigHash;
@@ -39,7 +40,7 @@ import org.tranche.users.User;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
@@ -57,13 +58,13 @@ public class FlatFileTrancheServerTest extends TrancheServerTest {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        FlatFileTrancheServer.setDebug(true);
+        DebugUtil.setDebug(FlatFileTrancheServer.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        FlatFileTrancheServer.setDebug(false);
+        DebugUtil.setDebug(FlatFileTrancheServer.class, false);
     }
 
     public void testGetActivityLogEntries() throws Exception {

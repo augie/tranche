@@ -23,11 +23,11 @@ import java.io.OutputStream;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 import java.util.TreeSet;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.DataDirectoryConfiguration;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.security.SecurityUtil;
-import org.tranche.util.DebugUtil;
 
 /**
  * <p>A utility class to read/write configuration files.</p>
@@ -36,8 +36,6 @@ import org.tranche.util.DebugUtil;
  * @author James "Augie" Hill - augman85@gmail.com
  */
 public class ConfigurationUtil {
-
-    private static boolean debug = false;
 
     /**
      * <p>Returns a configuration object from an input stream.</p>
@@ -61,7 +59,7 @@ public class ConfigurationUtil {
     }
 
     private static Configuration readVersionOne(InputStream is, int flags) throws Exception {
-        debugOut("Reading version one.");
+        DebugUtil.debugOut(ConfigurationUtil.class, "Reading version one.");
         // make a new MetaData object
         Configuration config = new Configuration();
         config.setFlags(flags);
@@ -83,7 +81,7 @@ public class ConfigurationUtil {
                 user.setCertificate(cert);
                 users.add(user);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setUsers(users);
@@ -103,7 +101,7 @@ public class ConfigurationUtil {
                 // add to the set
                 dataDirectories.add(ddc);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setDataDirectories(dataDirectories);
@@ -125,7 +123,7 @@ public class ConfigurationUtil {
                 // add to the set
                 serverConfigurations.add(sc);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setServerConfigs(serverConfigurations);
@@ -141,7 +139,7 @@ public class ConfigurationUtil {
                 // add to the set
                 hashSpans.add(new HashSpan(firstHash, lastHash));
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -157,7 +155,7 @@ public class ConfigurationUtil {
                 // add to the set
                 stickyProjects.add(hash);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -181,7 +179,7 @@ public class ConfigurationUtil {
                 // add to the config
                 config.setValue(nextKey, nextValue);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -190,7 +188,7 @@ public class ConfigurationUtil {
     }
 
     private static Configuration readVersionTwo(InputStream is, int flags) throws Exception {
-        debugOut("Reading version two.");
+        DebugUtil.debugOut(ConfigurationUtil.class, "Reading version two.");
         // make a new MetaData object
         Configuration config = new Configuration();
         config.setFlags(flags);
@@ -212,7 +210,7 @@ public class ConfigurationUtil {
                 user.setCertificate(cert);
                 users.add(user);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setUsers(users);
@@ -232,7 +230,7 @@ public class ConfigurationUtil {
                 // add to the set
                 dataDirectories.add(ddc);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setDataDirectories(dataDirectories);
@@ -254,7 +252,7 @@ public class ConfigurationUtil {
                 // add to the set
                 serverConfigurations.add(sc);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
         config.setServerConfigs(serverConfigurations);
@@ -262,7 +260,7 @@ public class ConfigurationUtil {
         // read in all of the hash-spans this server handles
         Set<HashSpan> hashSpans = config.getHashSpans();
         int numberOfHashSpans = RemoteUtil.readInt(is);
-        debugOut("Hash spans: " + numberOfHashSpans);
+        DebugUtil.debugOut(ConfigurationUtil.class, "Hash spans: " + numberOfHashSpans);
         for (int i = 0; i < numberOfHashSpans; i++) {
             try {
                 // make in to objects
@@ -271,9 +269,9 @@ public class ConfigurationUtil {
                 // add to the set
                 HashSpan hashSpan = new HashSpan(firstHash, lastHash);
                 hashSpans.add(hashSpan);
-                debugOut(hashSpan.toString());
+                DebugUtil.debugOut(ConfigurationUtil.class, hashSpan.toString());
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -289,7 +287,7 @@ public class ConfigurationUtil {
 //                targetHashSpans.add(new HashSpan(firstHash, lastHash));
                 config.addTargetHashSpan(new HashSpan(firstHash, lastHash));
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -305,7 +303,7 @@ public class ConfigurationUtil {
                 // add to the set
                 stickyProjects.add(hash);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -329,7 +327,7 @@ public class ConfigurationUtil {
                 // add to the config
                 config.setValue(nextKey, nextValue);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ConfigurationUtil.class, e);
             }
         }
 
@@ -357,7 +355,7 @@ public class ConfigurationUtil {
     }
 
     private static void writeVersionOne(Configuration config, OutputStream out) throws Exception {
-        debugOut("Writing version one.");
+        DebugUtil.debugOut(ConfigurationUtil.class, "Writing version one.");
         // write out the users
         User[] users = config.getUsers().toArray(new User[0]);
         // write out the length
@@ -422,7 +420,7 @@ public class ConfigurationUtil {
     }
 
     private static void writeVersionTwo(Configuration config, OutputStream out) throws Exception {
-        debugOut("Writing version two.");
+        DebugUtil.debugOut(ConfigurationUtil.class, "Writing version two.");
         // write out the users
         User[] users = config.getUsers().toArray(new User[0]);
         // write out the length
@@ -492,41 +490,5 @@ public class ConfigurationUtil {
 
         // flush
         out.flush();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ConfigurationUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ConfigurationUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

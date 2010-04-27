@@ -23,7 +23,7 @@ import org.tranche.util.IOUtil;
 
 /**
  * <p>Takes a User Zip File (*.zip.encrypted) and the password for that file and creates a X509Certificate file (*.public.certificate) and a PrivateKey file (*.private.key) in the same directory.</p>
- * @author James "Augie" Hill - augman85@gmail.com - augman85@gmail.com
+ * @author James "Augie" Hill - augman85@gmail.com
  */
 public class BreakApartUserZipFile {
 

@@ -25,14 +25,11 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.tranche.LocalDataServer;
-import org.tranche.configuration.ConfigKeys;
-import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebugUtil;
 import org.tranche.network.ConnectionEvent;
 import org.tranche.network.ConnectionListener;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.remote.RemoteTrancheServer;
-import org.tranche.util.DebugUtil;
 
 /**
  * <p>A lazy-loading utility class that helps track which servers are currently on-line.</p>
@@ -42,12 +39,10 @@ import org.tranche.util.DebugUtil;
  */
 public class ServerUtil {
 
-    private static boolean debug = false;
     // listen to what's happening with the servers
-    private final static Map<String, List<RemoteTrancheServerListener>> perUrlServerListeners = new HashMap<String, List<RemoteTrancheServerListener>>();
-    private final static List<RemoteTrancheServerListener> allUrlServerListeners = new ArrayList<RemoteTrancheServerListener>();
+    private static final Map<String, List<RemoteTrancheServerListener>> perUrlServerListeners = new HashMap<String, List<RemoteTrancheServerListener>>();
+    private static final List<RemoteTrancheServerListener> allUrlServerListeners = new ArrayList<RemoteTrancheServerListener>();
     private static String overrideHost = null;
-
 
     static {
         ConnectionUtil.addListener(new ConnectionListener() {
@@ -79,7 +74,7 @@ public class ServerUtil {
             try {
                 ((RemoteTrancheServer) ConnectionUtil.getHost(host)).addListener(l);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ServerUtil.class, e);
             }
         }
         synchronized (allUrlServerListeners) {
@@ -100,7 +95,7 @@ public class ServerUtil {
             try {
                 ((RemoteTrancheServer) ConnectionUtil.getHost(host)).addListener(l);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ServerUtil.class, e);
             }
         }
         synchronized (perUrlServerListeners) {
@@ -145,7 +140,7 @@ public class ServerUtil {
             try {
                 ((RemoteTrancheServer) ConnectionUtil.getHost(host)).removeListener(l);
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ServerUtil.class, e);
             }
         }
         synchronized (perUrlServerListeners) {
@@ -166,7 +161,7 @@ public class ServerUtil {
             try {
                 ((RemoteTrancheServer) ConnectionUtil.getHost(host)).clearListeners();
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ServerUtil.class, e);
             }
         }
         synchronized (perUrlServerListeners) {
@@ -217,41 +212,5 @@ public class ServerUtil {
      */
     public static void setHostName(String host) {
         overrideHost = host;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ServerUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ServerUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

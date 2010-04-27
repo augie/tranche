@@ -38,8 +38,8 @@ import org.tranche.hash.BigHash;
 public class BigHashHelperPanel extends JPanel {
 
     private final String DEFAULT_RESULT_TEXT = " ";
-    private final static String base16Alphabet = "0123456789abcdef";
-    private final static String base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    private static final String base16Alphabet = "0123456789abcdef";
+    private static final String base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     private DisplayTextArea resultText = new DisplayTextArea(DEFAULT_RESULT_TEXT);
     public static final Dimension RECOMMENDED_DIMENSION = new Dimension(500, 280);
 

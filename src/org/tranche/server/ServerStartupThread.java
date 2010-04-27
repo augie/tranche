@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Set;
 import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.DebuggableThread;
+import org.tranche.commons.TextUtil;
 import org.tranche.configuration.ConfigKeys;
-import org.tranche.configuration.ServerModeFlag;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -35,18 +37,15 @@ import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.network.*;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.User;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Start up tasks thread for server. Important for integrity of network: makes sure certain items which should be deleted are, and attempts to get copies of any newly added chunks.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class ServerStartupThread extends Thread {
+public class ServerStartupThread extends DebuggableThread {
 
-    private static boolean debug = false;
     /**
      * 
      */
@@ -151,8 +150,8 @@ public class ServerStartupThread extends Thread {
             final long lastRecordedActivityTimestamp = ffts.getActivityLog().getLastRecordedTimestamp();
 
             final long startWriteOnlyTimestamp = TimeUtil.getTrancheTimestamp();
-           
-             // ----------------------------------------------------------------------------------------------
+
+            // ----------------------------------------------------------------------------------------------
             //  STEP 1: Wait for it to load data blocks
             // ----------------------------------------------------------------------------------------------
             debugOut("Step 1: ");
@@ -166,7 +165,7 @@ public class ServerStartupThread extends Thread {
 
             // Record time took to complete step
             step1Time = TimeUtil.getTrancheTimestamp() - step1Start;
-            
+
             // ----------------------------------------------------------------------------------------------
             //  STEP 2: Check other servers for logs, and see if anything should be deleted.
             // ----------------------------------------------------------------------------------------------
@@ -285,12 +284,12 @@ public class ServerStartupThread extends Thread {
         } finally {
             exitted = true;
             debugOut("---------------------------------------------------------------------------------------------------------------------------");
-            debugOut(" ServerStartupThread finished. Took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
-            debugOut("    * Step 1 (wait for datablocks to load) ..................................... " + Text.getPrettyEllapsedTimeString(step1Time));
-            debugOut("    * Step 2 (find and replace meta data) ...................................... " + Text.getPrettyEllapsedTimeString(step2Time));
-            debugOut("    * Step 3 (set server mode unrestricted) .................................... " + Text.getPrettyEllapsedTimeString(step3Time));
-            debugOut("    * Step 4 (find and add missed chunks) ...................................... " + Text.getPrettyEllapsedTimeString(step4Time));
-            debugOut("    * Step 5 (wait for offline servers to perform steps 3 and 5) ............... " + Text.getPrettyEllapsedTimeString(step5Time));
+            debugOut(" ServerStartupThread finished. Took: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
+            debugOut("    * Step 1 (wait for datablocks to load) ..................................... " + TextUtil.formatTimeLength(step1Time));
+            debugOut("    * Step 2 (find and replace meta data) ...................................... " + TextUtil.formatTimeLength(step2Time));
+            debugOut("    * Step 3 (set server mode unrestricted) .................................... " + TextUtil.formatTimeLength(step3Time));
+            debugOut("    * Step 4 (find and add missed chunks) ...................................... " + TextUtil.formatTimeLength(step4Time));
+            debugOut("    * Step 5 (wait for offline servers to perform steps 3 and 5) ............... " + TextUtil.formatTimeLength(step5Time));
             debugOut(" Deletes: " + deleteCount[0] + "; Adds: " + addCount[0]);
             debugOut("---------------------------------------------------------------------------------------------------------------------------");
         }
@@ -823,11 +822,11 @@ public class ServerStartupThread extends Thread {
 
                                 ADD:
                                 for (Activity add : addedChunks) {
-                                    
+
                                     boolean isAfter = (delete.getTimestamp() > add.getTimestamp());
                                     boolean isSameType = (add.isMetaData() == delete.isMetaData());
                                     boolean isSameChunk = isAfter && isSameType && add.getHash().equals(delete.getHash());
-                                    
+
                                     // Don't bother--only care about deletes for chunks after they were added!
                                     if (!isSameChunk) {
                                         continue ADD;
@@ -904,7 +903,7 @@ public class ServerStartupThread extends Thread {
                 // If made it here, finished!
                 return true;
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ServerStartupThread.class, e);
             } finally {
                 releaseConnection(host);
             }
@@ -971,42 +970,6 @@ public class ServerStartupThread extends Thread {
             hostsToRelease.remove(host);
             ConnectionUtil.unlockConnection(host);
             ConnectionUtil.safeCloseHost(host);
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ServerStartupThread.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ServerStartupThread.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

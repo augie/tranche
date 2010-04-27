@@ -15,6 +15,7 @@
  */
 package org.tranche.hash;
 
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.*;
 import java.io.*;
 import java.util.*;
@@ -35,7 +36,7 @@ import java.util.*;
 public class DiskBackedBigHashList extends AbstractList<BigHash> {
 
     static String SLASH = File.separator;
-    static String NL = Text.getNewLine();
+    static String NL = "\n";
     // Incremented as hashes are added, decremented as hashes are removed.
     // Could be calculated by iterating partitions, but this offers a speedup.
     private int size = 0;

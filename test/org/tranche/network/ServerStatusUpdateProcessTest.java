@@ -15,6 +15,7 @@
  */
 package org.tranche.network;
 
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.TodoException;
 import org.tranche.util.TestUtil;
 
@@ -27,13 +28,13 @@ public class ServerStatusUpdateProcessTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        ServerStatusUpdateProcess.setDebug(true);
+        DebugUtil.setDebug(ServerStatusUpdateProcess.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        ServerStatusUpdateProcess.setDebug(false);
+        DebugUtil.setDebug(ServerStatusUpdateProcess.class, false);
     }
 
     public void testCalculateNonCoreServersToUpdate() throws Exception {
@@ -81,7 +82,7 @@ public class ServerStatusUpdateProcessTest extends NetworkPackageTestCase {
         TestUtil.printTitle("ServerStatusUpdateProcessTest:testCalculateAllCoreStatusTableRowRanges()");
         throw new TodoException();
 //        // set up -- makes the test verifiable
-//        ConfigureTranche.set(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING, "1");
+//        ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING, "1");
 //
 //        FlatFileTrancheServer ffts = null;
 //        File dir = null;

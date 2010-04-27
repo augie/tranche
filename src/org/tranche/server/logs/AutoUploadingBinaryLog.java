@@ -25,8 +25,8 @@ import org.tranche.hash.BigHash;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 import org.tranche.annotations.Todo;
+import org.tranche.commons.TextUtil;
 import org.tranche.security.Signature;
 import org.tranche.time.TimeUtil;
 
@@ -232,7 +232,7 @@ public class AutoUploadingBinaryLog implements Submittable {
         if (flush || hasHourEllapsed || has1MBAccumulated) {
             try {
                 // only do this if the log url is not null
-                final String logURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_SERVER_URL);
+                final String logURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_SERVER_URL);
                 if (logURL == null || logURL.equals("")) {
                     return;
                 }
@@ -248,7 +248,7 @@ public class AutoUploadingBinaryLog implements Submittable {
                     msgBuf.append(" [flush, server closing?]");
                 }
                 printTracer("Uploading log, reason(s): " + msgBuf.toString());
-                System.out.println("Uploading server log for " + serverURL + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", reason(s): " + msgBuf.toString());
+                System.out.println("Uploading server log for " + serverURL + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", reason(s): " + msgBuf.toString());
 
                 // Swap out entries
                 final LogEntries entriesToCommit = this.entries;
@@ -380,7 +380,7 @@ public class AutoUploadingBinaryLog implements Submittable {
                     }
 
                     // only do this if the log url is not null
-                    final String logURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_SERVER_URL);
+                    final String logURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_SERVER_URL);
                     if (logURL == null || logURL.equals("")) {
                         // if null, just delete to not take too much space
                         printTracer("Log URL not set. Deleting log.");

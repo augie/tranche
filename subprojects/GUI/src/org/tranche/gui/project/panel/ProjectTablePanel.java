@@ -40,9 +40,9 @@ import javax.swing.JPopupMenu;
 
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.project.ProjectFilePart;
-import org.tranche.util.Text;
 
 /**
  *
@@ -242,7 +242,7 @@ public class ProjectTablePanel extends ProjectViewPanel {
                 case 0:
                     return pageFiles.get(row).getRelativeName();
                 case 1:
-                    return Text.getFormattedBytes(pageFiles.get(row).getPaddingAdjustedLength());
+                    return TextUtil.formatBytes(pageFiles.get(row).getPaddingAdjustedLength());
                 default:
                     return null;
             }

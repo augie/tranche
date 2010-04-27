@@ -18,8 +18,8 @@ package org.tranche.add;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.util.Collection;
+import org.tranche.commons.TextUtil;
 import org.tranche.server.PropagationExceptionWrapper;
-import org.tranche.util.Text;
 
 /**
  * <p>A helper class that implements AddFileTool listening methods and produces data suitable for dispaly on the command prompt.</p>
@@ -32,7 +32,6 @@ public class CommandLineAddFileToolListener implements AddFileToolListener {
     private AddFileTool aft;
     private PrintStream out;
     private int chunkCount = 0;
-
 
     static {
         nf.setGroupingUsed(true);
@@ -178,7 +177,7 @@ public class CommandLineAddFileToolListener implements AddFileToolListener {
      * @param event
      */
     public void startedDirectory(AddFileToolEvent event) {
-        out.println("Uploading " + event.getFile().getAbsolutePath() + " (" + Text.getFormattedBytes(aft.getTimeEstimator().getTotalBytes()) + ")");
+        out.println("Uploading " + event.getFile().getAbsolutePath() + " (" + TextUtil.formatBytes(aft.getTimeEstimator().getTotalBytes()) + ")");
     }
 
     /**
@@ -186,7 +185,7 @@ public class CommandLineAddFileToolListener implements AddFileToolListener {
      * @param event
      */
     public void finishedDirectory(AddFileToolEvent event) {
-        out.println("Finished in " + Text.getPrettyEllapsedTimeString(aft.getTimeEstimator().getTimeRunning()));
+        out.println("Finished in " + TextUtil.formatTimeLength(aft.getTimeEstimator().getTimeRunning()));
     }
 
     /**

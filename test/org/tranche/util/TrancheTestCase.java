@@ -27,7 +27,7 @@ import org.tranche.server.PropagationExceptionWrapper;
  */
 public class TrancheTestCase extends TestCase {
 
-    private final static boolean isTesting = TestUtil.isTesting();
+    private static final boolean isTesting = TestUtil.isTesting();
     
     public TrancheTestCase() {
         
@@ -40,14 +40,12 @@ public class TrancheTestCase extends TestCase {
     @Override()
     protected void setUp() throws Exception {
         TestUtil.setTesting(true);
-        DebugUtil.setDebug(true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         TempFileUtil.clear();
         TestUtil.setTesting(isTesting);
-        DebugUtil.setDebug(false);
     }
 
     /**

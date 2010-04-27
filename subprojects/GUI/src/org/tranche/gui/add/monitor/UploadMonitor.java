@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import org.tranche.add.AddFileToolEvent;
 import org.tranche.add.AddFileToolListener;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.GenericMenu;
 import org.tranche.gui.GenericMenuBar;
@@ -35,7 +36,6 @@ import org.tranche.gui.monitor.StatusPanel;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -251,7 +251,7 @@ public class UploadMonitor extends Monitor {
     public void start() {
         if (!isListening()) {
             log.start();
-            log.addMessage("Listening at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Listening at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             us.getAddFileTool().addListener(listener);
             setStatus("  Idle");
             setListening(true);
@@ -264,7 +264,7 @@ public class UploadMonitor extends Monitor {
      */
     public void stop() {
         if (isListening()) {
-            log.addMessage("Stopped listening at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Stopped listening at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             us.getAddFileTool().removeListener(listener);
             setListening(false);
             setStatus("  NOT LISTENING");

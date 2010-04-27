@@ -20,13 +20,13 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import org.tranche.commons.DebugUtil;
 import org.tranche.gui.LazyLoadAllSlowStuffAfterGUIRenders;
 import org.tranche.gui.LazyLoadable;
 import org.tranche.gui.project.ProjectPool;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.PersistentServerFileUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -45,7 +45,7 @@ public class DownloadCache implements LazyLoadable {
             ProjectPool.waitForStartup();
             try {
                 file = PersistentServerFileUtil.getPersistentFile("downloads");
-                
+
                 // -----------------------------------------------------------------
                 // Fix: used to have a downloads directory in same location,
                 //      so need to check. If so, create a new file.
@@ -57,10 +57,10 @@ public class DownloadCache implements LazyLoadable {
                 if (file.exists() && file.isDirectory()) {
                     file = PersistentServerFileUtil.getPersistentFile("downloads-cache");
                 }
-                
-                debugOut("Loading download cache: " + file.getAbsolutePath());
+
+                DebugUtil.debugOut(DownloadCache.class, "Loading download cache: " + file.getAbsolutePath());
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(DownloadCache.class, e);
             }
             // read
             synchronized (fileLock) {
@@ -71,22 +71,22 @@ public class DownloadCache implements LazyLoadable {
                     in = new BufferedInputStream(fis);
                     while (in.available() > 0) {
                         try {
-                            debugOut("Loading dowload summary.");
+                            DebugUtil.debugOut(DownloadCache.class, "Loading dowload summary.");
                             DownloadSummary ds = new DownloadSummary(in);
-                            debugOut("Loaded download summary.");
+                            DebugUtil.debugOut(DownloadCache.class, "Loaded download summary.");
                             if (ds.getStatus().equals(DownloadSummary.STATUS_DOWNLOADING)) {
                                 ds.pause();
                                 ds.resume();
-                                debugOut("Paused download.");
+                                DebugUtil.debugOut(DownloadCache.class, "Paused download.");
                             }
                             DownloadPool.set(ds);
-                            debugOut("Set download summary.");
+                            DebugUtil.debugOut(DownloadCache.class, "Set download summary.");
                         } catch (Exception e) {
-                            debugErr(e);
+                            DebugUtil.debugErr(DownloadCache.class, e);
                         }
                     }
                 } catch (Exception e) {
-                    debugErr(e);
+                    DebugUtil.debugErr(DownloadCache.class, e);
                 } finally {
                     IOUtil.safeClose(in);
                     IOUtil.safeClose(fis);
@@ -138,7 +138,7 @@ public class DownloadCache implements LazyLoadable {
 
             @Override
             public void run() {
-                ThreadUtil.safeSleep(2500);
+                ThreadUtil.sleep(2500);
                 // save
                 synchronized (fileLock) {
                     FileOutputStream fos = null;
@@ -164,41 +164,5 @@ public class DownloadCache implements LazyLoadable {
             }
         };
         t.start();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        DownloadCache.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(DownloadCache.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

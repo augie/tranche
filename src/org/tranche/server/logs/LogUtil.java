@@ -27,10 +27,10 @@ import org.apache.commons.httpclient.methods.multipart.FilePart;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
-import org.tranche.util.Text;
 
 /**
  * Utility class for server logging mechanisms.
@@ -257,7 +257,7 @@ public class LogUtil {
                     filePart
                 };
 
-                printTracer("Uploading log (server=" + fromServerIP + ",isCompleteHour=" + isCompleteHour + ") at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                printTracer("Uploading log (server=" + fromServerIP + ",isCompleteHour=" + isCompleteHour + ") at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 
                 filePost.setRequestEntity(new MultipartRequestEntity(parts, filePost.getParams()));
                 HttpClient client = new HttpClient();

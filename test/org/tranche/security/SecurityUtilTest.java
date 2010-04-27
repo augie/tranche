@@ -24,7 +24,7 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TrancheTestCase;
 

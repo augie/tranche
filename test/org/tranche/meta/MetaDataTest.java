@@ -25,7 +25,7 @@ import org.tranche.security.Signature;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.FileEncoding;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.users.UserCertificateUtil;
 import org.tranche.util.TestUtil;

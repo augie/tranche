@@ -30,6 +30,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.GenericLabel;
 import org.tranche.gui.GenericTextArea;
 import org.tranche.gui.ErrorFrame;
@@ -40,7 +41,6 @@ import org.tranche.gui.Styles;
 import org.tranche.server.logs.ActionByte;
 import org.tranche.server.logs.LogEntry;
 import org.tranche.server.logs.LogReader;
-import org.tranche.util.Text;
 
 /**
  * A very simple binary log file reader. Very simple.
@@ -322,7 +322,7 @@ public class SimpleLogReaderPanel extends JPanel {
                         buffer.append(ip);
                         clients.add(ip);
 
-                        logFileDataArea.append(buffer.toString() + Text.getNewLine());
+                        logFileDataArea.append(buffer.toString() + "\n");
                     }
 
                     // Set the file name
@@ -331,7 +331,7 @@ public class SimpleLogReaderPanel extends JPanel {
                     // Set the date
                     try {
                         long timestamp = Long.parseLong(file.getName().substring(0, file.getName().indexOf(".")));
-                        logFileDateLabel.setText("* Date: " + Text.getFormattedDate(timestamp));
+                        logFileDateLabel.setText("* Date: " + TextUtil.getFormattedDate(timestamp));
                     } catch (Exception fex) {
                         logFileDateLabel.setText("* Date: not found (should be in file name)");
                     }
@@ -340,8 +340,8 @@ public class SimpleLogReaderPanel extends JPanel {
                     logFileNumEntriesLabel.setText("* Entries: " + entriesCount);
 
                     // Set uploaded and downloaded
-                    logFileUploadedLabel.setText("* Uploaded: " + Text.getFormattedBytes(uploaded));
-                    logFileDownloadedLabel.setText("* Downloaded: " + Text.getFormattedBytes(downloaded));
+                    logFileUploadedLabel.setText("* Uploaded: " + TextUtil.formatBytes(uploaded));
+                    logFileDownloadedLabel.setText("* Downloaded: " + TextUtil.formatBytes(downloaded));
                     logFileNumClientsLabel.setText("* Clients: " + clients.size());
                 } catch (Exception ex) {
                     ErrorFrame ef = new ErrorFrame();

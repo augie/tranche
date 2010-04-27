@@ -38,7 +38,6 @@ import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -79,14 +78,14 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
      */
     public void testProjectPositive(boolean isSpecifyServers) throws Exception {
         
-        final String oldReplicationsVal = ConfigureTranche.get(ConfigureTranche.PROP_REPLICATIONS);
+        final String oldReplicationsVal = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS);
 
         String HOST1 = "server1.com";
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
 
-            ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, String.valueOf(1));
+            ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, String.valueOf(1));
 
             testNetwork.start();
 
@@ -231,7 +230,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             GetFileToolReport gftr = gft.getDirectory();
             assertSuccess(gftr);
 
-            Text.printRecursiveDirectoryStructure(tmpDir);
+            TestUtil.printRecursiveDirectoryStructure(tmpDir);
 
             // Recursively find files
             List<File> filesToCheck = new LinkedList();
@@ -280,7 +279,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             assertTrue("Third downloaded file<" + downloadedFiles[2].getName() + "> doesn't match one of the files uploaded <" + assertFileName1 + " or " + assertFileName2 + " or " + assertFileName3 + ">", thirdDownloadedFileMatches);
         } finally {
             testNetwork.stop();
-            ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, oldReplicationsVal);
+            ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, oldReplicationsVal);
         }
     }
     
@@ -297,14 +296,14 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
         
         TestUtil.printTitle("ArbitraryProjectBuildingToolTest:testProjectWithDataSetAndSingleFile()");
         
-        final String oldReplicationsVal = ConfigureTranche.get(ConfigureTranche.PROP_REPLICATIONS);
+        final String oldReplicationsVal = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS);
 
         String HOST1 = "server1.com";
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false, HashSpan.FULL_SET, DevUtil.DEV_USER_SET));
         try {
 
-            ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, String.valueOf(1));
+            ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, String.valueOf(1));
 
             testNetwork.start();
 
@@ -333,7 +332,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             assertSuccess(report1);
             BigHash hash1 = report1.getHash();
 
-            Text.printRecursiveDirectoryStructure(testDir1);
+            TestUtil.printRecursiveDirectoryStructure(testDir1);
             
             aft = new AddFileTool();
             aft.setUserCertificate(DevUtil.getDevAuthority());
@@ -418,7 +417,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             GetFileToolReport gftr = gft.getDirectory();
             assertSuccess(gftr);
 
-            Text.printRecursiveDirectoryStructure(tmpDir);
+            TestUtil.printRecursiveDirectoryStructure(tmpDir);
 
             // Recursively find files
             List<File> filesToCheck = new LinkedList();
@@ -450,7 +449,7 @@ public class ArbitraryProjectBuildingToolTest extends TrancheTestCase {
             assertEquals("Expecting three files plus license.",  3, regularFilesFound.size());
         } finally {
             testNetwork.stop();
-            ConfigureTranche.set(ConfigureTranche.PROP_REPLICATIONS, oldReplicationsVal);
+            ConfigureTranche.set(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS, oldReplicationsVal);
         }
     }
 }

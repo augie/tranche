@@ -23,6 +23,7 @@ import java.util.Collection;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
+import org.tranche.commons.TextUtil;
 import org.tranche.get.GetFileToolEvent;
 import org.tranche.get.GetFileToolListener;
 import org.tranche.gui.get.DownloadSummary;
@@ -35,7 +36,6 @@ import org.tranche.gui.monitor.Monitor;
 import org.tranche.gui.monitor.StatusPanel;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -242,7 +242,7 @@ public class DownloadMonitor extends Monitor {
     public void start() {
         if (!isListening()) {
             log.start();
-            log.addMessage("Listening at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Listening at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             ds.getGetFileTool().addListener(listener);
             setListening(true);
             resetStatus();
@@ -255,7 +255,7 @@ public class DownloadMonitor extends Monitor {
      */
     public void stop() {
         if (isListening()) {
-            log.addMessage("Stopped listening at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            log.addMessage("Stopped listening at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             ds.getGetFileTool().removeListener(listener);
             setListening(false);
             setStatus("  NOT LISTENING");

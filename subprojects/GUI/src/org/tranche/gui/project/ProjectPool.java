@@ -27,7 +27,6 @@ import org.tranche.gui.LazyLoadable;
 import org.tranche.project.ProjectSummary;
 import org.tranche.project.ProjectSummaryCache;
 import org.tranche.hash.BigHash;
-import org.tranche.util.DebugUtil;
 
 /**
  *
@@ -35,7 +34,6 @@ import org.tranche.util.DebugUtil;
  */
 public class ProjectPool implements LazyLoadable {
 
-    private static boolean debug = false;
     private static final Set<ProjectSummary> pool = new HashSet<ProjectSummary>();
     private static final List<ProjectPoolListener> listeners = new ArrayList<ProjectPoolListener>();
     private static boolean lazyLoadStarted = false;
@@ -266,42 +264,6 @@ public class ProjectPool implements LazyLoadable {
     public static void addListener(ProjectPoolListener listener) {
         synchronized (listeners) {
             listeners.add(listener);
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ProjectPool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ProjectPool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

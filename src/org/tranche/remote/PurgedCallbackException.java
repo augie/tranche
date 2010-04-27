@@ -16,9 +16,9 @@
 package org.tranche.remote;
 
 import java.io.IOException;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Improved messages for purged callbacks instead of sporadic "null" messages.</p>
@@ -32,6 +32,6 @@ public class PurgedCallbackException extends IOException {
      * @param c
      */
     public PurgedCallbackException(RemoteCallback c) {
-        super(c.getClass().getSimpleName() + " (id = " + c.getID() + ") purged from " + IOUtil.createURL(c.getRemoteTrancheServer()) + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " with the message: " + c.getPurgeMsg() + ".");
+        super(c.getClass().getSimpleName() + " (id = " + c.getID() + ") purged from " + IOUtil.createURL(c.getRemoteTrancheServer()) + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " with the message: " + c.getPurgeMsg() + ".");
     }
 }

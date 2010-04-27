@@ -18,9 +18,9 @@ package org.tranche.flatfile.logs;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -166,8 +166,8 @@ public class InMemoryAggregateLog implements DataBlockUtilLog {
         StringBuffer buffer = new StringBuffer();
 
         buffer.append("In-memory aggregate log for DataBlockUtil:\n");
-        buffer.append(" - Total run time: " + Text.getPrettyEllapsedTimeString(getRuntime()) + "\n");
-        buffer.append(" - Total merge time: " + Text.getPrettyEllapsedTimeString(getTimeSpentMerging()) + "\n");
+        buffer.append(" - Total run time: " + TextUtil.formatTimeLength(getRuntime()) + "\n");
+        buffer.append(" - Total merge time: " + TextUtil.formatTimeLength(getTimeSpentMerging()) + "\n");
         buffer.append(" - Set blocks: successes=>" + getBlockSetSuccesses() + ", failures=>" + getBlockSetFailures() + "\n");
         buffer.append(" - Get blocks: successes=>" + getBlockGetSuccesses() + ", failures=>" + getBlockGetFailures() + "\n");
 

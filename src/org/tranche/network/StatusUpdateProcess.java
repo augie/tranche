@@ -15,11 +15,13 @@
  */
 package org.tranche.network;
 
+import org.tranche.commons.DebuggableThread;
+
 /**
  * <p>A thread for updating the network status.</p>
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public abstract class StatusUpdateProcess extends Thread {
+public abstract class StatusUpdateProcess extends DebuggableThread {
 
     protected boolean isRunning = true;
 

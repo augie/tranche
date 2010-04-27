@@ -15,7 +15,7 @@
  */
 package org.tranche.servers;
 
-import org.tranche.util.*;
+import org.tranche.commons.TextUtil;
 
 /**
  * <p>Used in server listeners to describe the communications between client and server.</p>
@@ -49,7 +49,7 @@ public class ServerMessageEvent extends ServerEvent {
      */
     @Override()
     public String toString() {
-        return "Callback #: " + callbackId + ";  Date: " + Text.getFormattedDate(getTimestamp()) + ";";
+        return "Callback #: " + callbackId + ";  Date: " + TextUtil.getFormattedDate(getTimestamp()) + ";";
     }
     
 }

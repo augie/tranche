@@ -27,12 +27,10 @@ import org.tranche.security.SecurityUtil;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.EmailUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>The network status update process used when there is a local server.</p>
@@ -48,7 +46,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class ServerStatusUpdateProcess extends StatusUpdateProcess {
 
-    private static boolean debug = false;
     private static final Set<StatusTableRowRange> ranges = new HashSet<StatusTableRowRange>(), nonCoreServersToUpdate = new HashSet<StatusTableRowRange>();
     private static long offlineServerNotificationTimestamp = 0;
 
@@ -69,7 +66,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
         // keep going
         while (isRunning) {
             try {
-                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_FREQUENCY));
+                ThreadUtil.sleep(ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_FREQUENCY));
 
                 if (NetworkUtil.getLocalServer() != null && NetworkUtil.getLocalServerRow() != null) {
                     // update the local server info -- do not let a problem here stop the updates
@@ -242,7 +239,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                         }
                     }
                     // some time between emails
-                    long interval = ConfigureTranche.getLong(ConfigureTranche.PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL);
+                    long interval = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_OFFLINE_NOTIFICATION_INTERVAL);
                     if (topOnlineHost.equals(NetworkUtil.getLocalServerRow().getHost()) && interval > 0 && TimeUtil.getTrancheTimestamp() - offlineServerNotificationTimestamp > interval) {
                         offlineServerNotificationTimestamp = TimeUtil.getTrancheTimestamp();
                         // check the number of core servers that are offline
@@ -254,11 +251,11 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                         }
                         // send an email if there's something noteworthy
                         if (ConfigureTranche.getAdminEmailAccounts().length > 0 && offlineCoreServerSet.size() > 0) {
-                            String message = offlineCoreServerSet.size() + " core servers are offline:" + Text.getNewLine() + Text.getNewLine();
+                            String message = offlineCoreServerSet.size() + " core servers are offline:" + "\n" + "\n";
                             for (StatusTableRow row : offlineCoreServerSet) {
-                                message = message + "  " + row.getName() + " (" + row.getHost() + ")" + Text.getNewLine();
+                                message = message + "  " + row.getName() + " (" + row.getHost() + ")" + "\n";
                             }
-                            EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] " + offlineCoreServerSet.size() + " Core Servers Offline", ConfigureTranche.getAdminEmailAccounts(), message);
+                            EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] " + offlineCoreServerSet.size() + " Core Servers Offline", ConfigureTranche.getAdminEmailAccounts(), message);
                         }
                     }
                 } catch (Exception e) {
@@ -377,7 +374,7 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
         }
         // now go through the rows creating ranges
         for (int i = 0; i < coreRows.size();) {
-            if (i + ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING) >= coreRows.size()) {
+            if (i + ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING) >= coreRows.size()) {
                 StatusTableRowRange range = new StatusTableRowRange(coreRows.get(i).getHost(), coreRows.get(0).getHost());
                 for (int j = i; j < coreRows.size(); j++) {
                     // if the current server is the local host or is offline, connect to the next one
@@ -393,8 +390,8 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                 }
                 i = coreRows.size();
             } else {
-                StatusTableRowRange range = new StatusTableRowRange(coreRows.get(i).getHost(), coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).getHost());
-                for (int j = i; j < i + ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING); j++) {
+                StatusTableRowRange range = new StatusTableRowRange(coreRows.get(i).getHost(), coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).getHost());
+                for (int j = i; j < i + ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING); j++) {
                     // if the current server is the local host or is offline, connect to the next one
                     if (range.getConnectionHost().equals(host) || !coreRows.get(j).isOnline()) {
                         range.setConnectionHost(coreRows.get(j + 1).getHost());
@@ -403,49 +400,13 @@ public class ServerStatusUpdateProcess extends StatusUpdateProcess {
                     }
                 }
                 // if we are connected to the last in the range and it is the local host or offline, don't bother adding to the ranges
-                if (!(range.getConnectionHost().equals(coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).getHost()) && (range.getConnectionHost().equals(host) || !coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).isOnline()))) {
+                if (!(range.getConnectionHost().equals(coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).getHost()) && (range.getConnectionHost().equals(host) || !coreRows.get(i + ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING)).isOnline()))) {
                     info.addCoreServerRowRange(range);
                 }
-                i += ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING);
+                i += ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_SERVER_GROUPING);
             }
         }
 
         return info;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ServerStatusUpdateProcess.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ServerStatusUpdateProcess.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

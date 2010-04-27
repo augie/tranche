@@ -20,58 +20,57 @@ import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.tranche.remote.RemoteUtil;
-import org.tranche.util.Text;
 
 /**
  * @author Bryan Smith <bryanesmith at gmail.com>
  */
 public class RSSRenderUtil {
 
-    private static String NEWLINE = Text.getNewLine();
-    private static String PREVIEW_CSS = "<style type=\"text/css\"> <!--" + NEWLINE +
-            "body {" +
-            "  margin: 0;" +
-            "  font-family: arial, sans-serif;" +
-            "  line-height: 1.3em;" +
-            "  font-size: 10px;" +
-            "}" + NEWLINE +
-            "h1 {  " +
-            "  font-weight: normal; " +
-            "  font-size: 1.5em; " +
-            "  font-weight: bold; " +
-            "  font-family: Georgia, Times, Times New Roman, serif; " +
-            "  margin-top: 5px; " +
-            "  margin-bottom: 14px;" +
-            "}" + NEWLINE +
-            "h2 {" +
-            "  font-size: 1em; " +
-            "  font-weight: bold; " +
-            "  margin-bottom:0; " +
-            "  margin-top: 8px; " +
-            "  color: #666666; " +
-            "}" + NEWLINE +
-            "p.date {" +
-            "  font-size: 1em; " +
-            "  margin-top:0; " +
-            "  margin-bottom: 0px;" +
-            "  color: #000000;" +
-            "}" + NEWLINE +
-            "p.description {font-size: 1em; margin-top: 0;}" + NEWLINE +
-            "p {font-size: 1em; margin-bottom: 5px;}" + NEWLINE +
-            "a {" +
-            "  color: #660000;" +
-            "  font-size: 1.2em;" +
-            "}" + NEWLINE +
-            "hr {height: 1px; border: 0; margin: 0; background: none;}" + NEWLINE +
-            "--></style>";
+    private static String NEWLINE = "\n";
+    private static String PREVIEW_CSS = "<style type=\"text/css\"> <!--" + NEWLINE
+            + "body {"
+            + "  margin: 0;"
+            + "  font-family: arial, sans-serif;"
+            + "  line-height: 1.3em;"
+            + "  font-size: 10px;"
+            + "}" + NEWLINE
+            + "h1 {  "
+            + "  font-weight: normal; "
+            + "  font-size: 1.5em; "
+            + "  font-weight: bold; "
+            + "  font-family: Georgia, Times, Times New Roman, serif; "
+            + "  margin-top: 5px; "
+            + "  margin-bottom: 14px;"
+            + "}" + NEWLINE
+            + "h2 {"
+            + "  font-size: 1em; "
+            + "  font-weight: bold; "
+            + "  margin-bottom:0; "
+            + "  margin-top: 8px; "
+            + "  color: #666666; "
+            + "}" + NEWLINE
+            + "p.date {"
+            + "  font-size: 1em; "
+            + "  margin-top:0; "
+            + "  margin-bottom: 0px;"
+            + "  color: #000000;"
+            + "}" + NEWLINE
+            + "p.description {font-size: 1em; margin-top: 0;}" + NEWLINE
+            + "p {font-size: 1em; margin-bottom: 5px;}" + NEWLINE
+            + "a {"
+            + "  color: #660000;"
+            + "  font-size: 1.2em;"
+            + "}" + NEWLINE
+            + "hr {height: 1px; border: 0; margin: 0; background: none;}" + NEWLINE
+            + "--></style>";
     /**
      * The regular expressions for XML tags
      */
-    private static String TITLE_PATTERN = ".*<title\\s?.*?>(.*?)</title>.*",  DESCRIPTION_PATTERN = ".*<description\\s?.*?>(.*?)</description>.*",  DATE_PATTERN = ".*<pubDate\\s?.*?>(.*?)</pubDate>.*";
+    private static String TITLE_PATTERN = ".*<title\\s?.*?>(.*?)</title>.*", DESCRIPTION_PATTERN = ".*<description\\s?.*?>(.*?)</description>.*", DATE_PATTERN = ".*<pubDate\\s?.*?>(.*?)</pubDate>.*";
     /**
      * Number of entries in RSS to show
      */
-    public final static int NUM_ENTRIES_TO_RENDER = 3;
+    public static final int NUM_ENTRIES_TO_RENDER = 3;
 
     public RSSRenderUtil() {
     }

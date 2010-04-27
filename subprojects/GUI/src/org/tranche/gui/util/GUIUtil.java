@@ -68,9 +68,9 @@ import org.tranche.project.ProjectSummary;
 import org.tranche.security.WrongPassphraseException;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.OperatingSystem;
-import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
+import org.tranche.commons.TextUtil;
 
 /**
  * Helpful static methods to be used in the Tranche GUI.
@@ -103,7 +103,7 @@ public class GUIUtil {
     public static final Exception CANT_READ_KEY_EXCEPTION = new Exception("Can't read user's private key. Please make sure it is valid.");
     public static final Exception CANT_CONNECT_EXCEPTION = new Exception("Can't connect to any of the specified servers.");
     public static final Exception USER_CANT_WRITE_EXCEPTION = new Exception("Can't find any servers that you have permission to upload to.");
-    public static final String NEWLINE = Text.getNewLine();
+    public static final String NEWLINE = "\n";
     private static ProjectReplicationToolGUI replicationTool = null;
     private static OperatingSystem userOS = null;
 
@@ -291,8 +291,8 @@ public class GUIUtil {
         infoPanel.set("Hash", summary.hash.toString());
         infoPanel.set("Title", summary.title);
         infoPanel.set("Uploaded By", summary.uploader);
-        infoPanel.set("Uploaded", Text.getFormattedDate(summary.uploadTimestamp));
-        infoPanel.set("Size", GUIUtil.integerFormat.format(summary.files) + " files, " + Text.getFormattedBytes(summary.size));
+        infoPanel.set("Uploaded", TextUtil.getFormattedDate(summary.uploadTimestamp));
+        infoPanel.set("Size", GUIUtil.integerFormat.format(summary.files) + " files, " + TextUtil.formatBytes(summary.size));
         if (summary.oldVersion != null) {
             infoPanel.set("Old Version", summary.oldVersion.toString());
         }

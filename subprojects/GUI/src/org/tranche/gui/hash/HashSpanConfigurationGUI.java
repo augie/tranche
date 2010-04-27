@@ -52,7 +52,6 @@ import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.span.HashSpanCalculator;
 import org.tranche.util.IOUtil;
-import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
 
 /**
@@ -325,7 +324,7 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
 //
 //                    // 1. Error if number of replications not set
 //                    if (replicationsField.getText().trim().equals("")) {
-//                        errorMsg.append("* Must specify number of replications. E.g., if want one copy of every file chunk in network, specify 1." + Text.getNewLine());
+//                        errorMsg.append("* Must specify number of replications. E.g., if want one copy of every file chunk in network, specify 1." + "\n");
 //                        isError = true;
 //                    } // 2. Error if number of replications NaN
 //                    else {
@@ -333,26 +332,26 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
 //                        try {
 //                            numReplications = Integer.parseInt(replicationsField.getText());
 //                        } catch (Exception numEx) {
-//                            errorMsg.append("* \"" + replicationsField.getText() + "\" is not a number. Please specify a whole number, e.g., 1, 2, 3, etc." + Text.getNewLine());
+//                            errorMsg.append("* \"" + replicationsField.getText() + "\" is not a number. Please specify a whole number, e.g., 1, 2, 3, etc." + "\n");
 //                            isError = true;
 //                        }
 //                    }
 //
 //                    // 3. Error if at least not 1 server selected
 //                    if (serversPanel.getSelectedServers().size() < 1) {
-//                        errorMsg.append("* Must select at least one server that is online." + Text.getNewLine());
+//                        errorMsg.append("* Must select at least one server that is online." + "\n");
 //                        isError = true;
 //                    }
 //
 //                    // 4. No user loaded
 //                    if (userButton.getUser() == null) {
-//                        errorMsg.append("* Must load a user." + Text.getNewLine());
+//                        errorMsg.append("* Must load a user." + "\n");
 //                        isError = true;
 //                    } // 5. User does not have permissions to set or get configuration
 //                    // USER FILE DOES NOT REPORT PERMISSIONS CORRECTLY, TODO
 //                    //            else if (!this.userButton.getUser().canSetConfiguration() || !this.userButton.getUser().canGetConfiguration()){
 //                    //
-//                    //                errorMsg.append("* User does not have configuration permissions set." + Text.getNewLine());
+//                    //                errorMsg.append("* User does not have configuration permissions set." + "\n");
 //                    //                isError = true;
 //                    //            }
 //                    // 6. User is not recognized by server
@@ -365,7 +364,7 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
 //
 //                            // If user not recognized
 //                            if (config.getRecognizedUser(userButton.getUser().getCertificate()) == null) {
-//                                errorMsg.append("* User is not recognized by server " + server + "." + Text.getNewLine());
+//                                errorMsg.append("* User is not recognized by server " + server + "." + "\n");
 //                                isError = true;
 //                            }
 //                        }
@@ -373,10 +372,10 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
 //
 //                    // If there is an error message, display it
 //                    if (isError) {
-//                        //ef.show(new Exception("Error while attempting to calculate hash spans:" + Text.getNewLine() + errorMsg), HashSpanConfigurationGUI.this);
+//                        //ef.show(new Exception("Error while attempting to calculate hash spans:" + "\n" + errorMsg), HashSpanConfigurationGUI.this);
 //
 //                        GenericOptionPane.showMessageDialog(HashSpanConfigurationGUI.this,
-//                                "Error while attempting to calculate hash spans:" + Text.getNewLine() + errorMsg,
+//                                "Error while attempting to calculate hash spans:" + "\n" + errorMsg,
 //                                "Cannot calculate hash spans",
 //                                JOptionPane.ERROR_MESSAGE);
 //
@@ -536,7 +535,7 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
             try {
                 this.spanMap = calculator.calculateSpans();
             } catch (Exception ex) {
-                ef.show(new Exception("An error has occurred. Please try again." + Text.getNewLine() + ex), HashSpanConfigurationGUI.this);
+                ef.show(new Exception("An error has occurred. Please try again." + "\n" + ex), HashSpanConfigurationGUI.this);
                 dispose();
                 return;
             }
@@ -641,7 +640,7 @@ public class HashSpanConfigurationGUI extends GenericFrame implements MouseListe
 
                                 successes++;
                             } catch (Exception ex) {
-                                ef.show(new Exception("An error has occurred. Please try again." + Text.getNewLine() + ex), CalculatorGUI.this);
+                                ef.show(new Exception("An error has occurred. Please try again." + "\n" + ex), CalculatorGUI.this);
                                 if (url != null) {
                                     System.err.println("Problem setting hash spans for " + url + ": " + ex.getMessage());
                                 } else {

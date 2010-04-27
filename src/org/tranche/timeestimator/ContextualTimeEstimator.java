@@ -15,8 +15,8 @@
  */
 package org.tranche.timeestimator;
 
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.*;
 
 /**
  * <p>Estimated remaining time depends on performance in last n seconds.</p>
@@ -25,8 +25,7 @@ import org.tranche.util.*;
  */
 public class ContextualTimeEstimator extends TimeEstimator {
 
-    private static boolean debug = false;
-    protected final static int SECOND = 1000, MINUTE = 60 * SECOND, HOUR = 60 * MINUTE;
+    protected static final int SECOND = 1000, MINUTE = 60 * SECOND, HOUR = 60 * MINUTE;
     /**
      * <p>Too short of window puts too much emphasis on immediate performance; many
      * small files will result in too large estimated remaining time.</p>
@@ -58,7 +57,7 @@ public class ContextualTimeEstimator extends TimeEstimator {
         boolean timeForUpdate = timestampAtStartOfCurrentContext + CONTEXT_INTERVAL <= TimeUtil.getTrancheTimestamp();
         if (timeForUpdate) {
             debugOut("Percentage done: " + getPercentDone() + "%");
-            debugOut("Time running: " + Text.getPrettyEllapsedTimeString(getTimeRunning()));
+            debugOut("Time running: " + TextUtil.formatTimeLength(getTimeRunning()));
             debugOut("Total work: " + totalBytes + ", Completed work: " + bytesCompleted);
             debugOut("Estimated remaining time: " + getHours() + "hr " + getMinutes() + "min " + getSeconds() + "s\n");
         }
@@ -163,41 +162,5 @@ public class ContextualTimeEstimator extends TimeEstimator {
      */
     public synchronized void setContextInterval(int milliseconds) {
         this.CONTEXT_INTERVAL = milliseconds;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        ContextualTimeEstimator.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ContextualTimeEstimator.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

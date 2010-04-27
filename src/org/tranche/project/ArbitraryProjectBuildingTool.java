@@ -36,6 +36,7 @@ import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
 import org.tranche.annotations.Todo;
 import org.tranche.annotations.TodoList;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolReport;
@@ -60,7 +61,6 @@ import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Create an arbitrary project from existing files on the network.</p>
@@ -293,7 +293,7 @@ public class ArbitraryProjectBuildingTool {
         rtsListenerMap = new HashMap();
         rtsDiagnosticsLog = new ConnectionDiagnosticsLog("Server activity when aggregating tools");
 
-        title = "Project packaged on " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+        title = "Project packaged on " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
         description = "Default description for a project packaged by the ArbitraryProjectBuildingTool.";
     }
 
@@ -799,7 +799,7 @@ public class ArbitraryProjectBuildingTool {
      */
     private void uploadChunk(byte[] chunk, BigHash hash, boolean isMetaData) throws Exception {
 
-        final int requiredCopies = Integer.parseInt(ConfigureTranche.get(ConfigureTranche.PROP_REPLICATIONS));
+        final int requiredCopies = Integer.parseInt(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS));
 
         int copies = 0;
 

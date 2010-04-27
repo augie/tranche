@@ -15,6 +15,7 @@
  */
 package org.tranche.meta;
 
+import org.tranche.commons.RandomUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.FileEncoding;
 import org.tranche.util.*;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import junit.framework.TestCase;
+import org.tranche.commons.DebugUtil;
 import org.tranche.security.Signature;
 import org.tranche.hash.Base16;
 import org.tranche.project.ProjectFile;
@@ -42,13 +43,13 @@ public class MetaDataUtilTest extends TrancheTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        MetaDataUtil.setDebug(true);
+        DebugUtil.setDebug(MetaDataUtil.class, true);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        MetaDataUtil.setDebug(false);
+        DebugUtil.setDebug(MetaDataUtil.class, false);
     }
 
     public void testVersionOne() throws Exception {

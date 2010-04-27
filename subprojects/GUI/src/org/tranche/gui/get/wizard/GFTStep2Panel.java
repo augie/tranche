@@ -44,7 +44,6 @@ import org.tranche.gui.GenericTextField;
 import org.tranche.gui.Styles;
 import org.tranche.gui.project.panel.ProjectPanel;
 import org.tranche.security.WrongPassphraseException;
-import org.tranche.util.DebugUtil;
 
 /**
  *

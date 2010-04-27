@@ -27,7 +27,7 @@ import java.util.zip.ZipInputStream;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TrancheTestCase;
 

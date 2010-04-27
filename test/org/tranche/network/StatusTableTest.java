@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.tranche.commons.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
 
@@ -35,15 +36,15 @@ public class StatusTableTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        StatusTable.setDebug(true);
-        StatusTableRow.setDebug(true);
+        DebugUtil.setDebug(StatusTable.class, true);
+        DebugUtil.setDebug(StatusTableRow.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        StatusTable.setDebug(false);
-        StatusTableRow.setDebug(false);
+        DebugUtil.setDebug(StatusTable.class, false);
+        DebugUtil.setDebug(StatusTableRow.class, false);
     }
 
     public void testCreate() throws Exception {

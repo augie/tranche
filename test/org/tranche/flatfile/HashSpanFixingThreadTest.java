@@ -15,12 +15,13 @@
  */
 package org.tranche.flatfile;
 
+import org.tranche.commons.RandomUtil;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import org.tranche.TrancheServer;
+import org.tranche.commons.TextUtil;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.Configuration;
 import org.tranche.hash.BigHash;
@@ -58,23 +59,23 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
     /**
      * Create a set of table rows. Will be used for each test
      */
-    final static String HOST1 = "ardvark.org";
-    final static String HOST2 = "batman.org";
-    final static String HOST3 = "catwoman.org";
-    final static String HOST4 = "darwin.edu";
-    final static String HOST5 = "edgar.com";
-    final static String HOST6 = "friday.com";
+    static final String HOST1 = "ardvark.org";
+    static final String HOST2 = "batman.org";
+    static final String HOST3 = "catwoman.org";
+    static final String HOST4 = "darwin.edu";
+    static final String HOST5 = "edgar.com";
+    static final String HOST6 = "friday.com";
     /**
      * <p>If need to duplicate a sporadic problem, increase the number. Else, leave at 1 to run each test once.</p>
      */
-    final static int RUN_EACH_TEST_COUNT = 1;
+    static final int RUN_EACH_TEST_COUNT = 1;
     /**
      * <p>Number of iterations to wait (in each test) for healing thread to do its job.</p>
      * <p>Ideally, one; however, test network must update and recognize updates. Try adjusting this number.</p>
      * <p>A good goal would be 2, as healing thread might already be in middle of iteration (so can't be 1).</p>
      */
-//    final static int NUM_HEALING_THREAD_ITS_TO_WAIT = 2;
-    final static int NUM_HEALING_THREAD_ITS_TO_WAIT = 3;
+//    static final int NUM_HEALING_THREAD_ITS_TO_WAIT = 2;
+    static final int NUM_HEALING_THREAD_ITS_TO_WAIT = 3;
     
     /**
      * <p>Simple test:</p>
@@ -208,7 +209,7 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                 try {
                     ffts1.getHashSpanFixingThread().waitForIteration();
                 } finally {
-                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + Text.getPrettyEllapsedTimeString(System.currentTimeMillis() - start));
+                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + TextUtil.formatTimeLength(System.currentTimeMillis() - start));
                 }
             }
 
@@ -394,7 +395,7 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                 try {
                     ffts2.getHashSpanFixingThread().waitForIteration();
                 } finally {
-                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + Text.getPrettyEllapsedTimeString(System.currentTimeMillis() - start));
+                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + TextUtil.formatTimeLength(System.currentTimeMillis() - start));
                 }
             }
 
@@ -632,7 +633,7 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                 try {
                     ffts2.getHashSpanFixingThread().waitForIteration();
                 } finally {
-                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + Text.getPrettyEllapsedTimeString(System.currentTimeMillis() - start));
+                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + TextUtil.formatTimeLength(System.currentTimeMillis() - start));
                 }
             }
 
@@ -829,12 +830,12 @@ public class HashSpanFixingThreadTest extends TrancheTestCase {
                 try {
                     ffts1.getHashSpanFixingThread().waitForIteration();
                 } finally {
-                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + Text.getPrettyEllapsedTimeString(System.currentTimeMillis() - start));
+                    System.err.println("DEBUG> Waited for iteration #" + String.valueOf(i + 1) + " of " + NUM_HEALING_THREAD_ITS_TO_WAIT + ": " + TextUtil.formatTimeLength(System.currentTimeMillis() - start));
                 }
             }
-            Text.printRecursiveDirectoryStructure(dir1);
-            Text.printRecursiveDirectoryStructure(dir2);
-            Text.printRecursiveDirectoryStructure(dir3);
+            TestUtil.printRecursiveDirectoryStructure(dir1);
+            TestUtil.printRecursiveDirectoryStructure(dir2);
+            TestUtil.printRecursiveDirectoryStructure(dir3);
             
             assertNotSame("Should not be empty: "+dir1.getAbsolutePath(), 0, getBytesUsedInDirectory(dir1));
             assertNotSame("Should not be empty: "+dir2.getAbsolutePath(), 0, getBytesUsedInDirectory(dir2));

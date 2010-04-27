@@ -205,7 +205,7 @@ public class DeleteMetaDataItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, BigHash hash, String uploaderName, Long uploadTimestamp, String relativePathInDataSet, String[] hosts, Signature[] signatures, byte[][] nonces, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, BigHash hash, String uploaderName, Long uploadTimestamp, String relativePathInDataSet, String[] hosts, Signature[] signatures, byte[][] nonces, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.DELETE_META, out);
         }

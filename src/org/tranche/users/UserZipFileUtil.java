@@ -15,6 +15,7 @@
  */
 package org.tranche.users;
 
+import org.tranche.commons.ThreadUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.security.EasySSLProtocolSocketFactory;
 import org.tranche.util.*;
@@ -82,7 +83,7 @@ public class UserZipFileUtil {
             }
         }
         // go to web site
-        String url = ConfigureTranche.get(ConfigureTranche.PROP_USER_LOG_IN_URL);
+        String url = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_USER_LOG_IN_URL);
         if (url == null || url.equals("")) {
             return null;
         }
@@ -115,7 +116,7 @@ public class UserZipFileUtil {
                 }
             } else {
                 // wait for headers to load
-                ThreadUtil.safeSleep(250);
+                ThreadUtil.sleep(250);
 
                 // try to get the email
                 String email = null;

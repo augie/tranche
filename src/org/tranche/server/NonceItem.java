@@ -186,7 +186,7 @@ public class NonceItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, int numNonces, String[] hosts, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, int numNonces, String[] hosts, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_NONCES, out);
         }

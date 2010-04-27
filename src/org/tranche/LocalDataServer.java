@@ -18,11 +18,11 @@ package org.tranche;
 import java.io.File;
 import java.io.IOException;
 import org.tranche.clc.TrancheServerCommandLineClient;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.server.Server;
 import org.tranche.servers.ServerUtil;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -31,7 +31,6 @@ import org.tranche.util.TestUtil;
  */
 public class LocalDataServer {
 
-    private static boolean debug = false;
     private static FlatFileTrancheServer ffts;
     private static Server server;
     private static File rootDir;
@@ -237,11 +236,10 @@ public class LocalDataServer {
             // flags first
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
-                    FlatFileTrancheServer.setDebug(true);
-                    Server.setDebug(true);
-                    TrancheServerCommandLineClient.setDebug(true);
+                    DebugUtil.setDebug(LocalDataServer.class, true);
+                    DebugUtil.setDebug(FlatFileTrancheServer.class, true);
+                    DebugUtil.setDebug(Server.class, true);
+                    DebugUtil.setDebug(TrancheServerCommandLineClient.class, true);
                 } else if (args[i].equals("-h") || args[i].equals("--help")) {
                     printUsage();
                     if (!TestUtil.isTesting()) {
@@ -274,7 +272,7 @@ public class LocalDataServer {
                 ConfigureTranche.load(args);
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
-                debugErr(e);
+                DebugUtil.debugErr(LocalDataServer.class, e);
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -283,9 +281,9 @@ public class LocalDataServer {
             }
 
             // set defaults
-            setRootDirectory(new File(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_DIRECTORY)));
-            setPort(ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_PORT));
-            setSSL(ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
+            setRootDirectory(new File(ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_DIRECTORY)));
+            setPort(ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT));
+            setSSL(ConfigureTranche.getBoolean(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SSL));
 
             // parameters next
             for (int i = 1; i < args.length - 1; i++) {
@@ -294,7 +292,7 @@ public class LocalDataServer {
                         setRootDirectory(new File(args[i + 1]));
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid root directory value: " + args[i + 1]);
-                        debugErr(e);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -308,7 +306,7 @@ public class LocalDataServer {
                         ServerUtil.setHostName(args[i + 1]);
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid host name: " + args[i + 1]);
-                        debugErr(e);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -322,7 +320,7 @@ public class LocalDataServer {
                         setPort(Integer.valueOf(args[i + 1]));
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid port value: " + args[i + 1]);
-                        debugErr(e);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -336,7 +334,7 @@ public class LocalDataServer {
                         setSSL(Boolean.valueOf(args[i + 1]));
                     } catch (Exception e) {
                         System.err.println("ERROR: Invalid SSL value: " + args[i + 1]);
-                        debugErr(e);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -352,7 +350,7 @@ public class LocalDataServer {
                         setUserZipFile(user);
                     } catch (Exception e) {
                         System.err.println("ERROR: " + e.getMessage());
-                        debugErr(e);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
                         if (!TestUtil.isTesting()) {
                             System.exit(2);
                         } else {
@@ -374,7 +372,7 @@ public class LocalDataServer {
                 client.run();
             } catch (Exception e) {
                 System.err.println("ERROR: " + e.getMessage());
-                debugErr(e);
+                DebugUtil.debugErr(LocalDataServer.class, e);
                 if (!TestUtil.isTesting()) {
                     System.exit(3);
                 } else {
@@ -388,48 +386,12 @@ public class LocalDataServer {
                 return;
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(LocalDataServer.class, e);
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
                 return;
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        LocalDataServer.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(LocalDataServer.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

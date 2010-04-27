@@ -34,6 +34,7 @@ import org.tranche.security.Signature;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.ServerModeFlag;
+import org.tranche.commons.DebuggableThread;
 import org.tranche.exceptions.RejectedRequestException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.flatfile.NonceMap;
@@ -43,10 +44,8 @@ import org.tranche.network.NetworkUtil;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.security.SecurityUtil;
-import org.tranche.server.logs.LogSubmitter;
 import org.tranche.util.IOUtil;
 import org.tranche.servers.ServerUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -55,9 +54,8 @@ import org.tranche.util.TestUtil;
  * @author Bryan Smith - bryanesmith@gmail.com
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class Server extends Thread {
+public class Server extends DebuggableThread {
 
-    private static boolean debug = false;
     /**
      * <p>The maximum amount of incoming data allowed buffered in memory. Protect against a DoS attack.</p>
      * <p>Right now, them maximum size is setting meta data, so based on it's maximum value plus a MB of elbow room.</p>
@@ -81,7 +79,7 @@ public class Server extends Thread {
      * @throws java.lang.Exception All exceptions are thrown.
      */
     public Server(TrancheServer dfs, int port) throws Exception {
-        this(dfs, port, ConfigureTranche.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
+        this(dfs, port, ConfigureTranche.getBoolean(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SSL));
     }
 
     /**
@@ -259,7 +257,7 @@ public class Server extends Thread {
      * @return
      */
     public int getMaxConcurrentClients() {
-        return ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_CLIENTS_MAX);
+        return ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_CLIENTS_MAX);
     }
 
     /**
@@ -434,7 +432,7 @@ public class Server extends Thread {
                 try {
                     debugOut("Server " + IOUtil.createURL(getHostName(), getPort(), isSSL()) + "; Established connection with " + clientSocket.getLocalAddress().getHostAddress() + ".");
 
-                    int timeout = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIMEOUT);
+                    int timeout = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_TIMEOUT);
                     if (timeout == 0) {
                         clientSocket.setSoTimeout(60000);
                     } else {
@@ -524,41 +522,5 @@ public class Server extends Thread {
      */
     public static void setRedirectOutputFile(File redirectOutputFile) {
         Server.redirectOutputFile = redirectOutputFile;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        Server.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(Server.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

@@ -198,7 +198,7 @@ public class SetDataItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, BigHash hash, String[] hosts, byte[] bytes, Signature signature, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, BigHash hash, String[] hosts, byte[] bytes, Signature signature, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.SET_DATA, out);
         }

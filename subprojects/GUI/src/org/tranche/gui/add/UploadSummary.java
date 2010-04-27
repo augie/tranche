@@ -49,8 +49,7 @@ import org.tranche.security.SecurityUtil;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.UserCertificateUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -332,7 +331,7 @@ public class UploadSummary implements ClipboardOwner {
                     printer.close();
                     GenericOptionPane.showMessageDialog(relativeTo, "Your receipt is saved at <" + saveTo.getPath() + ">.");
                 } catch (FileNotFoundException ex) {
-                    GenericOptionPane.showMessageDialog(relativeTo, "ERROR: Could not save to <" + saveTo.getPath() + ">. Please try again or cancel." + Text.getNewLine() + ex.getMessage());
+                    GenericOptionPane.showMessageDialog(relativeTo, "ERROR: Could not save to <" + saveTo.getPath() + ">. Please try again or cancel." + "\n" + ex.getMessage());
                 }
             }
         };
@@ -391,7 +390,7 @@ public class UploadSummary implements ClipboardOwner {
     public void waitForFinish() {
         // wait for start
         while (!isStarted()) {
-            ThreadUtil.safeSleep(500);
+            ThreadUtil.sleep(500);
         }
         // wait for finish
         while (!isFinished()) {

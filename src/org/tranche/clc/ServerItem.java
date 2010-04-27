@@ -49,7 +49,7 @@ public class ServerItem extends TrancheServerCommandLineClientItem {
         super(wrappedServer, dfsclc, "server", "Manipulates server's connectivity.");
         this.wrappedServer = wrappedServer;
         addAttribute("command", "The command to run. Type 'server help' to see a list of the possible commands.", true);
-        addAttribute("port", "The port to run the server on. Leave blank to use the default port (" + ConfigureTranche.get(ConfigureTranche.PROP_SERVER_PORT) + ").");
+        addAttribute("port", "The port to run the server on. Leave blank to use the default port (" + ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT) + ").");
         addAttribute("secure", "If this server should tunnel traffic via SSL.");
     }
 
@@ -86,8 +86,8 @@ public class ServerItem extends TrancheServerCommandLineClientItem {
                     pps.setPadding(10);
                 }
                 out.println("start      Starts the server.");
-                out.println("  port     Optional. The port to which the server should bind. Default is \"" + ConfigureTranche.get(ConfigureTranche.PROP_SERVER_PORT) + "\".");
-                out.println("  secure   Optional. Whether the server should run over SSL. Default is \"" + ConfigureTranche.get(ConfigureTranche.PROP_SERVER_PORT)+ "\".");
+                out.println("  port     Optional. The port to which the server should bind. Default is \"" + ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT) + "\".");
+                out.println("  secure   Optional. Whether the server should run over SSL. Default is \"" + ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT)+ "\".");
                 out.println();
                 out.println("update     Change the connectivity of the server.");
                 out.println("  port     Optional. The to which the server should bind. Default no change.");
@@ -120,7 +120,7 @@ public class ServerItem extends TrancheServerCommandLineClientItem {
                     }
                 } else {
                     try {
-                        port = Integer.parseInt(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_PORT));
+                        port = Integer.parseInt(ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT));
                     } catch (Exception e) {
                         out.println("Invalid default port.");
                     }
@@ -135,7 +135,7 @@ public class ServerItem extends TrancheServerCommandLineClientItem {
                     }
                 } else {
                     try {
-                        secure = Boolean.parseBoolean(ConfigureTranche.get(ConfigureTranche.PROP_SERVER_SSL));
+                        secure = Boolean.parseBoolean(ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SSL));
                     } catch (Exception e) {
                         out.println("Invalid default SSL.");
                     }

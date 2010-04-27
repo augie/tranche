@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 
 /**
  *

@@ -82,7 +82,7 @@ public class GetConfigurationItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, byte[] nonce, Signature signature, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, byte[] nonce, Signature signature, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_CONFIGURATION, out);
         }

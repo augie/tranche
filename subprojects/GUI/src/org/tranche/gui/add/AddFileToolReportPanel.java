@@ -20,20 +20,10 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
-import javax.swing.JFileChooser;
 import javax.swing.JPanel;
-import javax.swing.filechooser.FileFilter;
-import org.tranche.add.AddFileToolUtil;
 import org.tranche.gui.DisplayTextArea;
-import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.GenericRoundedButton;
 import org.tranche.gui.Styles;
-import org.tranche.gui.util.GUIUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -42,7 +32,7 @@ import org.tranche.util.Text;
 public class AddFileToolReportPanel extends JPanel {
 
     private DisplayTextArea trancheHash = new DisplayTextArea();
-    private GenericRoundedButton emailReceiptButton = new GenericRoundedButton("Email Receipt"),  saveReceiptButton = new GenericRoundedButton("Save Receipt");
+    private GenericRoundedButton emailReceiptButton = new GenericRoundedButton("Email Receipt"), saveReceiptButton = new GenericRoundedButton("Save Receipt");
 
     public AddFileToolReportPanel(final UploadSummary us) {
         setLayout(new GridBagLayout());
@@ -90,5 +80,4 @@ public class AddFileToolReportPanel extends JPanel {
             }
         });
     }
-
 }

@@ -17,6 +17,7 @@ package org.tranche.remote;
 
 import java.io.DataInputStream;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebuggableThread;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTableRow;
@@ -27,7 +28,7 @@ import org.tranche.time.TimeUtil;
  * <p>The thread to be used to receive messages from a server.</p>
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class RemoteTrancheServerDownloadThread extends Thread {
+public class RemoteTrancheServerDownloadThread extends DebuggableThread {
 
     private final RemoteTrancheServer rts;
 
@@ -60,14 +61,14 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                         }
                         continue;
                     } catch (Exception e) {
-                        RemoteTrancheServer.debugErr(e);
+                        debugErr(e);
                     }
                 }
 
                 // Keep track of last two times woke up from wait.
                 this.rts.setLastTimeWakeUp(TimeUtil.getTrancheTimestamp());
 
-                RemoteTrancheServer.debugOut("Server " + rts.getHost() + "; Released block on download thread");
+                debugOut("Server " + rts.getHost() + "; Released block on download thread");
 
                 DataInputStream dis = rts.getDataInputStream();
                 // check for the ok byte
@@ -98,7 +99,7 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                     rts.fireUpdateDownloadingBytes(id, bytesToRead, bytesRead);
                 }
 
-                RemoteTrancheServer.debugOut("Server " + IOUtil.createURL(rts) + "; Reading Bytes: finished; ID: " + id + "; Bytes: " + buffer.length);
+                debugOut("Server " + IOUtil.createURL(rts) + "; Reading Bytes: finished; ID: " + id + "; Bytes: " + buffer.length);
 
                 // Update time of last server response
                 long ts = TimeUtil.getTrancheTimestamp();
@@ -120,14 +121,14 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                         continue;
                     }
                     // has this been kept alive too long?
-                    long timeout = ConfigureTranche.getLong(ConfigureTranche.PROP_SERVER_KEEP_ALIVE_TIMEOUT);
-                    RemoteTrancheServer.debugOut("Keep-alive timeout: " + timeout);
+                    long timeout = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_KEEP_ALIVE_TIMEOUT);
+                    debugOut("Keep-alive timeout: " + timeout);
                     if (timeout == 0 || TimeUtil.getTrancheTimestamp() - rc.getTimeStarted() < timeout) {
-                        RemoteTrancheServer.debugOut("Keeping alive " + rts.getHost());
+                        debugOut("Keeping alive " + rts.getHost());
                         rc.keepAlive();
                         continue;
                     } else {
-                        RemoteTrancheServer.debugOut("Keep-alive timed out: " + rts.getHost());
+                        debugOut("Keep-alive timed out: " + rts.getHost());
                         // remove
                         synchronized (rts.outgoingSent) {
                             rts.outgoingSent.remove(id);
@@ -159,14 +160,14 @@ public class RemoteTrancheServerDownloadThread extends Thread {
                 // invoke the callback
                 ra.callback(buffer);
             } catch (NullPointerException npe) {
-                RemoteTrancheServer.debugErr(npe);
+                debugErr(npe);
             } catch (InterruptedException ie) {
-                RemoteTrancheServer.debugErr(ie);
+                debugErr(ie);
             } catch (Exception e) {
                 if (id != -1) {
                     rts.fireFailedDownloadingBytes(id);
                 }
-                RemoteTrancheServer.debugErr(e);
+                debugErr(e);
                 // attempt to reconnect
                 try {
                     rts.reconnect();

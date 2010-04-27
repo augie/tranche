@@ -21,13 +21,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import javax.swing.JPanel;
-
 import org.tranche.gui.GenericScrollPane;
 import org.tranche.gui.GenericTextArea;
 import org.tranche.gui.Styles;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -96,7 +94,7 @@ public class LogPanel extends JPanel {
             } catch (Exception e) {
             }
         }
-        String newText = log.getText() + Text.getNewLine() + message;
+        String newText = log.getText() + "\n" + message;
         if (newText.length() > MAX_CHARACTERS_TO_DISPLAY) {
             newText = newText.substring(newText.length() - MAX_CHARACTERS_TO_DISPLAY);
         }

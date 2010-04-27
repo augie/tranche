@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.tranche.commons.DebugUtil;
 import org.tranche.gui.ErrorFrame;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.gui.advanced.GenericTab;
 import org.tranche.gui.advanced.ProjectsPanel;
 import org.tranche.hash.BigHash;
-import org.tranche.util.DebugUtil;
 
 /**
  * A utilities that mediates between tranche modules and the GUI.
@@ -36,7 +36,6 @@ import org.tranche.util.DebugUtil;
  */
 public class GUIMediatorUtil {
 
-    private static boolean debug = false;
     private static Installable projectsInstaller = null;
     private static Installable topInstaller = null;
     private static boolean loaded = false;
@@ -64,7 +63,7 @@ public class GUIMediatorUtil {
         if (GUIUtil.getAdvancedGUI() == null) {
             return;
         }
-        debugOut("Installing action: " + action.label + ", from module: " + action.moduleName);
+        DebugUtil.debugOut(GUIMediatorUtil.class, "Installing action: " + action.label + ", from module: " + action.moduleName);
 
         lazyload();
 
@@ -96,7 +95,7 @@ public class GUIMediatorUtil {
      * Clears the actions from the GUI.
      */
     public static void uninstallActions() {
-        debugOut("Uninstalling all actions...");
+        DebugUtil.debugOut(GUIMediatorUtil.class, "Uninstalling all actions...");
         lazyload();
         projectsInstaller.clearActions();
         topInstaller.clearActions();
@@ -283,42 +282,6 @@ public class GUIMediatorUtil {
 
         public Object[] getParameters() {
             return this.params;
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        GUIMediatorUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(GUIMediatorUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

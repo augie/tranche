@@ -50,7 +50,7 @@ import org.tranche.gui.util.GUIUtil;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -257,7 +257,7 @@ public class ServersTable extends GenericTable {
         }
         frame.setVisible(true);
         while (frame.isVisible()) {
-            ThreadUtil.safeSleep(250);
+            ThreadUtil.sleep(250);
         }
         String url = textField.getText();
         if (url != null && !url.equals("")) {

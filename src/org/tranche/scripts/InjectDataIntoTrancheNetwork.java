@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.TodoException;
 import org.tranche.flatfile.DataDirectoryConfiguration;
 import org.tranche.flatfile.FlatFileTrancheServer;
@@ -30,7 +31,6 @@ import org.tranche.hash.BigHash;
 import org.tranche.scripts.ScriptsUtil.ChunkType;
 import org.tranche.util.IOUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 import org.tranche.users.UserZipFile;
 
 /**
@@ -42,19 +42,19 @@ public class InjectDataIntoTrancheNetwork {
     /**
      * Size of batch to handle at a time
      */
-    final static int hashBatchSize = 500;
+    static final int hashBatchSize = 500;
     /**
      * Keep track of progress for handling chunks
      */
-    static int dataCount = 0,  metaCount = 0;
+    static int dataCount = 0, metaCount = 0;
     /**
      * Keep some over all stats for user's knowledge
      */
-    static int noReplications = 0,  totalChunksInjected = 0;
+    static int noReplications = 0, totalChunksInjected = 0;
     /**
      * Calculate totals so progress information can be converted to percentages
      */
-    static int dataChunkTotal = 0,  metaChunkTotal = 0;
+    static int dataChunkTotal = 0, metaChunkTotal = 0;
     /**
      * Queue up chunks without sufficient replications
      */
@@ -267,7 +267,7 @@ public class InjectDataIntoTrancheNetwork {
             System.out.println(">>> Loading data from disk.");
             ffts.waitToLoadExistingDataBlocks();
 
-            System.out.println("Finished loading servers and data, took " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - startupStart));
+            System.out.println("Finished loading servers and data, took " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - startupStart));
             System.out.println();
             System.out.println("Writing output to file: " + outputFile.getAbsolutePath());
 
@@ -333,7 +333,7 @@ public class InjectDataIntoTrancheNetwork {
                 }
             }
 
-            System.out.println("Waiting for injection threads to complete chunk uploads at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            System.out.println("Waiting for injection threads to complete chunk uploads at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 
             // Since all the consumers are joined, tell the producers to stop
             for (int i = 0; i < injectionThreads.length; i++) {
@@ -356,7 +356,7 @@ public class InjectDataIntoTrancheNetwork {
             }
 
             System.out.println("\n\n=============== SUMMARY ===============");
-            System.out.println("* Tool ran for: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+            System.out.println("* Tool ran for: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
             System.out.println("* Found total " + dataCount + " data chunks and " + metaCount + " meta chunks on disk");
             System.out.println("* Found " + noReplications + " chunks on disk with no replications on network");
             System.out.println("* Injected total of " + totalChunksInjected + " chunk replications to network (each chunks could account for up to three replications)");
@@ -541,7 +541,7 @@ public class InjectDataIntoTrancheNetwork {
 //                            } else {
 //                                serversWithChunkAlready = ScriptsUtil.getServersWithChunk(hash, type);
 //                            }
-//                            writer.write("! " + serversWithChunkAlready.size() + " servers with " + type + " hash " + hash + Text.getNewLine());
+//                            writer.write("! " + serversWithChunkAlready.size() + " servers with " + type + " hash " + hash + "\n");
 //                            writer.flush();
 //
 //                            // Increment count if no replications
@@ -656,7 +656,7 @@ public class InjectDataIntoTrancheNetwork {
         final UserZipFile user;
         final ArrayBlockingQueue<ChunkToInject> queue;
         private boolean stopped = false;
-        private final BufferedWriter chunkExceptionFileWriter,  chunkFailureFileWriter;
+        private final BufferedWriter chunkExceptionFileWriter, chunkFailureFileWriter;
 
         /**
          *
@@ -766,7 +766,7 @@ public class InjectDataIntoTrancheNetwork {
 //
 //                                    this.chunkExceptionFileWriter.write("\"" + s + "\",");
 //
-//                                    this.chunkExceptionFileWriter.write("\"" + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + "\",");
+//                                    this.chunkExceptionFileWriter.write("\"" + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + "\",");
 //                                    this.chunkExceptionFileWriter.write("\"" + ex.getMessage() + "\",");
 //                                    this.chunkExceptionFileWriter.write("\"" + chunkToInject.getChunkHash() + "\"");
 //                                    this.chunkExceptionFileWriter.newLine();
@@ -837,7 +837,7 @@ public class InjectDataIntoTrancheNetwork {
         private BigHash chunkHash;
         private ChunkType type;
         private List<String> serversToInjectTo;
-        private final int requiredReps,  foundReps;
+        private final int requiredReps, foundReps;
 
         ChunkToInject(BigHash chunkHash, ChunkType type, List<String> serversToInjectTo, int requiredReps, int foundReps) {
             this.chunkHash = chunkHash;

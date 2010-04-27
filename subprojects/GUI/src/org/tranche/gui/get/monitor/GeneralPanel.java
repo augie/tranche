@@ -19,12 +19,12 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
+import org.tranche.commons.TextUtil;
 import org.tranche.get.GetFileToolEvent;
 import org.tranche.gui.get.DownloadSummary;
 import org.tranche.gui.monitor.InfoColumn;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.project.ProjectSummary;
-import org.tranche.util.Text;
 
 /**
  *
@@ -105,7 +105,7 @@ public class GeneralPanel extends JPanel {
         left.put("", " ");
         left.put("Filter", ds.getGetFileTool().getRegEx());
         left.put("Files", GUIUtil.integerFormat.format(ds.filesToDownload));
-        left.put("Size", Text.getFormattedBytes(ds.bytesToDownload));
+        left.put("Size", TextUtil.formatBytes(ds.bytesToDownload));
         left.put("Passphrase Provided", String.valueOf(ds.getGetFileTool().getPassphrase() != null && !ds.getGetFileTool().getPassphrase().equals("")));
         left.put("Validate", String.valueOf(ds.getGetFileTool().isValidate()));
         left.put("Download Location", ds.getGetFileTool().getSaveFile().getAbsolutePath());
@@ -118,11 +118,11 @@ public class GeneralPanel extends JPanel {
         right.clear();
         right.put("Status", ds.getStatus());
         if (ds.getReport() != null) {
-            right.put("Elapsed Time", Text.getShortPrettyEllapsedTimeString(ds.getReport().getTimeToFinish()));
-            right.put("Downloaded", Text.getFormattedBytes(ds.getReport().getBytesDownloaded()));
+            right.put("Elapsed Time", TextUtil.formatTimeLength(ds.getReport().getTimeToFinish()));
+            right.put("Downloaded", TextUtil.formatBytes(ds.getReport().getBytesDownloaded()));
         } else if (ds.getGetFileTool().getTimeEstimator() != null) {
             right.put("Time Remaining", ds.getGetFileTool().getTimeEstimator().getTimeLeftString());
-            right.put("Downloaded", Text.getFormattedBytes(ds.getGetFileTool().getBytesDownloaded()) + " / " + Text.getFormattedBytes(ds.getGetFileTool().getBytesToDownload()));
+            right.put("Downloaded", TextUtil.formatBytes(ds.getGetFileTool().getBytesDownloaded()) + " / " + TextUtil.formatBytes(ds.getGetFileTool().getBytesToDownload()));
         }
         right.put("", " ");
         right.put("Meta Data", "");

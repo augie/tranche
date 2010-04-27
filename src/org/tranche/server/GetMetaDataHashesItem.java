@@ -63,7 +63,7 @@ public class GetMetaDataHashesItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, long offset, long length, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, long offset, long length, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_META_HASHES, out);
         }

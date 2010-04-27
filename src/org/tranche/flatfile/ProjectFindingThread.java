@@ -22,30 +22,30 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.DebuggableThread;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.UnexpectedEndOfDataBlockException;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.meta.MetaData;
 import org.tranche.meta.MetaDataUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Loads information about available data, along with corrupted DataBlock files, from disk. This runs when a server starts up.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class ProjectFindingThread extends Thread {
+public class ProjectFindingThread extends DebuggableThread {
 
-    private static boolean debug = false;
     private final FlatFileTrancheServer ffts;
     /**
      * Tell this thread to stop. Happens if launching a new thread.
      */
     private boolean stopped = false;
-    private int successes = 0,  failures = 0;
-    private long metaLoaded = 0,  metaFailures = 0,  dataLoaded = 0;
+    private int successes = 0, failures = 0;
+    private long metaLoaded = 0, metaFailures = 0, dataLoaded = 0;
     private long totalDataBlockMismatch = 0;
 
     /**
@@ -68,7 +68,7 @@ public class ProjectFindingThread extends Thread {
             debugOut("********************************************************************");
             debugOut("******* WARNING: The project find thread has been turned OFF *******");
             debugOut("*** The TestUtil has been set to prevent this thread from running");
-            debugOut("*** while testing. At: " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            debugOut("*** while testing. At: " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             debugOut("********************************************************************");
             debugOut("");
 
@@ -113,14 +113,14 @@ public class ProjectFindingThread extends Thread {
              */
             if (!TestUtil.isTesting()) {
                 debugOut("");
-                debugOut("FlatFileTrancheServer finished loading data, took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+                debugOut("FlatFileTrancheServer finished loading data, took: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start));
                 debugOut(" - Home directory: " + this.ffts.getHomeDirectory().getAbsolutePath());
 
                 // DDC information
                 final int dataDirectoryCount = this.ffts.getConfiguration().getDataDirectories().size();
                 debugOut(" - " + dataDirectoryCount + " data " + (dataDirectoryCount == 1 ? "directory" : "directories") + ":");
                 for (DataDirectoryConfiguration ddc : this.ffts.getConfiguration().getDataDirectories()) {
-                    debugOut("   * " + ddc.getDirectory() + " (limit=" + Text.getFormattedBytes(ddc.getSizeLimit()) + ", used=" + Text.getFormattedBytes(ddc.getActualSize()) + ")");
+                    debugOut("   * " + ddc.getDirectory() + " (limit=" + TextUtil.formatBytes(ddc.getSizeLimit()) + ", used=" + TextUtil.formatBytes(ddc.getActualSize()) + ")");
                 }
 
                 // Hash spans information
@@ -216,7 +216,7 @@ public class ProjectFindingThread extends Thread {
     private void resetFlatFileTrancheServer() throws Exception {
         this.ffts.doneLoadingDataBlocks = false;
         this.ffts.clearKnownProjects();
-    // DataBlockUtil reset in FlatFileTrancheServer
+        // DataBlockUtil reset in FlatFileTrancheServer
     }
 
     /**
@@ -235,42 +235,6 @@ public class ProjectFindingThread extends Thread {
     public void setStopped(boolean stopped) {
         debugOut("Stopping");
         this.stopped = stopped;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ProjectFindingThread.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ProjectFindingThread.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 
     /**
@@ -308,14 +272,14 @@ public class ProjectFindingThread extends Thread {
             for (DataDirectoryConfiguration ddc : ddcs) {
                 final long startDDC = TimeUtil.getTrancheTimestamp();
 
-                debugOut("Searching for data in " + ddc.getDirectory());
+                DebugUtil.debugOut(ProjectFindingThread.class, "Searching for data in " + ddc.getDirectory());
 
                 /**
                  * Before committing any information to FFTS or DataBlockUtil,
                  * check to see whether should stop
                  */
                 if (thisThread != null && thisThread.isStopped()) {
-                    debugOut("Stopped");
+                    DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                     break;
                 }
 
@@ -327,23 +291,23 @@ public class ProjectFindingThread extends Thread {
                 while (!filenames.isEmpty()) {
                     String filename = filenames.remove(filenames.size() - 1);
 
-                    debugOut("File name: " + filename);
+                    DebugUtil.debugOut(ProjectFindingThread.class, "File name: " + filename);
 
                     /**
                      * Before committing any information to FFTS or DataBlockUtil,
                      * check to see whether should stop
                      */
                     if (thisThread != null && thisThread.isStopped()) {
-                        debugOut("Stopped");
+                        DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                         break;
                     }
 
                     try {
                         File file = new File(filename);
-                        debugOut("File path: " + file.getAbsolutePath());
+                        DebugUtil.debugOut(ProjectFindingThread.class, "File path: " + file.getAbsolutePath());
                         if (file.isDirectory()) {
                             for (String moreFileName : file.list()) {
-                                debugOut("Adding file to stack: " + moreFileName);
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Adding file to stack: " + moreFileName);
                                 filenames.add(file.getAbsolutePath() + File.separator + moreFileName);
                             }
                         } else {
@@ -358,7 +322,7 @@ public class ProjectFindingThread extends Thread {
                                  * check to see whether should stop
                                  */
                                 if (thisThread != null && thisThread.isStopped()) {
-                                    debugOut("Stopped");
+                                    DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                     break;
                                 }
 
@@ -380,10 +344,10 @@ public class ProjectFindingThread extends Thread {
                             // load the existing block normally
                             // add all meta-data hashes and check the files for project files
                             String trimmedFileName = filename.substring(ddc.getDirectory().length());
-                            debugOut("Trimmed File Name: " + trimmedFileName);
+                            DebugUtil.debugOut(ProjectFindingThread.class, "Trimmed File Name: " + trimmedFileName);
 
                             if (trimmedFileName == null || trimmedFileName.trim().equals("")) {
-                                debugOut("Trimmed file name is empty for " + filename + ", skipping...");
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Trimmed file name is empty for " + filename + ", skipping...");
                                 continue;
                             }
 
@@ -392,7 +356,7 @@ public class ProjectFindingThread extends Thread {
                              * check to see whether should stop
                              */
                             if (thisThread != null && thisThread.isStopped()) {
-                                debugOut("Stopped");
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                 break;
                             }
 
@@ -428,28 +392,28 @@ public class ProjectFindingThread extends Thread {
                                 // Rethrow the exception so logs appropriately
                                 throw ex;
                             }
-                            debugOut("# Meta Data Hashes: " + metaDataHashes.size());
+                            DebugUtil.debugOut(ProjectFindingThread.class, "# Meta Data Hashes: " + metaDataHashes.size());
 
                             /**
                              * Before committing any information to FFTS or DataBlockUtil,
                              * check to see whether should stop
                              */
                             if (thisThread != null && thisThread.isStopped()) {
-                                debugOut("Stopped");
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                 break;
                             }
 
                             // get a reference to the DataBlockUtil
                             for (BigHash metaDataHash : metaDataHashes) {
 
-                                debugOut("Checking meta data " + metaDataHash);
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Checking meta data " + metaDataHash);
 
                                 /**
                                  * Before committing any information to FFTS or DataBlockUtil,
                                  * check to see whether should stop
                                  */
                                 if (thisThread != null && thisThread.isStopped()) {
-                                    debugOut("Stopped");
+                                    DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                     break;
                                 }
                                 // add to the meta-data list kept internally
@@ -477,13 +441,13 @@ public class ProjectFindingThread extends Thread {
                                 try {
                                     MetaData md = MetaDataUtil.read(new ByteArrayInputStream(metaBytes));
                                     if (md.isProjectFile()) {
-                                        debugOut("ProjectFile found: " + metaDataHash);
+                                        DebugUtil.debugOut(ProjectFindingThread.class, "ProjectFile found: " + metaDataHash);
                                         /**
                                          * Before committing any information to FFTS or DataBlockUtil,
                                          * check to see whether should stop
                                          */
                                         if (thisThread != null && thisThread.isStopped()) {
-                                            debugOut("Stopped");
+                                            DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                             break;
                                         }
 
@@ -502,13 +466,13 @@ public class ProjectFindingThread extends Thread {
                                         thisThread.metaLoaded++;
                                     }
                                 } catch (Exception metaEx) {
-                                    debugErr(metaEx);
+                                    DebugUtil.debugErr(DataBlockUtil.class, metaEx);
                                     if (thisThread != null) {
                                         thisThread.metaFailures++;
                                         System.err.println("Meta data exception #" + thisThread.metaFailures + " while loading meta data in ProjectFindingThread <" + metaEx.getClass().getName() + ">: " + metaEx.getMessage());
                                     }
-                                // Don't print stack trace. Message above is brief but contains enough info.
-                                // Might be a lot of these!
+                                    // Don't print stack trace. Message above is brief but contains enough info.
+                                    // Might be a lot of these!
                                 }
                             }
 
@@ -517,7 +481,7 @@ public class ProjectFindingThread extends Thread {
                              * check to see whether should stop
                              */
                             if (thisThread != null && thisThread.isStopped()) {
-                                debugOut("Stopped");
+                                DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                 break;
                             }
 
@@ -530,7 +494,7 @@ public class ProjectFindingThread extends Thread {
                                  * check to see whether should stop
                                  */
                                 if (thisThread != null && thisThread.isStopped()) {
-                                    debugOut("Stopped");
+                                    DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                                     break;
                                 }
 
@@ -550,11 +514,11 @@ public class ProjectFindingThread extends Thread {
                         if (thisThread != null) {
                             thisThread.failures++;
                         }
-                        debugErr(e);
+                        DebugUtil.debugErr(DataBlockUtil.class, e);
                     }
                 }
 
-                debugOut("Finished " + ddc.getDirectory() + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", DDC took " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - startDDC) + " to scan in ProjectFindingThread.");
+                DebugUtil.debugOut(ProjectFindingThread.class, "Finished " + ddc.getDirectory() + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ", DDC took " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - startDDC) + " to scan in ProjectFindingThread.");
             } // Go through each DDC looking for data/meta data
 
             /**
@@ -562,7 +526,7 @@ public class ProjectFindingThread extends Thread {
              * check to see whether should stop
              */
             if (thisThread != null && thisThread.isStopped()) {
-                debugOut("Stopped");
+                DebugUtil.debugOut(ProjectFindingThread.class, "Stopped");
                 return;
             }
         } finally {

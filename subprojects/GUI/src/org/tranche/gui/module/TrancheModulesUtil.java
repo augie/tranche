@@ -51,15 +51,15 @@ public class TrancheModulesUtil {
      * <p>Modules to ignore because they are deprecated, etc.</p>
      * <p>Note they should be deleted from client; haven't addressed how to do this best yet.</p>
      */
-    private final static String[] DEPRECATED_MODULE_NAMES = {
+    private static final String[] DEPRECATED_MODULE_NAMES = {
         "AdvancedSearchModule.jar",
         "ProteomeCommons.org-Tags.jar"
     };
     /**
      * Disk location for modules.
      */
-    public final static File MODULE_DIRECTORY = new File(GUIUtil.getGUIDirectory(), "modules");
-    private final static Set<BigHash> modulesToLoadOnStartup = new HashSet<BigHash>();
+    public static final File MODULE_DIRECTORY = new File(GUIUtil.getGUIDirectory(), "modules");
+    private static final Set<BigHash> modulesToLoadOnStartup = new HashSet<BigHash>();
     private static List<TrancheModule> modules = new ArrayList();
     /**
      * All modules that have install hooks (e.g., native binaries, additional JARs) are queued up.
@@ -95,7 +95,7 @@ public class TrancheModulesUtil {
         try {
 
             // read from the configuration
-            String startupModules = ConfigureTrancheGUI.get(ConfigureTrancheGUI.PROP_STARTUP_MODULES);
+            String startupModules = ConfigureTrancheGUI.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_STARTUP_MODULES);
             if (startupModules != null && !startupModules.equals("")) {
                 for (String hashString : startupModules.split(",")) {
                     try {

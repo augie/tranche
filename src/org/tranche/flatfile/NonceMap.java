@@ -27,7 +27,7 @@ import org.tranche.hash.Base64;
 import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 
 /**
  * <p>An abstraction to track nonces on the server-side. It will also ensure that the same nonce isn't being used twice during operation of the server.</p>
@@ -152,7 +152,7 @@ public class NonceMap {
     /**
      * 
      */
-    private final static long timeEllapseBeforeUpdate = 1000 * 60 * 10;
+    private static final long timeEllapseBeforeUpdate = 1000 * 60 * 10;
 
     /**
      * <p>Caches and returns maximum size of collection. Periodically updates. Intended for quick, internal use.</p>

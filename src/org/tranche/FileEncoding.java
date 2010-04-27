@@ -17,7 +17,7 @@ package org.tranche;
 
 import org.tranche.hash.BigHash;
 import java.util.Properties;
-import org.tranche.util.Text;
+import org.tranche.commons.TextUtil;
 
 /**
  * <p>Represents an encoding of a chunk. A meta data will have collection of FileEncoding so that, when downloading the chunk, the tool will know how to process it to get the original bytes.</p>
@@ -63,6 +63,7 @@ public class FileEncoding {
     public static final String PROP_TIMESTAMP_PUBLISHED = "Timestamp Published";
     private static final String DELIMITER = "<<ENC>>";
     private static final String PROP_DELIMITER = "<<PROP>>";
+    private static final String NEWLINE_TOKEN = "<<NL>>";
     private String name;
     private BigHash hash;
     private Properties properties;
@@ -184,14 +185,11 @@ public class FileEncoding {
      */
     @Override()
     public String toString() {
-
         StringBuffer props = new StringBuffer();
-
-        for (Object key : this.properties.keySet()) {
-            props.append(key + PROP_DELIMITER + this.properties.get(key) + DELIMITER);
+        for (Object key : properties.keySet()) {
+            props.append(key + PROP_DELIMITER + properties.get(key) + DELIMITER);
         }
-
-        return Text.tokenizeNewlines(this.getName() + DELIMITER + props.toString());
+        return String.valueOf(getName() + DELIMITER + props.toString()).replace(TextUtil.TEXT_LINE_BREAK_RN, NEWLINE_TOKEN).replace(TextUtil.TEXT_LINE_BREAK_R, NEWLINE_TOKEN).replace(TextUtil.TEXT_LINE_BREAK_N, NEWLINE_TOKEN);
     }
 
     /**
@@ -202,7 +200,7 @@ public class FileEncoding {
      */
     public static FileEncoding createFromString(String string) {
 
-        String[] items = Text.detokenizeNewlines(string).split(DELIMITER);
+        String[] items = string.replace(NEWLINE_TOKEN, TextUtil.TEXT_LINE_BREAK_N).split(DELIMITER);
 
         String name = items[0];
         Properties properties = new Properties();

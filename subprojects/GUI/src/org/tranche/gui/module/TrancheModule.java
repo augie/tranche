@@ -30,7 +30,7 @@ public class TrancheModule {
     public boolean isInstalled;
     public Class moduleClass;
     private List<SelectableModuleAction> selectableActions;
-    public final static String FIELD_DELIMITER = "<MOD_PART>";
+    public static final String FIELD_DELIMITER = "<MOD_PART>";
 
     public TrancheModule(String name, String description, boolean isEnabled, boolean isInstalled, Class moduleClass) {
         this.name = name;

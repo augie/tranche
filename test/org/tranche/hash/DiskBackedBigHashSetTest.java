@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Set;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -136,10 +136,10 @@ public class DiskBackedBigHashSetTest extends TrancheTestCase {
             }
             final long setNoFlushTime = TimeUtil.getTrancheTimestamp() - start;
 
-            System.out.println("Time with auto-flush...... " + Text.getPrettyEllapsedTimeString(setFlushTime));
-            System.out.println("Time without auto-flush... " + Text.getPrettyEllapsedTimeString(setNoFlushTime));
+            System.out.println("Time with auto-flush...... " + TextUtil.formatTimeLength(setFlushTime));
+            System.out.println("Time without auto-flush... " + TextUtil.formatTimeLength(setNoFlushTime));
 
-            assertTrue("Expecting non-auto-flush mode to be quicker<no auto=" + Text.getPrettyEllapsedTimeString(setNoFlushTime) + ",auto=" + Text.getPrettyEllapsedTimeString(setFlushTime) + ">", setFlushTime > setNoFlushTime);
+            assertTrue("Expecting non-auto-flush mode to be quicker<no auto=" + TextUtil.formatTimeLength(setNoFlushTime) + ",auto=" + TextUtil.formatTimeLength(setFlushTime) + ">", setFlushTime > setNoFlushTime);
 
         } finally {
             if (setNoFlush != null) {

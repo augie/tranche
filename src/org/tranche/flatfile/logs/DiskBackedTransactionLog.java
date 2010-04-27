@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  * Logs every transaction. Useful for stress testing, but will negatively impact performance due to transaction writes.
@@ -90,7 +90,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         long start = TimeUtil.getTrancheTimestamp();
         mergeLogs.put(datablock, start);
         try {
-            writer.write("START MERGE " + Text.getFormattedDate(start) + " <" + datablock.getAbsolutePath() + ">\n");
+            writer.write("START MERGE " + TextUtil.getFormattedDate(start) + " <" + datablock.getAbsolutePath() + ">\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -105,7 +105,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         long finish = TimeUtil.getTrancheTimestamp();
         try {
             aggregateTimeMerging += (finish - start);
-            writer.write("FINISH MERGE " + Text.getFormattedDate(start) + " <" + datablock.getAbsolutePath() + "> (DELTA=" + Text.getPrettyEllapsedTimeString(finish - start) + ")\n");
+            writer.write("FINISH MERGE " + TextUtil.getFormattedDate(start) + " <" + datablock.getAbsolutePath() + "> (DELTA=" + TextUtil.formatTimeLength(finish - start) + ")\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -125,7 +125,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         logHas.put(hash, TimeUtil.getTrancheTimestamp());
 
         try {
-            writer.write("HAS STARTED " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
+            writer.write("HAS STARTED " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -138,7 +138,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
     public void logHasTrue(BigHash hash) {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logHas.remove(hash);
-            writer.write("HAS TRUE " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("HAS TRUE " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -151,7 +151,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
     public void logHasFalse(BigHash hash) {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logHas.remove(hash);
-            writer.write("HAS FALSE " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("HAS FALSE " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -181,7 +181,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         logGets.put(hash, TimeUtil.getTrancheTimestamp());
 
         try {
-            writer.write("GET STARTED " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
+            writer.write("GET STARTED " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -201,7 +201,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logGets.remove(hash);
             blockGetSuccesses++;
-            writer.write("GET OK " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("GET OK " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -216,7 +216,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logGets.remove(hash);
             blockGetFailures++;
-            writer.write("GET FAILED " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("GET FAILED " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -236,7 +236,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         logSets.put(hash, TimeUtil.getTrancheTimestamp());
 
         try {
-            writer.write("SET STARTED " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
+            writer.write("SET STARTED " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...>\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -251,7 +251,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logSets.remove(hash);
             blockSetSuccesses++;
-            writer.write("SET OK " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("SET OK " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -266,7 +266,7 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         try {
             long delta = TimeUtil.getTrancheTimestamp() - logSets.remove(hash);
             blockSetFailures++;
-            writer.write("SET FAILED " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + Text.getPrettyEllapsedTimeString(delta) + "\n");
+            writer.write("SET FAILED " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " <" + hash.toString().substring(0, hashSubstrLen) + "...> Took: " + TextUtil.formatTimeLength(delta) + "\n");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -293,8 +293,8 @@ public class DiskBackedTransactionLog implements DataBlockUtilLog {
         StringBuffer buffer = new StringBuffer();
 
         buffer.append("Disk-backed transaction log for DataBlockUtil:\n");
-        buffer.append(" - Total run time: " + Text.getPrettyEllapsedTimeString(getRuntime()) + "\n");
-        buffer.append(" - Total merge time: " + Text.getPrettyEllapsedTimeString(getTimeSpentMerging()) + "\n");
+        buffer.append(" - Total run time: " + TextUtil.formatTimeLength(getRuntime()) + "\n");
+        buffer.append(" - Total merge time: " + TextUtil.formatTimeLength(getTimeSpentMerging()) + "\n");
         buffer.append(" - Set blocks: successes=>" + getBlockSetSuccesses() + ", failures=>" + getBlockSetFailures() + "\n");
         buffer.append(" - Get blocks: successes=>" + getBlockGetSuccesses() + ", failures=>" + getBlockGetFailures() + "\n");
 

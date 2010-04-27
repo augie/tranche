@@ -33,13 +33,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import org.tranche.commons.TextUtil;
 
 import org.tranche.gui.GenericLabel;
 import org.tranche.gui.GenericPopupListener;
 import org.tranche.gui.GenericScrollPane;
 import org.tranche.gui.Styles;
 import org.tranche.project.ProjectFilePart;
-import org.tranche.util.Text;
 
 /**
  *
@@ -176,7 +176,7 @@ public class ProjectListPanel extends ProjectFolderViewPanel {
             labelPanel.removeAll();
             if (getCurrentFolder() != null) {
                 // add the current location label
-                GenericLabel label = new GenericLabel("Current Folder:  /" + getCurrentFolder().getPath() + "  (" + GUIUtil.integerFormat.format(getCurrentFolder().getFileCount()) + " files, " + Text.getFormattedBytes(getCurrentFolder().getSize()) + ")");
+                GenericLabel label = new GenericLabel("Current Folder:  /" + getCurrentFolder().getPath() + "  (" + GUIUtil.integerFormat.format(getCurrentFolder().getFileCount()) + " files, " + TextUtil.formatBytes(getCurrentFolder().getSize()) + ")");
                 label.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
                 label.setFont(Styles.FONT_12PT_MONOSPACED);
                 labelPanel.add(label, labelPanel.gbc);
@@ -275,7 +275,7 @@ public class ProjectListPanel extends ProjectFolderViewPanel {
             if (popupListener != null) {
                 label.addMouseListener(popupListener);
             }
-            label.setToolTipText(GUIUtil.integerFormat.format(folder.getFileCount()) + " files, " + Text.getFormattedBytes(folder.getSize()));
+            label.setToolTipText(GUIUtil.integerFormat.format(folder.getFileCount()) + " files, " + TextUtil.formatBytes(folder.getSize()));
             label.addMouseListener(new MouseAdapter() {
 
                 @Override
@@ -368,7 +368,7 @@ public class ProjectListPanel extends ProjectFolderViewPanel {
             if (isSelected(part)) {
                 label.setBackground(Styles.COLOR_LIGHT_BLUE);
             }
-            label.setToolTipText(Text.getFormattedBytes(part.getPaddingAdjustedLength()));
+            label.setToolTipText(TextUtil.formatBytes(part.getPaddingAdjustedLength()));
             if (popupListener != null) {
                 label.addMouseListener(popupListener);
             }

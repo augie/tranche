@@ -29,12 +29,13 @@ import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.Configuration;
 import org.tranche.configuration.ConfigKeys;
+import org.tranche.commons.DebuggableThread;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
-import org.tranche.exceptions.ChunkAlreadyExistsSecurityException;
 import org.tranche.exceptions.UnexpectedEndOfDataBlockException;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
@@ -46,25 +47,21 @@ import org.tranche.network.MultiServerRequestStrategy;
 import org.tranche.network.NetworkUtil;
 import org.tranche.network.StatusTable;
 import org.tranche.network.StatusTableRow;
-import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>"Heals" a server's data and meta-data based on the configured hash span.</p>
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class HashSpanFixingThread extends Thread {
+public class HashSpanFixingThread extends DebuggableThread {
 
-    private static boolean debug = false;
     /**
      * <p>Static references to the activities this thread will undertake</p>
      */
-    public static final byte ACTIVITY_NOTHING = 0,  ACTIVITY_HEALING = 1,  ACTIVITY_DELETING = 2,  ACTIVITY_DOWNLOADING = 3,  ACTIVITY_BALANCING = 4;
+    public static final byte ACTIVITY_NOTHING = 0, ACTIVITY_HEALING = 1, ACTIVITY_DELETING = 2, ACTIVITY_DOWNLOADING = 3, ACTIVITY_BALANCING = 4;
     /**
      * <p>a reference to the current activity handled by this thread.</p>
      */
@@ -72,7 +69,7 @@ public class HashSpanFixingThread extends Thread {
     /**
      * <p>Keep track of times spent doing things.</p>
      */
-    private long timeSpentDoingNothing = 0,  timeSpentHealing = 0,  timeSpentDeleting = 0,  timeSpentDownloading = 0,  timeSpentBalancing = 0;
+    private long timeSpentDoingNothing = 0, timeSpentHealing = 0, timeSpentDeleting = 0, timeSpentDownloading = 0, timeSpentBalancing = 0;
     /**
      * Instead of core, use these!
      */
@@ -797,9 +794,9 @@ public class HashSpanFixingThread extends Thread {
 
                                                 continue;
                                             }
-                                        // -------------------------------------------------------------------------
-                                        // + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D +
-                                        // -------------------------------------------------------------------------
+                                            // -------------------------------------------------------------------------
+                                            // + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D + D +
+                                            // -------------------------------------------------------------------------
 
                                         } /**
                                          * Going to verify that the chunk is good! We have
@@ -870,9 +867,9 @@ public class HashSpanFixingThread extends Thread {
 
                                                 continue;
                                             }
-                                        // -------------------------------------------------------------------------
-                                        // + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD +
-                                        // -------------------------------------------------------------------------
+                                            // -------------------------------------------------------------------------
+                                            // + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD + MD +
+                                            // -------------------------------------------------------------------------
                                         }
                                     }
                                 } catch (Exception ex) {
@@ -1652,10 +1649,10 @@ public class HashSpanFixingThread extends Thread {
 //                        }
 //
 //                        final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
-                        
+
                         // Let's count the reps
                         int reps = 0;
-                       
+
                         for (String verifyHost : hostsArr) {
                             try {
                                 TrancheServer verifyTs = getConnection(verifyHost);
@@ -1665,8 +1662,8 @@ public class HashSpanFixingThread extends Thread {
                             } finally {
                                 releaseConnection(verifyHost);
                             }
-                        } 
-                        
+                        }
+
                         final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
 
                         if (isEnoughToDelete) {
@@ -1811,7 +1808,7 @@ public class HashSpanFixingThread extends Thread {
 
                         // Let's count the reps
                         int reps = 0;
-                       
+
                         for (String verifyHost : hostsArr) {
                             try {
                                 TrancheServer verifyTs = getConnection(verifyHost);
@@ -1821,10 +1818,10 @@ public class HashSpanFixingThread extends Thread {
                             } finally {
                                 releaseConnection(verifyHost);
                             }
-                        } 
-                        
+                        }
+
                         final boolean isEnoughToDelete = reps >= this.getTotalRequiredRepsToDelete(config);
-                        
+
                         if (isEnoughToDelete) {
                             this.ffts.getDataBlockUtil().deleteData(dataHash, "Not in hash span; was replicated.");
                             isDeleted = true;
@@ -1947,7 +1944,6 @@ public class HashSpanFixingThread extends Thread {
             this.setCurrentActivity(HashSpanFixingThread.ACTIVITY_NOTHING);
         }
     }
-    
     private Configuration lastConfig = null;
 
     /**
@@ -2118,7 +2114,7 @@ public class HashSpanFixingThread extends Thread {
         }
 
         if (wasCriticallyChanged) {
-            debugOut("There was a critical change to the configuration noticed at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+            debugOut("There was a critical change to the configuration noticed at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
         }
 
         return wasCriticallyChanged;
@@ -3140,7 +3136,7 @@ public class HashSpanFixingThread extends Thread {
                 }
             }
         } catch (Exception e) {
-            System.err.println(e.getClass().getSimpleName() + " occurred while trying to add line<" + line + "> to file<" + name + "> at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ": " + e.getMessage());
+            System.err.println(e.getClass().getSimpleName() + " occurred while trying to add line<" + line + "> to file<" + name + "> at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ": " + e.getMessage());
         }
     }
 
@@ -3166,41 +3162,5 @@ public class HashSpanFixingThread extends Thread {
      */
     public static void setTimeToSleepIfNotAllowedToRun(long time) {
         timeToSleepIfNotAllowedToRun = time;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        HashSpanFixingThread.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(HashSpanFixingThread.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

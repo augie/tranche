@@ -21,11 +21,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.regex.Pattern;
 import javax.swing.JPanel;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.SortableTableModel;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.project.ProjectSummary;
-import org.tranche.util.Text;
 
 /**
  *
@@ -218,7 +218,7 @@ public class DownloadsTableModel extends SortableTableModel {
                     return getTitle(row);
                 case 1:
                     if (getSize(row) >= 0) {
-                        return Text.getFormattedBytes(getSize(row));
+                        return TextUtil.formatBytes(getSize(row));
                     } else {
                         return "";
                     }

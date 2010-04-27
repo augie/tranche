@@ -16,6 +16,7 @@
 package org.tranche.network;
 
 import java.util.Collection;
+import org.tranche.commons.DebugUtil;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.span.HashSpanCollection;
 import org.tranche.util.TrancheTestCase;
@@ -29,15 +30,15 @@ public class NetworkPackageTestCase extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        NetworkUtil.setDebug(true);
-        ConnectionUtil.setDebug(true);
+        DebugUtil.setDebug(NetworkUtil.class, true);
+        DebugUtil.setDebug(ConnectionUtil.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        NetworkUtil.setDebug(false);
-        ConnectionUtil.setDebug(false);
+        DebugUtil.setDebug(NetworkUtil.class, false);
+        DebugUtil.setDebug(ConnectionUtil.class, false);
     }
 
     public void assertEquals(StatusTableRow str, String host, String name, String group, int port, long updateTimestamp, boolean ssl, boolean online, boolean readOnly, boolean writeOnly, boolean dataStore, Collection<HashSpan> hashSpans) throws Exception {

@@ -33,7 +33,7 @@ import org.tranche.logs.activity.*;
 import org.tranche.network.StatusTable;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -45,13 +45,13 @@ import org.tranche.util.TrancheTestCase;
  */
 public class RoutingTrancheServerTest extends TrancheTestCase {
 
-    final static String HOST1 = "ardvark.org";
-    final static String HOST2 = "batman.org";
-    final static String HOST3 = "catwoman.org";
-    final static String HOST4 = "darwin.edu";
-    final static String HOST5 = "edgar.com";
-    final static String HOST6 = "friday.gov";
-    final static String[] ALL_HOSTS = {HOST1, HOST2, HOST3, HOST4, HOST5};
+    static final String HOST1 = "ardvark.org";
+    static final String HOST2 = "batman.org";
+    static final String HOST3 = "catwoman.org";
+    static final String HOST4 = "darwin.edu";
+    static final String HOST5 = "edgar.com";
+    static final String HOST6 = "friday.gov";
+    static final String[] ALL_HOSTS = {HOST1, HOST2, HOST3, HOST4, HOST5};
     final boolean wasTestingTargetHashSpan;
     final boolean wasTestingHealingThread;
 

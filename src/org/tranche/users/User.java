@@ -18,13 +18,14 @@ package org.tranche.users;
 import org.tranche.hash.Base16;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import org.tranche.commons.Debuggable;
 
 /**
  * <p>Represents a Tranche user.</p>
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class User implements Comparable {
+public class User extends Debuggable implements Comparable {
 
     /**
      * <p>Flag for whether the User can set data.</p>

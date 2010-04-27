@@ -16,8 +16,7 @@
 package org.tranche.publish;
 
 import org.tranche.exceptions.TodoException;
-import org.tranche.util.DebugUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>This tool is used to publish a passphrase for an encrypted upload.</p>
@@ -25,7 +24,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class PublishFileTool {
 
-    private static boolean debug = false;
     /**
      * Default parameters
      */
@@ -38,7 +36,7 @@ public class PublishFileTool {
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Inernal variables
      */
@@ -83,7 +81,7 @@ public class PublishFileTool {
      */
     private void waitHereOnPause() {
         while (paused) {
-            ThreadUtil.safeSleep(1000);
+            ThreadUtil.sleep(1000);
         }
     }
 
@@ -111,41 +109,5 @@ public class PublishFileTool {
             throw new TodoException();
         }
         return null;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        PublishFileTool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(PublishFileTool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

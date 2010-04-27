@@ -19,7 +19,7 @@ import java.util.Random;
 import org.tranche.security.Signature;
 import org.tranche.flatfile.NonceMap;
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**

@@ -69,7 +69,7 @@ public class GetActivityLogEntriesItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, long startTimestamp, long endTimestamp, int limit, byte mask, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, long startTimestamp, long endTimestamp, int limit, byte mask, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_ACTIVITY_LOG_ENTRIES, out);
         }
@@ -85,7 +85,7 @@ public class GetActivityLogEntriesItem extends ServerItem {
      * @return
      * @throws java.lang.Exception
      */
-    public final static Activity[] readResponse(InputStream in) throws Exception {
+    public static final Activity[] readResponse(InputStream in) throws Exception {
         Activity[] activities = new Activity[RemoteUtil.readInt(in)];
         for (int i = 0; i < activities.length; i++) {
             activities[i] = new Activity(RemoteUtil.readDataBytes(in));

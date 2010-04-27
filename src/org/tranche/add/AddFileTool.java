@@ -67,9 +67,11 @@ import org.tranche.timeestimator.ContextualTimeEstimator;
 import org.tranche.timeestimator.TimeEstimator;
 import org.tranche.users.UserZipFile;
 import org.tranche.users.UserZipFileUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.FileEncoding;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.Debuggable;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.UnknownArgumentException;
 import org.tranche.get.GetFileTool;
@@ -80,8 +82,7 @@ import org.tranche.security.SecurityUtil;
 import org.tranche.util.CompressionUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>A helper utility that adds single files or directories (a.k.a. "data sets" or "projects") of files to the repository.</p>
@@ -89,9 +90,8 @@ import org.tranche.util.ThreadUtil;
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
-public class AddFileTool {
+public class AddFileTool extends Debuggable {
 
-    private static boolean debug = false;
     /**
      * Default parameters
      */
@@ -126,17 +126,17 @@ public class AddFileTool {
      * User parameters
      */
     private File file = START_VALUE_FILE;
-    private boolean compress = DEFAULT_COMPRESS,  dataOnly = DEFAULT_DATA_ONLY,  explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD,  showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED,  useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS,  emailOnFailure = DEFAULT_EMAIL_ON_FAILURE,  sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
+    private boolean compress = DEFAULT_COMPRESS, dataOnly = DEFAULT_DATA_ONLY, explodeBeforeUpload = DEFAULT_EXPLODE_BEFORE_UPLOAD, showMetaDataIfEncrypted = DEFAULT_SHOW_META_DATA_IF_ENCRYPTED, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, emailOnFailure = DEFAULT_EMAIL_ON_FAILURE, sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
     private License license;
     private X509Certificate userCertificate;
     private PrivateKey userPrivateKey;
-    private String title = START_VALUE_TITLE,  description = START_VALUE_DESCRIPTION,  passphrase;
+    private String title = START_VALUE_TITLE, description = START_VALUE_DESCRIPTION, passphrase;
     private final List<MetaDataAnnotation> metaDataAnnotations = new ArrayList<MetaDataAnnotation>();
-    private final Set<String> emailConfirmationSet = new HashSet<String>(),  serverHostUseSet = new HashSet<String>(),  serverHostStickySet = new HashSet<String>();
+    private final Set<String> emailConfirmationSet = new HashSet<String>(), serverHostUseSet = new HashSet<String>(), serverHostStickySet = new HashSet<String>();
     /**
      * Runtime parameters
      */
-    private boolean paused = START_VALUE_PAUSED,  stopped = START_VALUE_STOPPED;
+    private boolean paused = START_VALUE_PAUSED, stopped = START_VALUE_STOPPED;
     /**
      * Statistics, reporting variables, listeners
      */
@@ -148,7 +148,7 @@ public class AddFileTool {
      */
     private boolean projectFileAddedToStack = false;
     private ProjectFile projectFile = START_VALUE_PROJECT_FILE;
-    private int threadCount = DEFAULT_THREADS,  fileCount = START_VALUE_FILE_COUNT;
+    private int threadCount = DEFAULT_THREADS, fileCount = START_VALUE_FILE_COUNT;
     private long size = START_VALUE_SIZE;
     byte[] padding = START_VALUE_PADDING;
     private boolean locked = false;
@@ -1239,8 +1239,8 @@ public class AddFileTool {
                 report.setHash(null);
             }
             // register our upload only if there were no failures
-            if (!dataOnly) {
-                if (!report.isFailed() && !TestUtil.isTesting()) {
+            if (!dataOnly && !TestUtil.isTesting()) {
+                if (!report.isFailed()) {
                     AddFileToolUtil.registerUpload(this, report);
                     if (emailConfirmationSet != null && !emailConfirmationSet.isEmpty()) {
                         AddFileToolUtil.emailReceipt(emailConfirmationSet.toArray(new String[0]), report);
@@ -1248,12 +1248,12 @@ public class AddFileTool {
                     if (ConfigureTranche.getAdminEmailAccounts().length > 0) {
                         AddFileToolUtil.emailReceipt(ConfigureTranche.getAdminEmailAccounts(), report);
                     }
-                } else if (report.isFailed() && !TestUtil.isTesting()) {
-                    if (emailOnFailure && !emailConfirmationSet.isEmpty()) {
-                        AddFileToolUtil.emailFailureNotice(emailConfirmationSet.toArray(new String[0]), this, report);
-                    }
+                } else {
                     if (ConfigureTranche.getAdminEmailAccounts().length > 0) {
                         AddFileToolUtil.emailFailureNotice(ConfigureTranche.getAdminEmailAccounts(), this, report);
+                    }
+                    if (emailOnFailure && !emailConfirmationSet.isEmpty()) {
+                        AddFileToolUtil.emailFailureNotice(emailConfirmationSet.toArray(new String[0]), this, report);
                     }
                 }
             }
@@ -1548,9 +1548,9 @@ public class AddFileTool {
         System.err.println("    To allocate 512 MB of memory to the process, you should use the JVM option: java -Xmx512m");
         System.err.println();
         System.err.println("USER FILE AND SECURITY");
-        System.err.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
+        System.err.println("    If you are not an approved user, visit " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_SIGN_UP_URL) + " to apply.");
         System.err.println();
-        System.err.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
+        System.err.println("    If you have an approved account, use your login information or go to " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_HOME_URL) + " to download a user file.");
         System.err.println();
         System.err.println("LICENSE AGGREEMENT");
         System.err.println("    A license agreement can be uploaded with your files. Uploading without a license puts the files into the public domain. Right now, the only built-in license is the Creative Commons Zero waiver (CC0). For more information, use the --describecczero parameter.");
@@ -1661,8 +1661,7 @@ public class AddFileTool {
             // flags
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-g") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
+                    DebugUtil.setDebug(AddFileTool.class, true);
                 } else if (args[i].equals("-h") || args[i].equals("--help")) {
                     printUsage();
                     if (!TestUtil.isTesting()) {
@@ -1694,8 +1693,7 @@ public class AddFileTool {
             try {
                 ConfigureTranche.load(args);
             } catch (Exception e) {
-                System.err.println("ERROR: " + e.getMessage());
-                debugErr(e);
+                e.printStackTrace();
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -1766,7 +1764,7 @@ public class AddFileTool {
                             aft.setUserPrivateKey(user.getPrivateKey());
                         } catch (Exception e) {
                             System.err.println("Check login information, " + e.getClass().getSimpleName() + ": " + e.getMessage());
-                            e.printStackTrace(System.err);
+                            e.printStackTrace();
                             LogUtil.logError(e);
                             if (!TestUtil.isTesting()) {
                                 System.exit(8);
@@ -1867,8 +1865,7 @@ public class AddFileTool {
                     }
                 }
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                debugErr(e);
+                e.printStackTrace();
                 if (!TestUtil.isTesting()) {
                     System.exit(3);
                 } else {
@@ -1890,8 +1887,8 @@ public class AddFileTool {
                 } else {
                     System.out.println(report.getHash());
                     if (showSummary) {
-                        System.err.println("Total upload time: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
-                        System.err.println("Total bytes uploaded: " + Text.getFormattedBytes(report.getBytesUploaded()));
+                        System.err.println("Total upload time: " + TextUtil.formatTimeLength(report.getTimeToFinish()));
+                        System.err.println("Total bytes uploaded: " + TextUtil.formatBytes(report.getBytesUploaded()));
                     }
                 }
             } catch (Exception e) {
@@ -1902,7 +1899,7 @@ public class AddFileTool {
                         System.exit(4);
                     } else {
                         System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                        e.printStackTrace(System.err);
+                        e.printStackTrace();
                         System.exit(1);
                     }
                 } else {
@@ -1917,50 +1914,12 @@ public class AddFileTool {
                 return;
             }
         } catch (Exception e) {
-            debugErr(e);
             if (!TestUtil.isTesting()) {
-                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                e.printStackTrace(System.err);
+                e.printStackTrace();
                 System.exit(1);
             } else {
                 throw e;
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        AddFileTool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(AddFileTool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 
@@ -2148,7 +2107,7 @@ public class AddFileTool {
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
         private int emptyCount = 0;
-        private boolean started = false,  finished = false,  stopped = false;
+        private boolean started = false, finished = false, stopped = false;
         private final LinkedList<FileToUpload> fileStack;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         public BigHash primaryFileHash;
@@ -2243,7 +2202,7 @@ public class AddFileTool {
                                 fileStack.addLast(new FileToUpload(projectFile, padding));
                                 continue;
                             } else if (emptyCount <= 3) {
-                                ThreadUtil.safeSleep(250);
+                                ThreadUtil.sleep(250);
                                 continue;
                             }
                             debugOut("File stack is empty.");
@@ -2578,7 +2537,7 @@ public class AddFileTool {
                     if (thread.stopped || AddFileTool.this.stopped) {
                         return;
                     }
-                    ThreadUtil.safeSleep(100);
+                    ThreadUtil.sleep(100);
                 }
                 // data chunks queued
                 dataChunksQueued++;
@@ -2656,7 +2615,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
@@ -2768,7 +2727,7 @@ public class AddFileTool {
                 }
 
                 // have we uploaded enough copies?
-                if (isStopIfEnough && hostsWithCopy.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS)) {
+                if (isStopIfEnough && hostsWithCopy.size() >= ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS)) {
                     return hostsWithCopy;
                 }
 
@@ -2926,7 +2885,7 @@ public class AddFileTool {
                                     }
 
                                     // have we uploaded enough copies?
-                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                                    if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
                                         break ATTEMPT;
                                     }
 
@@ -2994,7 +2953,7 @@ public class AddFileTool {
                         }
 
                         // checks
-                        int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
+                        int reps = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS);
                         if (uploadedCoreHosts.size() < reps) {
                             throw new Exception("Data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
                         }
@@ -3015,7 +2974,7 @@ public class AddFileTool {
                                     break DOWHILE;
                                 }
                                 debugOut("Waiting for file upload thread to finish with meta data.");
-                                ThreadUtil.safeSleep(100);
+                                ThreadUtil.sleep(100);
                             }
 
                             debugOut("Time spent waiting for the file encoding thread to finish with this file: " + (TimeUtil.getTrancheTimestamp() - startTime));
@@ -3031,7 +2990,7 @@ public class AddFileTool {
                                         break DOWHILE;
                                     }
                                     debugOut("Waiting for room in meta data queue.");
-                                    ThreadUtil.safeSleep(100);
+                                    ThreadUtil.sleep(100);
                                 }
                                 metaChunkQueue.put(dataChunk.metaChunk);
                                 debugOut("Time spent waiting to submit to the meta data queue: " + (TimeUtil.getTrancheTimestamp() - startTime2));
@@ -3057,7 +3016,7 @@ public class AddFileTool {
         private final Set<FileEncodingThread> fileThreads;
         private final Set<DataUploadingThread> dataThreads;
         private final Set<MetaDataUploadingThread> metaThreads;
-        private boolean started = false,  finished = false,  stopWhenFinished = false,  stopped = false;
+        private boolean started = false, finished = false, stopWhenFinished = false, stopped = false;
         private final PriorityBlockingQueue<MetaChunk> metaChunkQueue;
 
         public MetaDataUploadingThread(Set<FileEncodingThread> fileThreads, Set<DataUploadingThread> dataThreads, Set<MetaDataUploadingThread> metaThreads, PriorityBlockingQueue<MetaChunk> metaChunkQueue) {
@@ -3198,7 +3157,7 @@ public class AddFileTool {
                                     break DOWHILE;
                                 }
                                 // sleep for data to upload
-                                ThreadUtil.safeSleep(250);
+                                ThreadUtil.sleep(250);
                                 // make sure it's put at the end of the queue
                                 metaChunk.serversTried = 0;
                                 metaChunkQueue.put(metaChunk);
@@ -3282,7 +3241,7 @@ public class AddFileTool {
                                 }
                             }
                             // have we uploaded enough copies?
-                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
+                            if (uploadedCoreHosts.size() >= ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS) || toUploadCoreHosts.isEmpty()) {
                                 break;
                             }
                         }
@@ -3319,7 +3278,7 @@ public class AddFileTool {
                         }
 
                         // checks
-                        int reps = ConfigureTranche.getInt(ConfigureTranche.PROP_REPLICATIONS);
+                        int reps = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_REPLICATIONS);
                         if (uploadedCoreHosts.size() < reps) {
                             throw new Exception("Meta data uploaded to " + uploadedCoreHosts.size() + " core servers, but required number is " + reps);
                         }

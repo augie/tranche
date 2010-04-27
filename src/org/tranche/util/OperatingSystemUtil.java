@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.regex.Pattern;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
 
 /**
@@ -28,8 +30,6 @@ import org.tranche.time.TimeUtil;
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
 public class OperatingSystemUtil {
-
-    private static boolean debug = false;
 
     /**
      * <p>Run an external app using Runtime. Should work for Windows XP and other OS.</p>
@@ -43,13 +43,13 @@ public class OperatingSystemUtil {
         OperatingSystem thisOS = OperatingSystem.getCurrentOS();
 
         boolean isModernWin =
-                thisOS.equals(OperatingSystem.WINDOWS_XP) ||
-                thisOS.equals(OperatingSystem.WINDOWS_2000) ||
-                thisOS.equals(OperatingSystem.WINDOWS_NT);
+                thisOS.equals(OperatingSystem.WINDOWS_XP)
+                || thisOS.equals(OperatingSystem.WINDOWS_2000)
+                || thisOS.equals(OperatingSystem.WINDOWS_NT);
 
         boolean isOldWin =
-                thisOS.equals(OperatingSystem.WINDOWS_95) ||
-                thisOS.equals(OperatingSystem.WINDOWS_98);
+                thisOS.equals(OperatingSystem.WINDOWS_95)
+                || thisOS.equals(OperatingSystem.WINDOWS_98);
 
 
         if (isModernWin) {
@@ -58,7 +58,7 @@ public class OperatingSystemUtil {
             command = "command.com /c " + command;
         }
 
-        debugOut(command);
+        DebugUtil.debugOut(OperatingSystemUtil.class, command);
 
         Runtime rt = Runtime.getRuntime();
         Process proc = rt.exec(command);
@@ -70,7 +70,7 @@ public class OperatingSystemUtil {
         outHandler.start();
 
         int exitCode = proc.waitFor();
-        debugOut("Process running \"" + command + "\" exited with value of " + exitCode + " at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+        DebugUtil.debugOut(OperatingSystemUtil.class, "Process running \"" + command + "\" exited with value of " + exitCode + " at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 
         return exitCode;
     }
@@ -95,7 +95,7 @@ public class OperatingSystemUtil {
             command + " >> " + outputFile.getAbsolutePath() + " 2>> " + outputFile.getAbsolutePath()
         };
 
-        debugOut(command);
+        DebugUtil.debugOut(OperatingSystemUtil.class, command);
 
         Runtime rt = Runtime.getRuntime();
         Process proc = rt.exec(commandArray);
@@ -108,7 +108,7 @@ public class OperatingSystemUtil {
         outHandler.start();
 
         int exitCode = proc.waitFor();
-        debugOut("Process running \"" + command + "\" exited with value of " + exitCode + ".");
+        DebugUtil.debugOut(OperatingSystemUtil.class, "Process running \"" + command + "\" exited with value of " + exitCode + ".");
 
         return exitCode;
     }
@@ -211,43 +211,6 @@ public class OperatingSystemUtil {
         if (OperatingSystem.getCurrentOS().isMSWindows()) {
             return escapeFileName(file);
         }
-
         return file;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        OperatingSystemUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(OperatingSystemUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

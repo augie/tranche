@@ -29,14 +29,14 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.UnresponsiveServerException;
 import org.tranche.remote.RemoteTrancheServer;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>Manages the Tranche server connections for the local JVM.</p>
@@ -45,7 +45,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class ConnectionUtil {
 
-    private static boolean debug = false;
     private static final ConnectionsKeepAliveThread keepAliveThread = new ConnectionsKeepAliveThread();
     private static final Map<String, Connection> connectionMap = new HashMap<String, Connection>();
     private static final Set<ConnectionListener> listeners = new HashSet<ConnectionListener>();
@@ -255,7 +254,7 @@ public class ConnectionUtil {
         }
         if (ts == null) {
             // create a new connection
-            debugOut("Creating connection to " + url);
+            DebugUtil.debugOut(ConnectionUtil.class, "Creating connection to " + url);
             ts = new RemoteTrancheServer(host, port, secure);
 
             if (!TestUtil.isTesting()) {
@@ -279,28 +278,28 @@ public class ConnectionUtil {
                 };
                 t.setDaemon(true);
                 t.start();
-                int millisToWait = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIMEOUT);
+                int millisToWait = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_TIMEOUT);
                 if (millisToWait > 0) {
-                    debugOut("Waiting " + millisToWait + " milliseconds for verification of connection with " + host);
+                    DebugUtil.debugOut(ConnectionUtil.class, "Waiting " + millisToWait + " milliseconds for verification of connection with " + host);
                     t.join(millisToWait);
                     if (t.isAlive()) {
                         try {
                             t.interrupt();
                         } catch (Exception e) {
-                            debugErr(e);
+                            DebugUtil.debugErr(ConnectionUtil.class, e);
                         }
                     }
                 } else {
-                    debugOut("Waiting indefinitely milliseconds for verification of connection with " + host);
+                    DebugUtil.debugOut(ConnectionUtil.class, "Waiting indefinitely milliseconds for verification of connection with " + host);
                     t.join();
                 }
                 if (exception.length > 0 && exception[0] != null) {
-                    debugErr(exception[0]);
+                    DebugUtil.debugErr(ConnectionUtil.class, exception[0]);
                     throw exception[0];
                 }
             }
 
-            debugOut("Connection made with " + url);
+            DebugUtil.debugOut(ConnectionUtil.class, "Connection made with " + url);
 
             // it's OK to kill the old connection now
             int lockCount = 0;
@@ -309,7 +308,7 @@ public class ConnectionUtil {
                 oldTrancheServer = getConnection(originalHost).getTrancheServer();
                 lockCount = getConnection(originalHost).getLockCount();
             }
-            debugOut("Caching the new connection with " + url);
+            DebugUtil.debugOut(ConnectionUtil.class, "Caching the new connection with " + url);
 
             // cache the new connection
             synchronized (connectionMap) {
@@ -320,11 +319,11 @@ public class ConnectionUtil {
                     getConnection(originalHost).lock();
                 }
             }
-            debugOut("Firing event for a connection made with " + url);
+            DebugUtil.debugOut(ConnectionUtil.class, "Firing event for a connection made with " + url);
 
             // killing the old tranche server
             if (oldTrancheServer != null) {
-                debugOut("Killing the old connection with " + originalHost);
+                DebugUtil.debugOut(ConnectionUtil.class, "Killing the old connection with " + originalHost);
                 IOUtil.safeClose(oldTrancheServer);
             }
 
@@ -344,7 +343,7 @@ public class ConnectionUtil {
         try {
             reportExceptionHost(row.getHost(), e);
         } catch (Exception ex) {
-            debugErr(ex);
+            DebugUtil.debugErr(ConnectionUtil.class, ex);
         }
     }
 
@@ -358,7 +357,7 @@ public class ConnectionUtil {
         try {
             reportExceptionHost(IOUtil.parseHost(URL), e);
         } catch (Exception ex) {
-            debugErr(ex);
+            DebugUtil.debugErr(ConnectionUtil.class, ex);
         }
     }
 
@@ -376,7 +375,7 @@ public class ConnectionUtil {
             if (isConnected(host) && !getConnection(host).reportException(e)) {
                 return;
             }
-            debugErr(e);
+            DebugUtil.debugErr(ConnectionUtil.class, e);
             // connection exceptions mean the server is absolutely offlikne
             if (e instanceof ConnectException || e instanceof NoRouteToHostException) {
                 flagOffline(host, e.getClass().getSimpleName());
@@ -401,7 +400,7 @@ public class ConnectionUtil {
                 }
             }
         } catch (Exception ex) {
-            debugErr(ex);
+            DebugUtil.debugErr(ConnectionUtil.class, ex);
         }
     }
 
@@ -416,7 +415,7 @@ public class ConnectionUtil {
                 getConnection(host).clearExceptions();
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(ConnectionUtil.class, e);
         }
     }
 
@@ -441,7 +440,7 @@ public class ConnectionUtil {
             reason = "none specified";
         }
 
-        debugOut(host + " flagged offline at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " (reason: " + reason + ")");
+        DebugUtil.debugOut(ConnectionUtil.class, host + " flagged offline at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " (reason: " + reason + ")");
         safeForceClose(host, "Flagged offline");
         // flag the server offline
         StatusTableRow row = NetworkUtil.getStatus().getRow(host);
@@ -502,7 +501,7 @@ public class ConnectionUtil {
         try {
             safeCloseHost(IOUtil.parseHost(url));
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(ConnectionUtil.class, e);
         }
     }
 
@@ -527,7 +526,7 @@ public class ConnectionUtil {
             return;
         }
 
-        debugOut("Forcing closed " + host + ", reason: " + reason);
+        DebugUtil.debugOut(ConnectionUtil.class, "Forcing closed " + host + ", reason: " + reason);
 
         // kill the server
         IOUtil.safeClose(getConnection(host).getTrancheServer());
@@ -564,7 +563,7 @@ public class ConnectionUtil {
         if (!isConnected(host)) {
             return;
         }
-        debugOut("Adjusting the connection for " + host + ".");
+        DebugUtil.debugOut(ConnectionUtil.class, "Adjusting the connection for " + host + ".");
         // open the new connection
         try {
             connect(host, port, ssl, isLocked(host));
@@ -581,7 +580,7 @@ public class ConnectionUtil {
      * <p>If connections have already been made, will try to make as few changes as possible to that pool of existing connections.</p>
      */
     public synchronized static void adjustConnections() {
-        debugOut("Adjusting connections");
+        DebugUtil.debugOut(ConnectionUtil.class, "Adjusting connections");
         try {
             // clone the status table to work with
             StatusTable table = NetworkUtil.getStatus().clone();
@@ -591,7 +590,7 @@ public class ConnectionUtil {
 //            if (NetworkUtil.getLocalServer() == null) {
 
             // repository must be x servers in size before connecting only to a full hash span
-            int threshold = ConfigureTranche.getInt(ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
+            int threshold = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_CONNECTION_FULL_HASH_SPAN_THRESHOLD);
             Set<StatusTableRow> onlineRows = new HashSet<StatusTableRow>();
             for (StatusTableRow row : table.getRows()) {
                 if (!row.isOnline()) {
@@ -600,7 +599,7 @@ public class ConnectionUtil {
                 onlineRows.add(row);
             }
             if (onlineRows.size() > threshold) {
-                debugOut("Getting a full hash span.");
+                DebugUtil.debugOut(ConnectionUtil.class, "Getting a full hash span.");
                 // calculate a full hash span -- seeding with the currently connected rows
                 requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(getConnectedRows(), table.getRows()));
             } else {
@@ -626,7 +625,7 @@ public class ConnectionUtil {
             // alternative to above, connect to select
             {
 //                // start with the servers from which to get network status updates
-//                debugOut("Determining status table row ranges.");
+//                DebugUtil.debugOut(ConnectionUtil.class, "Determining status table row ranges.");
 //                // have the server status update process modify its own ranges based on the network
 //                ServerStatusUpdateProcess.adjustStatusTableRowRanges();
 //                // connect to all the servers to which we are supposed to be connected to for updates
@@ -639,23 +638,23 @@ public class ConnectionUtil {
 //                }
 //
 //                if (NetworkUtil.getLocalServer().getTrancheServer() instanceof FlatFileTrancheServer) {
-//                    debugOut("Local server is a FlatFileTrancheServer");
+//                    DebugUtil.debugOut(ConnectionUtil.class, "Local server is a FlatFileTrancheServer");
 //
 //                    // always connect with the local server
-//                    debugOut("Connecting to the local data server.");
+//                    DebugUtil.debugOut(ConnectionUtil.class, "Connecting to the local data server.");
 //                    requiredConnections.add(NetworkUtil.getLocalServerRow());
 //
 //                    // next get all servers with overlapping hash spans
-//                    debugOut("Getting all servers with overlapping hash spans");
+//                    DebugUtil.debugOut(ConnectionUtil.class, "Getting all servers with overlapping hash spans");
 //                    Map<Collection<HashSpan>, String> overlappingHashSpanHosts = new HashMap<Collection<HashSpan>, String>();
-//                    debugOut("Starting to check servers with overlapping hash spans.");
+//                    DebugUtil.debugOut(ConnectionUtil.class, "Starting to check servers with overlapping hash spans.");
 //                    for (StatusTableRow row : table.getRows()) {
-//                        debugOut("Starting to check for overlapping hashspans with " + row.getURL());
+//                        DebugUtil.debugOut(ConnectionUtil.class, "Starting to check for overlapping hashspans with " + row.getURL());
 //                        // do not connect to self, offline servers, non-data servers, and non-core servers for overlapping hash spans
 //                        if (row.isLocalServer() || !row.isOnline() || !row.isCore() || !row.isDataStore()) {
 //                            continue;
 //                        }
-//                        debugOut("Checking for overlapping hashspans with " + row.getURL());
+//                        DebugUtil.debugOut(ConnectionUtil.class, "Checking for overlapping hashspans with " + row.getURL());
 //                        // determine if the servers have overlapping hashspans
 //                        rowLoop:
 //                        for (HashSpan hs1 : row.getHashSpans()) {
@@ -678,7 +677,7 @@ public class ConnectionUtil {
 //                    // calculate a full hash span
 //                    requiredConnections.addAll(StatusTableRow.calculateFullHashSpan(fullHashSpanSeedRows, table.getRows()));
 //                } else if (NetworkUtil.getLocalServer().getTrancheServer() instanceof RoutingTrancheServer) {
-//                    debugOut("Local server is a RoutingTrancheServer");
+//                    DebugUtil.debugOut(ConnectionUtil.class, "Local server is a RoutingTrancheServer");
 //                    // connect to all servers being routed to
 //                    Collection<String> hosts = ((RoutingTrancheServer) NetworkUtil.getLocalServer().getTrancheServer()).getManagedServers();
 //                    for (String host : hosts) {
@@ -700,7 +699,7 @@ public class ConnectionUtil {
                             try {
                                 connect(row, false);
                             } catch (Exception e) {
-                                debugErr(e);
+                                DebugUtil.debugErr(ConnectionUtil.class, e);
                                 reportException(row, e);
                             }
                         }
@@ -713,7 +712,7 @@ public class ConnectionUtil {
             // wait for connections
             ThreadUtil.wait(threads, 10000);
 
-            debugOut("Killing unnecessary connections");
+            DebugUtil.debugOut(ConnectionUtil.class, "Killing unnecessary connections");
             // kill the unneeded connections
             Set<String> toKill = new HashSet<String>();
             for (String host : getConnectedHosts()) {
@@ -732,7 +731,7 @@ public class ConnectionUtil {
                 safeCloseHost(host);
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(ConnectionUtil.class, e);
         }
     }
 
@@ -793,42 +792,6 @@ public class ConnectionUtil {
                 listener.connectionDropped(event);
             } catch (Exception e) {
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ConnectionUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ConnectionUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

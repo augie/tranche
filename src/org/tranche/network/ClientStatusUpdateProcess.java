@@ -19,10 +19,9 @@ import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
 import org.tranche.security.SecurityUtil;
 import org.tranche.server.GetNetworkStatusItem;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>The network status update process used when there is no local server.</p>
@@ -32,7 +31,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class ClientStatusUpdateProcess extends StatusUpdateProcess {
 
-    private static boolean debug = false;
     private static String lastCheckedHost;
 
     /**
@@ -51,7 +49,7 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
         debugOut("Started the process");
         while (isRunning) {
             try {
-                ThreadUtil.safeSleep(ConfigureTranche.getInt(ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
+                ThreadUtil.sleep(ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_STATUS_UPDATE_CLIENT_FREQUENCY));
 //            updateUsingStatusTablePortions();
                 updateDirectly();
             } catch (Exception e) {
@@ -198,41 +196,5 @@ public class ClientStatusUpdateProcess extends StatusUpdateProcess {
         NetworkUtil.updateRows(table.getRows());
         // check the status table for servers to clear
         NetworkUtil.getStatus().removeDefunctRows();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ClientStatusUpdateProcess.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ClientStatusUpdateProcess.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

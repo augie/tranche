@@ -25,13 +25,13 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.TextUtil;
 import org.tranche.network.*;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.UserZipFile;
 import org.tranche.util.EmailUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.Text;
 
 /**
  * Utility code to help send logs to the appropriate groups.
@@ -85,7 +85,7 @@ public class LogUtil {
             }
         }
 
-        final StringBuffer descriptionBuffer = new StringBuffer(),  exceptionBuffer = new StringBuffer(),  userBuffer = new StringBuffer();
+        final StringBuffer descriptionBuffer = new StringBuffer(), exceptionBuffer = new StringBuffer(), userBuffer = new StringBuffer();
 
         // Build: messageBuffer
         if (description != null && !description.trim().equals("")) {
@@ -95,15 +95,15 @@ public class LogUtil {
         }
 
         // Build: exceptionBuffer
-        exceptionBuffer.append("Exceptions: " + exceptions.size() + " exceptions to report" + Text.getNewLine());
+        exceptionBuffer.append("Exceptions: " + exceptions.size() + " exceptions to report" + "\n");
         for (Exception e : exceptions) {
-            exceptionBuffer.append(e.getClass().getName() + ": " + e.getMessage() + Text.getNewLine());
+            exceptionBuffer.append(e.getClass().getName() + ": " + e.getMessage() + "\n");
             for (StackTraceElement ste : e.getStackTrace()) {
-                exceptionBuffer.append("    " + ste + Text.getNewLine());
+                exceptionBuffer.append("    " + ste + "\n");
             }
-            exceptionBuffer.append(Text.getNewLine());
+            exceptionBuffer.append("\n");
         }
-        exceptionBuffer.append(Text.getNewLine());
+        exceptionBuffer.append("\n");
 
         // Build: userBuffer
         if (uzf == null) {
@@ -116,7 +116,7 @@ public class LogUtil {
         final String threadDump = getThreadDump();
         final String memoryDump = getEnvironmentDump();
 
-        final String submitURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_ERROR_URL);
+        final String submitURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_ERROR_URL);
         if (submitURL != null && !submitURL.trim().equals("")) {
             Thread t = new Thread("Submit error thread") {
 
@@ -163,7 +163,7 @@ public class LogUtil {
         if (ConfigureTranche.getAdminEmailAccounts().length > 0) {
             File tempFile = null;
             try {
-                String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Error @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+                String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Error @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
                 StringBuffer msg = new StringBuffer();
                 msg.append("User comments:\n");
                 msg.append(descriptionBuffer + "\n\n\n");
@@ -171,7 +171,7 @@ public class LogUtil {
                 msg.append(exceptionBuffer + "\n");
                 tempFile = getTroubleshootingInformationFile();
                 try {
-                    EmailUtil.sendEmail(subject, ConfigureTranche.getAdminEmailAccounts(), msg.toString(), tempFile);
+                    EmailUtil.sendEmailHttp(subject, ConfigureTranche.getAdminEmailAccounts(), msg.toString(), tempFile);
                 } catch (Exception ee) {
                     ee.printStackTrace();
                 }
@@ -187,9 +187,9 @@ public class LogUtil {
      */
     public static final String getEnvironmentDump() {
         StringBuffer buf = new StringBuffer();
-        buf.append("Build: @buildNumber" + Text.getNewLine());
+        buf.append("Build: @buildNumber" + "\n");
         try {
-            buf.append("Internet host/address: " + java.net.InetAddress.getLocalHost() + Text.getNewLine());
+            buf.append("Internet host/address: " + java.net.InetAddress.getLocalHost() + "\n");
         } catch (Exception e) {
         }
         Runtime rt = Runtime.getRuntime();
@@ -197,15 +197,15 @@ public class LogUtil {
         long tm = rt.totalMemory();
         long mm = rt.maxMemory();
         buf.append("Memory: ");
-        buf.append(Text.getNewLine());
-        buf.append("    Free: " + Text.getFormattedBytes(fm));
-        buf.append(Text.getNewLine());
-        buf.append("    Used: " + Text.getFormattedBytes(tm - fm));
-        buf.append(Text.getNewLine());
-        buf.append("    Total: " + Text.getFormattedBytes(tm));
-        buf.append(Text.getNewLine());
-        buf.append("    Maximum:" + Text.getFormattedBytes(mm));
-        buf.append(Text.getNewLine() + Text.getNewLine() + Text.getNewLine());
+        buf.append("\n");
+        buf.append("    Free: " + TextUtil.formatBytes(fm));
+        buf.append("\n");
+        buf.append("    Used: " + TextUtil.formatBytes(tm - fm));
+        buf.append("\n");
+        buf.append("    Total: " + TextUtil.formatBytes(tm));
+        buf.append("\n");
+        buf.append("    Maximum:" + TextUtil.formatBytes(mm));
+        buf.append("\n" + "\n" + "\n");
         return buf.toString();
     }
 
@@ -229,15 +229,15 @@ public class LogUtil {
             }
         }
         StringBuffer buf = new StringBuffer();
-        buf.append("Servers: " + onlineCount + " online core servers, " + onlineNonCoreServers + " other online servers" + Text.getNewLine());
-        buf.append(table.toString() + Text.getNewLine() + Text.getNewLine() + Text.getNewLine());
-        buf.append("Connections: " + connectedCount + " connections" + Text.getNewLine() + Text.getNewLine());
+        buf.append("Servers: " + onlineCount + " online core servers, " + onlineNonCoreServers + " other online servers" + "\n");
+        buf.append(table.toString() + "\n" + "\n" + "\n");
+        buf.append("Connections: " + connectedCount + " connections" + "\n" + "\n");
         for (StatusTableRow row : table.getRows()) {
             if (ConnectionUtil.isConnected(row.getHost())) {
-                buf.append("  " + row.getName() + " (" + row.getHost() + ")" + Text.getNewLine());
+                buf.append("  " + row.getName() + " (" + row.getHost() + ")" + "\n");
             }
         }
-        buf.append(Text.getNewLine() + Text.getNewLine());
+        buf.append("\n" + "\n");
         return buf.toString();
     }
 
@@ -249,22 +249,22 @@ public class LogUtil {
         Map<Thread, StackTraceElement[]> threadInfo = Thread.getAllStackTraces();
         StringBuffer buf = new StringBuffer();
         buf.append("Thread dump: " + threadInfo.size() + " threads");
-        buf.append(Text.getNewLine() + Text.getNewLine());
+        buf.append("\n" + "\n");
         for (Thread t : threadInfo.keySet()) {
             StackTraceElement[] ste = threadInfo.get(t);
             String daemonMsg = t.isDaemon() ? "daemon" : "non-daemon";
             String aliveMsg = t.isAlive() ? "alive" : "non-alive";
             buf.append("    * " + t.getName() + " (priority: " + t.getPriority() + ", " + daemonMsg + ", " + aliveMsg + ", state: " + t.getState() + ") ");
-            buf.append(Text.getNewLine());
+            buf.append("\n");
 
             for (int i = 0; i < ste.length; i++) {
                 buf.append("        " + ste[i].toString());
-                buf.append(Text.getNewLine());
+                buf.append("\n");
             }
 
-            buf.append(Text.getNewLine());
+            buf.append("\n");
         }
-        buf.append(Text.getNewLine() + Text.getNewLine());
+        buf.append("\n" + "\n");
         return buf.toString();
     }
 

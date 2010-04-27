@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.tranche.util.IOUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Creates a CSV file from a CSVFile representation.</p>
@@ -38,7 +37,7 @@ public class CSVWriter {
      */
     public CSVWriter(CSVFile csvObj) {
         this.csvObj = csvObj;
-        this.NEWLINE = Text.getNewLine();
+        this.NEWLINE = "\n";
     }
 
     /**

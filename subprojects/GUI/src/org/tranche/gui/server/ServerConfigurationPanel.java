@@ -67,6 +67,7 @@ import org.tranche.LocalDataServer;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.DataDirectoryConfiguration;
 import org.tranche.gui.DisplayTextArea;
 import org.tranche.gui.ErrorFrame;
@@ -91,7 +92,6 @@ import org.tranche.network.NetworkUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.users.User;
 import org.tranche.users.UserZipFile;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.PreferencesUtil;
 
@@ -102,11 +102,10 @@ import org.tranche.util.PreferencesUtil;
  */
 public class ServerConfigurationPanel extends JPanel {
 
-    private static boolean debug = false;
     // button for saving the changes
     public ErrorFrame ef = new ErrorFrame();
     private JTabbedPane tabbedPane = new JTabbedPane();
-    private final static int HORIZONTAL_MARGIN = 10;
+    private static final int HORIZONTAL_MARGIN = 10;
     private LocalServerPanel localServerPanel = new LocalServerPanel();
     private ExternalServerPanel externalServerPanel = new ExternalServerPanel();
     private UsersPanel usersPanel = new UsersPanel();
@@ -194,7 +193,7 @@ public class ServerConfigurationPanel extends JPanel {
     }
 
     public void setConfiguration(Configuration configuration) {
-        debugOut("Setting configuration with " + configuration.getTargetHashSpans().size() + " target hash spans.");
+        DebugUtil.debugOut(ServerConfigurationPanel.class, "Setting configuration with " + configuration.getTargetHashSpans().size() + " target hash spans.");
 
         // unset the old configuration
         clearConfiguration();
@@ -209,7 +208,7 @@ public class ServerConfigurationPanel extends JPanel {
         // but that's important enough to clone. Pretty cheap operation anyhow.
         this.configuration = configuration.clone();
 
-        debugOut("Set configuration with " + this.configuration.getTargetHashSpans().size() + " target hash spans.");
+        DebugUtil.debugOut(ServerConfigurationPanel.class, "Set configuration with " + this.configuration.getTargetHashSpans().size() + " target hash spans.");
 
         // set the server configuration to on
         setServerIsLoaded(configuration != null);
@@ -269,7 +268,7 @@ public class ServerConfigurationPanel extends JPanel {
                         return;
                     }
 
-                    debugOut("Setting configuration for " + loadedServerHost);
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "Setting configuration for " + loadedServerHost);
 
                     // clear the old set of users
                     configuration.clearUsers();
@@ -306,22 +305,22 @@ public class ServerConfigurationPanel extends JPanel {
                         configuration.addUser(nextUser);
                     }
 
-                    debugOut("... set " + usersPanel.getEmbeddedUserPanels().size() + " users.");
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "... set " + usersPanel.getEmbeddedUserPanels().size() + " users.");
 
                     // clear the hash spans
                     configuration.clearTargetHashSpans();
                     // Set the hash spans
                     configuration.setTargetHashSpans(targetHashSpansPanel.getHashSpans());
 
-                    debugOut("... set " + targetHashSpansPanel.getHashSpans().size() + " target hash spans.");
-                    debugOut("... there are " + configuration.getTargetHashSpans().size() + " target hash spans in the configuration.");
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "... set " + targetHashSpansPanel.getHashSpans().size() + " target hash spans.");
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "... there are " + configuration.getTargetHashSpans().size() + " target hash spans in the configuration.");
 
                     // clear the directories
                     configuration.clearDataDirectories();
                     // Save the data directory information
                     configuration.setDataDirectories(dataDirectoriesPanel.getDataDirectoryConfigurations());
 
-                    debugOut("... set " + dataDirectoriesPanel.getDataDirectoryConfigurations().size() + " data directories.");
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "... set " + dataDirectoriesPanel.getDataDirectoryConfigurations().size() + " data directories.");
 
                     // First, replace the attributes.
                     Map<String, String> pairs = attributesPanel.getNameValuePairs();
@@ -343,7 +342,7 @@ public class ServerConfigurationPanel extends JPanel {
                         configuration.removeKeyValuePair(key);
                     }
 
-                    debugOut("... set " + attributesPanel.getNameValuePairs().size() + " attributes.");
+                    DebugUtil.debugOut(ServerConfigurationPanel.class, "... set " + attributesPanel.getNameValuePairs().size() + " attributes.");
 
                     // Connect to the server
                     TrancheServer ts = ConnectionUtil.connectHost(loadedServerHost, true);
@@ -352,19 +351,19 @@ public class ServerConfigurationPanel extends JPanel {
                     }
                     try {
                         IOUtil.setConfiguration(ts, configuration, user.getCertificate(), user.getPrivateKey());
-                        debugOut("... saved configuration to " + loadedServerHost);
+                        DebugUtil.debugOut(ServerConfigurationPanel.class, "... saved configuration to " + loadedServerHost);
                     } finally {
                         ConnectionUtil.unlockConnection(loadedServerHost);
                     }
                     // set the label to reflect the change
                     loadedServerLabel.setText("Server configuration loaded: " + loadedServerHost);
                 } catch (Exception e) {
-                    debugErr(e);
+                    DebugUtil.debugErr(ServerConfigurationPanel.class, e);
                     ef.show(e, ServerConfigurationPanel.this);
                     return;
                 }
 
-                debugOut(NetworkUtil.getStatus().toString());
+                DebugUtil.debugOut(ServerConfigurationPanel.class, NetworkUtil.getStatus().toString());
 
                 // notify the user of success
                 GenericOptionPane.showMessageDialog(
@@ -900,7 +899,7 @@ public class ServerConfigurationPanel extends JPanel {
         private User user;
         private String name;
         private JButton removeButton;
-        public final static byte READ_CONFIG = 0, WRITE_CONFIG = 1, WRITE_DATA = 2, WRITE_META = 3, DELETE_DATA = 4, DELETE_META = 5;
+        public static final byte READ_CONFIG = 0, WRITE_CONFIG = 1, WRITE_DATA = 2, WRITE_META = 3, DELETE_DATA = 4, DELETE_META = 5;
         private GenericCheckBox readConfigBox, writeConfigBox, writeDataBox, writeMetaBox, deleteDataBox, deleteMetaBox;
 
         public SingleUserEmbeddedPanel(final User user) {
@@ -2722,8 +2721,8 @@ public class ServerConfigurationPanel extends JPanel {
         private JTextField nameField, valueField;
         private int MARGIN_LEFT = 10, MARGIN_RIGHT = 10, LABEL_MARGIN_TOP = 10, FIELD_MARGIN_TOP = 3;
         private AttributesPanel panel;
-        private final static String addLabel = "Add Attribute to Configuration";
-        private final static String editLabel = "Edit Attribute in Configuration";
+        private static final String addLabel = "Add Attribute to Configuration";
+        private static final String editLabel = "Edit Attribute in Configuration";
 
         public AddAttributeFrame(AttributesPanel panel) {
             this(panel, "", "", addLabel, true);
@@ -2991,42 +2990,6 @@ public class ServerConfigurationPanel extends JPanel {
                 public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
                 }
             });
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ServerConfigurationPanel.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ServerConfigurationPanel.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

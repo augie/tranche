@@ -24,7 +24,7 @@ import java.util.TimeZone;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 import org.tranche.ConfigureTranche;
-import org.tranche.util.DebugUtil;
+import org.tranche.commons.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -33,9 +33,8 @@ import org.tranche.util.TestUtil;
  */
 public final class TimeUtil {
 
-    private static boolean debug = false;
     public static final TimeZone TRANCHE_TIMEZONE = TimeZone.getTimeZone("America/New_York");
-    private static long lastRemainderUpdateTrancheConfig = -1,  timestampAuthorityLastChecked = -1,  offset = 0;
+    private static long lastRemainderUpdateTrancheConfig = -1, timestampAuthorityLastChecked = -1, offset = 0;
     private static Thread offsetUpdateThread = new Thread("Time Management") {
 
         @Override
@@ -45,12 +44,12 @@ public final class TimeUtil {
                     if (TestUtil.isTesting()) {
                         return;
                     }
-                    long timeBetweenChangeChecks = ConfigureTranche.getLong(ConfigureTranche.PROP_TIME_CHANGE_CHECK_INTERVAL);
-                    debugOut("Time betwen change checks: " + timeBetweenChangeChecks);
-                    long timeAcceptableDeviation = ConfigureTranche.getLong(ConfigureTranche.PROP_TIME_CHANGE_CHECK_DEVIATION);
-                    debugOut("Acceptable deviation: " + timeAcceptableDeviation);
-                    long timeBetwenForcedUpdates = ConfigureTranche.getLong(ConfigureTranche.PROP_TIME_UPDATE_INTERVAL);
-                    debugOut("Time betwen forced updates: " + timeBetwenForcedUpdates);
+                    long timeBetweenChangeChecks = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_NETWORK_TIME_SERVERS, ConfigureTranche.PROP_TIME_CHANGE_CHECK_INTERVAL);
+                    DebugUtil.debugOut(TimeUtil.class, "Time betwen change checks: " + timeBetweenChangeChecks);
+                    long timeAcceptableDeviation = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_NETWORK_TIME_SERVERS, ConfigureTranche.PROP_TIME_CHANGE_CHECK_DEVIATION);
+                    DebugUtil.debugOut(TimeUtil.class, "Acceptable deviation: " + timeAcceptableDeviation);
+                    long timeBetwenForcedUpdates = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_NETWORK_TIME_SERVERS, ConfigureTranche.PROP_TIME_UPDATE_INTERVAL);
+                    DebugUtil.debugOut(TimeUtil.class, "Time betwen forced updates: " + timeBetwenForcedUpdates);
                     if (timeBetweenChangeChecks == 0) {
                         // can't let the thread run away
                         Thread.sleep(30000);
@@ -60,25 +59,25 @@ public final class TimeUtil {
                         long timestampNow = System.currentTimeMillis();
                         // if the expected current timestamp is off by more than the acceptable deviation
                         if (Math.abs(timestampNow - timestampLastChecked - timeBetweenChangeChecks) > timeAcceptableDeviation) {
-                            debugOut("Forcing an offset update because of a system time change.");
+                            DebugUtil.debugOut(TimeUtil.class, "Forcing an offset update because of a system time change.");
                             // the local time was changed -- recalculate the offset
                             updateOffset();
                         } // it's been too long
                         else if (System.currentTimeMillis() - timestampAuthorityLastChecked >= timeBetwenForcedUpdates) {
-                            debugOut("Forcing offset update.");
+                            DebugUtil.debugOut(TimeUtil.class, "Forcing offset update.");
                             updateOffset();
                         }
                     } else if (timeBetwenForcedUpdates > 0 && System.currentTimeMillis() - timestampAuthorityLastChecked >= timeBetwenForcedUpdates) {
-                        debugOut("Forcing offset update.");
+                        DebugUtil.debugOut(TimeUtil.class, "Forcing offset update.");
                         updateOffset();
                     }
 
                     // also use this thread to update the network configuration
-                    long confUpdateInterval = ConfigureTranche.getLong(ConfigureTranche.PROP_UPDATE_CONFIG_INTERVAL);
+                    long confUpdateInterval = ConfigureTranche.getLong(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_UPDATE_CONFIG_INTERVAL);
                     if (confUpdateInterval > 0) {
                         long remainderUpdateTrancheConfig = getTrancheTimestamp() % confUpdateInterval;
                         if (remainderUpdateTrancheConfig < lastRemainderUpdateTrancheConfig) {
-                            debugOut("Updating network configuration.");
+                            DebugUtil.debugOut(TimeUtil.class, "Updating network configuration.");
                             ConfigureTranche.update();
                         }
                         lastRemainderUpdateTrancheConfig = remainderUpdateTrancheConfig;
@@ -86,12 +85,11 @@ public final class TimeUtil {
                         lastRemainderUpdateTrancheConfig = -1;
                     }
                 } catch (Exception e) {
-                    debugErr(e);
+                    DebugUtil.debugErr(TimeUtil.class, e);
                 }
             }
         }
     };
-
 
     static {
         // make sure everybody is on the same time zone
@@ -117,8 +115,8 @@ public final class TimeUtil {
             timestampAuthorityLastChecked = System.currentTimeMillis();
             return;
         }
-        debugOut("Updating offset.");
-        List<String> servers = ConfigureTranche.getNetworkTimeServers();
+        DebugUtil.debugOut(TimeUtil.class, "Updating offset.");
+        List<String> servers = ConfigureTranche.getList(ConfigureTranche.CATEGORY_NETWORK_TIME_SERVERS);
         // shuffle the servers each time we go for an offset, which should not happen often
         Collections.shuffle(servers);
         // try all the servers
@@ -130,16 +128,16 @@ public final class TimeUtil {
                 success = true;
                 break;
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(TimeUtil.class, e);
             }
         }
         if (!success) {
-            debugOut("Could not update time offset from any network time servers.");
+            DebugUtil.debugOut(TimeUtil.class, "Could not update time offset from any network time servers.");
             if (timestampAuthorityLastChecked == -1) {
                 throw new RuntimeException("Could not set time offset from any network time servers.");
             }
         }
-        debugOut("Done updating offset.");
+        DebugUtil.debugOut(TimeUtil.class, "Done updating offset.");
     }
 
     /**
@@ -153,18 +151,22 @@ public final class TimeUtil {
         NTPUDPClient ntpClient = new NTPUDPClient();
         try {
             InetAddress inet = InetAddress.getByName(address);
-            debugOut("Updating offset from " + inet.getHostAddress() + ".");
-            int timeout = ConfigureTranche.getInt(ConfigureTranche.PROP_TIME_UPDATE_TIMEOUT);
+            DebugUtil.debugOut(TimeUtil.class, "Updating offset from " + inet.getHostAddress() + ".");
+            int timeout = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_NETWORK_TIME_SERVERS, ConfigureTranche.PROP_TIME_UPDATE_TIMEOUT);
             if (timeout > 0) {
                 ntpClient.setDefaultTimeout(timeout);
             }
             TimeInfo time = ntpClient.getTime(inet);
             time.computeDetails();
-            debugOut("Returned Offset: " + time.getOffset());
-            debugOut("Network Delay: " + time.getDelay());
+            DebugUtil.debugOut(TimeUtil.class, "Returned Offset: " + time.getOffset());
+            DebugUtil.debugOut(TimeUtil.class, "Network Delay: " + time.getDelay());
             return time.getOffset();
         } finally {
-            ntpClient.close();
+            try {
+                ntpClient.close();
+            } catch (Exception e) {
+                DebugUtil.debugErr(TimeUtil.class, e);
+            }
         }
     }
 
@@ -178,41 +180,5 @@ public final class TimeUtil {
             updateOffset();
         }
         return System.currentTimeMillis() - offset;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        TimeUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(TimeUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

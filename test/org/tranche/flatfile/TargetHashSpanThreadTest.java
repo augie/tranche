@@ -20,6 +20,7 @@ import java.util.Set;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebugUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
 import org.tranche.hash.span.HashSpanCollection;
@@ -47,7 +48,7 @@ public class TargetHashSpanThreadTest extends TrancheTestCase {
         super.setUp();
         TestUtil.setTestingTargetHashSpan(true);
         TestUtil.setTestingHashSpanFixingThread(false);
-        TargetHashSpanThread.setDebug(true);
+        DebugUtil.setDebug(TargetHashSpanThread.class, true);
     }
 
     @Override()
@@ -55,7 +56,7 @@ public class TargetHashSpanThreadTest extends TrancheTestCase {
         super.tearDown();
         TestUtil.setTestingTargetHashSpan(wasTestingTargetHashSpan);
         TestUtil.setTestingHashSpanFixingThread(wasTestingHealingThread);
-        TargetHashSpanThread.setDebug(false);
+        DebugUtil.setDebug(TargetHashSpanThread.class, false);
     }
 
     /**

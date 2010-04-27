@@ -15,8 +15,8 @@
  */
 package org.tranche.servers;
 
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Represents a general server event.</p>
@@ -130,6 +130,6 @@ public class ServerEvent {
      */
     @Override()
     public String toString() {
-        return "Type: " + getTypeString() + ";  Date: " + Text.getFormattedDate(timestamp);
+        return "Type: " + getTypeString() + ";  Date: " + TextUtil.getFormattedDate(timestamp);
     }
 }

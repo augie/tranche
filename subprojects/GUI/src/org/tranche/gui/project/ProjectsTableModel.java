@@ -21,13 +21,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.regex.Pattern;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.SortableTableModel;
 import org.tranche.gui.user.UserZipFileEvent;
 import org.tranche.gui.user.UserZipFileListener;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.project.ProjectSummary;
-import org.tranche.util.Text;
 
 /**
  *
@@ -268,7 +268,7 @@ public class ProjectsTableModel extends SortableTableModel {
                 return ps.isHidden;
             case 3:
                 if (ps.size > 0) {
-                    return Text.getFormattedBytes(ps.size);
+                    return TextUtil.formatBytes(ps.size);
                 } else {
                     return "";
                 }

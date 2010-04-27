@@ -17,7 +17,7 @@ package org.tranche.logs.activity;
 
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -27,7 +27,7 @@ import org.tranche.util.TrancheTestCase;
 public class ActivityLogUtilTest extends TrancheTestCase {
 
     // If more activities, just add to this array. 
-    private final static byte[] actions = {
+    private static final byte[] actions = {
         Activity.DELETE_DATA,
         Activity.DELETE_META_DATA,
         Activity.SET_DATA,

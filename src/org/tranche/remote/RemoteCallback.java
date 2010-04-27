@@ -16,11 +16,11 @@
 package org.tranche.remote;
 
 import java.util.concurrent.TimeoutException;
+import org.tranche.commons.Debuggable;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.UnresponsiveServerException;
 import org.tranche.network.ConnectionUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Abstract remote callback with common functionality.</p>
@@ -28,9 +28,8 @@ import org.tranche.util.Text;
  * @author Bryan E. Smith - bryanesmith@gmail.com
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public abstract class RemoteCallback {
+public abstract class RemoteCallback extends Debuggable {
 
-    private static boolean debug = false;
     /**
      * <p>Flag meaning the callback is not fulfilled.</p>
      */
@@ -91,12 +90,12 @@ public abstract class RemoteCallback {
             // did this time out?
             if (timeCompleted == RemoteCallback.NOT_COMPLETED && cachedException == null) {
                 final long finish = TimeUtil.getTrancheTimestamp();
-                cachedException = new TimeoutException("Callback #" + id + " timed out. Server: " + this.rts.getHost() + ". Waited: " + Text.getPrettyEllapsedTimeString(finish - start) + " (Start: " + Text.getFormattedDate(start) + ", Finish: " + Text.getFormattedDate(finish) + ")");
+                cachedException = new TimeoutException("Callback #" + id + " timed out. Server: " + this.rts.getHost() + ". Waited: " + TextUtil.formatTimeLength(finish - start) + " (Start: " + TextUtil.getFormattedDate(start) + ", Finish: " + TextUtil.getFormattedDate(finish) + ")");
             } else {
                 ConnectionUtil.clearExceptionsHost(rts.getHost());
             }
         }
-        debugOut("Exiting wait method after " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start) + " (ID = " + id + ", Time completed = " + timeCompleted + ", Name = " + name + ", Description = " + description + ")");
+        debugOut("Exiting wait method after " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start) + " (ID = " + id + ", Time completed = " + timeCompleted + ", Name = " + name + ", Description = " + description + ")");
         // throw the exception if there is one
         if (cachedException != null) {
             throw cachedException;
@@ -223,41 +222,5 @@ public abstract class RemoteCallback {
      */
     protected void setCachedException(Exception e) {
         cachedException = e;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        RemoteCallback.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    protected static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(RemoteCallback.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    protected static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

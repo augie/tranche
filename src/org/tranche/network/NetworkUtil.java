@@ -24,17 +24,17 @@ import java.util.List;
 import java.util.Set;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
 import org.tranche.routing.RoutingTrancheServer;
 import org.tranche.routing.RoutingTrancheServerListener;
 import org.tranche.security.SecurityUtil;
 import org.tranche.server.GetNetworkStatusItem;
 import org.tranche.server.Server;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TestUtilListener;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>Manages the representation of the Tranche network.</p>
@@ -43,7 +43,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class NetworkUtil {
 
-    private static boolean debug = false;
     /**
      * <p>A list of Tranche servers to begin contact with the network.</p>
      */
@@ -114,7 +113,7 @@ public class NetworkUtil {
                     return;
                 }
 
-                debugOut("Connection made: " + event.getHost());
+                DebugUtil.debugOut(NetworkUtil.class, "Connection made: " + event.getHost());
                 StatusTableRow row = masterStatusTable.getRow(event.getHost());
                 // is this not in the status table?
                 if (row == null) {
@@ -159,14 +158,14 @@ public class NetworkUtil {
     public static void setBannedServerHosts(Collection<String> serverHosts) {
         synchronized (bannedServerHosts) {
             bannedServerHosts.clear();
-            debugOut("Cleared banned servers.");
+            DebugUtil.debugOut(NetworkUtil.class, "Cleared banned servers.");
             for (String host : serverHosts) {
                 if (host == null) {
                     continue;
                 }
                 String normalizedHost = normalize(host);
-                debugOut("Adding banned server host: " + normalizedHost);
-                debugOut("BANNED: " + host);
+                DebugUtil.debugOut(NetworkUtil.class, "Adding banned server host: " + normalizedHost);
+                DebugUtil.debugOut(NetworkUtil.class, "BANNED: " + host);
 
                 bannedServerHosts.add(normalizedHost);
             }
@@ -180,7 +179,7 @@ public class NetworkUtil {
     public static void addBannedServerHost(String host) {
         synchronized (bannedServerHosts) {
             if (bannedServerHosts.add(host)) {
-                debugOut("BANNED: " + host);
+                DebugUtil.debugOut(NetworkUtil.class, "BANNED: " + host);
             }
         }
     }
@@ -220,7 +219,7 @@ public class NetworkUtil {
                     continue;
                 }
                 String normalizedURL = normalize(serverURL);
-                debugOut("Adding startup server URL: " + normalizedURL);
+                DebugUtil.debugOut(NetworkUtil.class, "Adding startup server URL: " + normalizedURL);
                 startupServerURLs.add(normalizedURL);
             }
         }
@@ -252,7 +251,7 @@ public class NetworkUtil {
                 }
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(NetworkUtil.class, e);
         }
         return false;
     }
@@ -264,7 +263,7 @@ public class NetworkUtil {
      * @return A collection of Tranche server URL's
      */
     private static Collection<String> getRandomStartupServerURLs(int size, Collection<String> ignoreServers) {
-        debugOut("Getting random startup server URLs.");
+        DebugUtil.debugOut(NetworkUtil.class, "Getting random startup server URLs.");
         // generate a list of servers from which to choose at random
         List<String> serversToPickFrom = new ArrayList<String>();
         for (String server : getStartupServerURLs()) {
@@ -277,7 +276,7 @@ public class NetworkUtil {
         for (int i = 0; i < size && !serversToPickFrom.isEmpty(); i++) {
             servers.add(serversToPickFrom.remove(RandomUtil.getInt(serversToPickFrom.size())));
         }
-        debugOut("Returning random startup server URLs.");
+        DebugUtil.debugOut(NetworkUtil.class, "Returning random startup server URLs.");
         return Collections.unmodifiableSet(servers);
     }
 
@@ -285,7 +284,7 @@ public class NetworkUtil {
      * 
      */
     public static void reload() {
-        debugOut("Reloading the network.");
+        DebugUtil.debugOut(NetworkUtil.class, "Reloading the network.");
         startedLoadingNetwork = false;
         finishedLoadingNetwork = false;
         lazyLoad();
@@ -302,11 +301,11 @@ public class NetworkUtil {
                 try {
                     NetworkUtil.class.wait();
                 } catch (Exception e) {
-                    debugErr(e);
+                    DebugUtil.debugErr(NetworkUtil.class, e);
                 }
             }
         }
-        debugOut("Finished waiting for startup.");
+        DebugUtil.debugOut(NetworkUtil.class, "Finished waiting for startup.");
     }
 
     /**
@@ -315,7 +314,7 @@ public class NetworkUtil {
      */
     public synchronized static void lazyLoad() {
         if (startedLoadingNetwork || TestUtil.isTestingManualNetworkStatusTable()) {
-            debugOut("Returning loadNetwork (startedLoadingNetwork = " + startedLoadingNetwork + ", TestUtil.isTestingManualNetworkStatusTable() = " + TestUtil.isTestingManualNetworkStatusTable() + ")");
+            DebugUtil.debugOut(NetworkUtil.class, "Returning loadNetwork (startedLoadingNetwork = " + startedLoadingNetwork + ", TestUtil.isTestingManualNetworkStatusTable() = " + TestUtil.isTestingManualNetworkStatusTable() + ")");
             return;
         }
         startedLoadingNetwork = true;
@@ -323,13 +322,13 @@ public class NetworkUtil {
 
             @Override
             public void run() {
-                debugOut("Starting to load the network.");
+                DebugUtil.debugOut(NetworkUtil.class, "Starting to load the network.");
                 try {
                     if (TestUtil.isTesting()) {
                         return;
                     }
                     ConfigureTranche.waitForStartup();
-                    debugOut("# startup server URLs: " + getStartupServerURLs().size());
+                    DebugUtil.debugOut(NetworkUtil.class, "# startup server URLs: " + getStartupServerURLs().size());
 
                     // combine the status table of all startup servers
                     {
@@ -342,14 +341,14 @@ public class NetworkUtil {
                                         continue;
                                     }
                                 } catch (Exception e) {
-                                    debugErr(e);
+                                    DebugUtil.debugErr(NetworkUtil.class, e);
                                 }
                             }
                             Thread t = new Thread("Getting Network Status From " + serverURL) {
 
                                 @Override
                                 public void run() {
-                                    debugOut("Trying to get the network status from " + serverURL);
+                                    DebugUtil.debugOut(NetworkUtil.class, "Trying to get the network status from " + serverURL);
                                     try {
                                         TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
                                         if (ts != null) {
@@ -361,10 +360,10 @@ public class NetworkUtil {
                                                     masterStatusTable.setRow(row);
                                                 }
                                             }
-                                            debugOut("Retreived the network status table from " + serverURL);
+                                            DebugUtil.debugOut(NetworkUtil.class, "Retreived the network status table from " + serverURL);
                                         }
                                     } catch (Exception e) {
-                                        debugErr(e);
+                                        DebugUtil.debugErr(NetworkUtil.class, e);
                                         ConnectionUtil.reportExceptionURL(serverURL, e);
                                     }
                                 }
@@ -377,7 +376,7 @@ public class NetworkUtil {
                         int returnedCount = 0;
                         do {
                             returnedCount = 0;
-                            ThreadUtil.safeSleep(200);
+                            ThreadUtil.sleep(200);
                             for (Thread t : threads) {
                                 if (!t.isAlive()) {
                                     returnedCount++;
@@ -421,7 +420,7 @@ public class NetworkUtil {
 //
 //                                @Override
 //                                public void run() {
-//                                    debugOut("Trying to get the network status from " + serverURL);
+//                                    DebugUtil.debugOut(NetworkUtil.class, "Trying to get the network status from " + serverURL);
 //                                    // catch connection errors
 //                                    try {
 //                                        TrancheServer ts = ConnectionUtil.connectURL(serverURL, false);
@@ -430,10 +429,10 @@ public class NetworkUtil {
 //                                            table.removeDefunctRows();
 //                                            masterStatusTable.setRows(table.getRows());
 //                                            success[j] = true;
-//                                            debugOut("Retreived the network status table from " + serverURL);
+//                                            DebugUtil.debugOut(NetworkUtil.class, "Retreived the network status table from " + serverURL);
 //                                        }
 //                                    } catch (Exception e) {
-//                                        debugErr(e);
+//                                        DebugUtil.debugErr(NetworkUtil.class, e);
 //                                        ConnectionUtil.reportExceptionURL(serverURL, e);
 //                                    }
 //                                }
@@ -446,7 +445,7 @@ public class NetworkUtil {
 //                            try {
 //                                t.join(5000);
 //                            } catch (Exception e) {
-//                                debugErr(e);
+//                                DebugUtil.debugErr(NetworkUtil.class, e);
 //                            }
 //                        }
 //                        }
@@ -461,7 +460,7 @@ public class NetworkUtil {
                     synchronized (NetworkUtil.class) {
                         NetworkUtil.class.notifyAll();
                     }
-                    debugOut("Finished loading the network.");
+                    DebugUtil.debugOut(NetworkUtil.class, "Finished loading the network.");
                 }
             }
         };
@@ -479,7 +478,7 @@ public class NetworkUtil {
         if (row == null || NetworkUtil.getLocalServerRow() != null && row.getHost().equals(NetworkUtil.getLocalServerRow().getHost())) {
             return;
         }
-        debugOut("Updating a row in the master status table.");
+        DebugUtil.debugOut(NetworkUtil.class, "Updating a row in the master status table.");
         // update the master status table
         masterStatusTable.setRow(row);
     }
@@ -490,7 +489,7 @@ public class NetworkUtil {
      * @param rows A collection of status rows
      */
     public static void updateRows(Collection<StatusTableRow> rows) {
-        debugOut("Updating rows in the master status table.");
+        DebugUtil.debugOut(NetworkUtil.class, "Updating rows in the master status table.");
         Collection<StatusTableRow> rowsToSet = new HashSet<StatusTableRow>();
         for (StatusTableRow row : rows) {
             // ignore the local server
@@ -514,7 +513,7 @@ public class NetworkUtil {
             if (clientUpdateProcess != null) {
                 // stop the client process
                 if (clientUpdateProcess.isAlive()) {
-                    debugOut("Killed the client updating process.");
+                    DebugUtil.debugOut(NetworkUtil.class, "Killed the client updating process.");
                     clientUpdateProcess.safeStop();
                 }
                 // null the client process
@@ -522,7 +521,7 @@ public class NetworkUtil {
             }
             // start a new server process?
             if (serverUpdateProcess == null || !serverUpdateProcess.isAlive()) {
-                debugOut("Starting a new server updating process.");
+                DebugUtil.debugOut(NetworkUtil.class, "Starting a new server updating process.");
                 serverUpdateProcess = new ServerStatusUpdateProcess();
                 serverUpdateProcess.start();
             }
@@ -530,7 +529,7 @@ public class NetworkUtil {
             if (serverUpdateProcess != null) {
                 // stop the server process
                 if (serverUpdateProcess.isAlive()) {
-                    debugOut("Killed the server updating process.");
+                    DebugUtil.debugOut(NetworkUtil.class, "Killed the server updating process.");
                     serverUpdateProcess.safeStop();
                 }
                 // null the server process
@@ -538,7 +537,7 @@ public class NetworkUtil {
             }
             // start a new client process?
             if (clientUpdateProcess == null || !clientUpdateProcess.isAlive()) {
-                debugOut("Starting a new client updating process.");
+                DebugUtil.debugOut(NetworkUtil.class, "Starting a new client updating process.");
                 clientUpdateProcess = new ClientStatusUpdateProcess();
                 clientUpdateProcess.start();
             }
@@ -552,12 +551,12 @@ public class NetworkUtil {
         if (TestUtil.isTestingManualNetworkStatusTable()) {
             return;
         }
-        debugOut("Restarting the update process.");
+        DebugUtil.debugOut(NetworkUtil.class, "Restarting the update process.");
         // an old server process is running
         if (serverUpdateProcess != null) {
             // stop the server process
             if (serverUpdateProcess.isAlive()) {
-                debugOut("Killed the client updating process.");
+                DebugUtil.debugOut(NetworkUtil.class, "Killed the client updating process.");
                 serverUpdateProcess.safeStop();
             }
             // null the server process
@@ -567,7 +566,7 @@ public class NetworkUtil {
         if (clientUpdateProcess != null) {
             // stop the client process
             if (clientUpdateProcess.isAlive()) {
-                debugOut("Killed the server updating process.");
+                DebugUtil.debugOut(NetworkUtil.class, "Killed the server updating process.");
                 clientUpdateProcess.safeStop();
             }
             // null the client process
@@ -626,7 +625,7 @@ public class NetworkUtil {
             return;
         }
 
-        debugOut("Cleared the local server.");
+        DebugUtil.debugOut(NetworkUtil.class, "Cleared the local server.");
 
         // kill a connection if there is one
         StatusTableRow str = getLocalServerRow();
@@ -652,13 +651,13 @@ public class NetworkUtil {
      * @param localServer A local Tranche server
      */
     public static void setLocalServer(Server localServer) {
-        debugOut("Set the local server.");
+        DebugUtil.debugOut(NetworkUtil.class, "Set the local server.");
         // set the server
         NetworkUtil.localServer = localServer;
         try {
             masterStatusTable.setRow(new StatusTableRow(localServer));
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(NetworkUtil.class, e);
         }
         boolean isFirstLoad = !startedLoadingNetwork;
         // set the listener for the routing server
@@ -675,42 +674,6 @@ public class NetworkUtil {
         // make sure server is registered
         for (StatusTableRowRange range : ServerStatusUpdateProcess.getStatusTableRowRanges()) {
             range.setRegistrationStatus(false);
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        NetworkUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     * 
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(NetworkUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     * 
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

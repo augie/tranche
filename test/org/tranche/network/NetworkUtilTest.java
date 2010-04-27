@@ -17,7 +17,8 @@ package org.tranche.network;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -29,13 +30,13 @@ public class NetworkUtilTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        NetworkUtil.setDebug(true);
+        DebugUtil.setDebug(NetworkUtil.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        NetworkUtil.setDebug(false);
+        DebugUtil.setDebug(NetworkUtil.class, false);
     }
 
     public void testStartupServerURLs() throws Exception {

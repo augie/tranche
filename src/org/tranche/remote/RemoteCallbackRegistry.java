@@ -20,10 +20,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Register all callbacks, unregister when called back. Registry invokes an interrupt on timeout.</p>
@@ -255,7 +255,7 @@ public class RemoteCallbackRegistry {
                             next = it.next();
                             if (next.isTimedOut()) {
                                 it.remove();
-                                printTracer("Callback timed out, purged for " + IOUtil.createURL(next.server) + " (Registered " + Text.getFormattedDate(next.registeredTime) + ", Purged at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
+                                printTracer("Callback timed out, purged for " + IOUtil.createURL(next.server) + " (Registered " + TextUtil.getFormattedDate(next.registeredTime) + ", Purged at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
                             }
                         }
                     }
@@ -309,13 +309,13 @@ public class RemoteCallbackRegistry {
                     why = "Absolute age of request exceeded";
                 }
 
-                final String desc = "Callback id #" + callback.getID() + "(" + callback.getName() + ") for " + IOUtil.createURL(callback.getRemoteTrancheServer()) + " timed out and purged at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + "; Reason: " + why;
+                final String desc = "Callback id #" + callback.getID() + "(" + callback.getName() + ") for " + IOUtil.createURL(callback.getRemoteTrancheServer()) + " timed out and purged at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + "; Reason: " + why;
 
                 // Print more information if debug flag set
                 printTracer(desc);
                 printTracer("  - Type: " + callback.getName());
-                printTracer("  - Time since registration: " + Text.getPrettyEllapsedTimeString(getRegistrationEllapsed()));
-                printTracer("  - Time since server output: " + Text.getPrettyEllapsedTimeString(getServerOutputEllapsed()));
+                printTracer("  - Time since registration: " + TextUtil.formatTimeLength(getRegistrationEllapsed()));
+                printTracer("  - Time since server output: " + TextUtil.formatTimeLength(getServerOutputEllapsed()));
                 printTracer("  - Number of registered entries: " + entries.size());
 
                 // Print minimal information about purge -- every time out is notable

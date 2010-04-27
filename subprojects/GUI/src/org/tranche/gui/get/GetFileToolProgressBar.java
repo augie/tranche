@@ -27,13 +27,13 @@ import java.awt.image.BufferedImage;
 import java.util.Collection;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import org.tranche.commons.TextUtil;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolEvent;
 import org.tranche.get.GetFileToolListener;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.server.PropagationExceptionWrapper;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>A simple progress bar for showing download status.</p>
@@ -281,7 +281,7 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
                     string = string + "Calculating...";
                 }
             }
-            string = string + "; " + Text.getFormattedBytes(gft.getBytesDownloaded()) + " / " + Text.getFormattedBytes(gft.getBytesToDownload());
+            string = string + "; " + TextUtil.formatBytes(gft.getBytesDownloaded()) + " / " + TextUtil.formatBytes(gft.getBytesToDownload());
         }
 
         // pick the font
@@ -358,7 +358,7 @@ public class GetFileToolProgressBar extends JPanel implements GetFileToolListene
         public void run() {
             while (!closed) {
                 repaint();
-                ThreadUtil.safeSleep(500);
+                ThreadUtil.sleep(500);
             }
             repaint();
         }

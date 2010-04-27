@@ -24,13 +24,13 @@ import java.awt.Insets;
 import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.DidYouKnowPanel;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.gui.GenericOptionPane;
 import org.tranche.gui.InformationPanel;
 import org.tranche.gui.PauseButton;
 import org.tranche.gui.Styles;
-import org.tranche.util.Text;
 
 /**
  *
@@ -101,7 +101,7 @@ public class AFTStep4Panel extends GenericWizardPanel {
         add(didYouKnowPanel, gbc);
 
         informationWidget.set("File", wizard.summary.getAddFileTool().getFile().getAbsolutePath());
-        informationWidget.set("Size", wizard.summary.getAddFileTool().getFileCount() + " files, " + Text.getFormattedBytes(wizard.summary.getAddFileTool().getSize()));
+        informationWidget.set("Size", wizard.summary.getAddFileTool().getFileCount() + " files, " + TextUtil.formatBytes(wizard.summary.getAddFileTool().getSize()));
         informationWidget.set("User", wizard.step1Panel.userButton.getUser().getUserNameFromCert());
         informationWidget.set("License", wizard.summary.getAddFileTool().getLicense().getTitle());
         informationWidget.set("Title", wizard.summary.getAddFileTool().getTitle());

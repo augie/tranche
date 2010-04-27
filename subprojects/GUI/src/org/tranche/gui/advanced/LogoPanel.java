@@ -64,15 +64,15 @@ public class LogoPanel extends JPanel {
             trancheTool.setFont(new Font("Times New Roman", Font.PLAIN, 38));
             JLabel buildNumber = new GenericLabel("(Build #@buildNumber)");
             buildNumber.setFont(new Font("Times New Roman", Font.PLAIN, 15));
-            JLabel networkName = new GenericLabel(ConfigureTranche.get(ConfigureTranche.PROP_NAME));
+            JLabel networkName = new GenericLabel(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME));
             networkName.setFont(new Font("Times New Roman", Font.BOLD, 16));
             networkName.setForeground(Styles.COLOR_DARK_RED);
 
             // I got null pointers on this. What should be the fallback behavior? Why did
             // ProteomeCommons.org Tranche project built on machine give null?
             String urlText = "";
-            if (ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL) != null) {
-                urlText = ConfigureTranche.get(ConfigureTranche.PROP_HOME_URL).replace("http://", "").replace("https://", "");
+            if (ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_HOME_URL) != null) {
+                urlText = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_HOME_URL).replace("http://", "").replace("https://", "");
             }
             JLabel url = new GenericLabel(urlText);
 
@@ -126,7 +126,7 @@ public class LogoPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 5);
         add(fillerPanel2, gbc);
 
-        JTextArea billboard = new GenericTextArea(ConfigureTranche.get(ConfigureTranche.PROP_DESCRIPTION));
+        JTextArea billboard = new GenericTextArea(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DESCRIPTION));
         billboard.setLineWrap(true);
         billboard.setWrapStyleWord(true);
         billboard.setEditable(false);

@@ -34,8 +34,8 @@ import org.tranche.hash.BigHash;
 import org.tranche.project.ProjectFile;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.FileEncoding;
+import org.tranche.commons.DebugUtil;
 import org.tranche.util.IOUtil;
 
 /**
@@ -44,8 +44,6 @@ import org.tranche.util.IOUtil;
  * @author James "Augie" Hill - augman85@gmail.com
  */
 public class MetaDataUtil {
-
-    private static boolean debug = false;
 
     /**
      * 
@@ -60,7 +58,7 @@ public class MetaDataUtil {
      * @return The unserialized MetaData object.
      */
     public static final MetaData read(InputStream is) throws Exception {
-        debugOut("Reading");
+        DebugUtil.debugOut(MetaDataUtil.class, "Reading");
         // make a new MetaData object
         MetaData md = new MetaData();
 
@@ -166,7 +164,7 @@ public class MetaDataUtil {
     }
 
     private static final void readVersionOneBody(MetaData md, InputStream is) throws Exception {
-        debugOut("Reading version one.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Reading version one.");
         md.setVersion(MetaData.VERSION_ONE);
 
         // if GZIP'd, decompress on-the-fly
@@ -254,7 +252,7 @@ public class MetaDataUtil {
     }
 
     private static final void readVersionTwoBody(MetaData md, InputStream is) throws Exception {
-        debugOut("Reading version two.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Reading version two.");
 
         // if GZIP'd, decompress on-the-fly
         if (md.isGZIPCompressed()) {
@@ -344,7 +342,7 @@ public class MetaDataUtil {
     }
 
     private static final void readVersionThreeBody(MetaData md, InputStream is) throws Exception {
-        debugOut("Reading version three.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Reading version three.");
         // if GZIP'd, decompress on-the-fly
         if (md.isGZIPCompressed()) {
             is = new GZIPInputStream(is);
@@ -441,24 +439,24 @@ public class MetaDataUtil {
     }
 
     private static final void readVersionFourBody(MetaData md, InputStream is) throws Exception {
-        debugOut("Reading version four.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Reading version four.");
 
         // set last modified timestamp
         md.setLastModifiedTimestamp(RemoteUtil.readLong(is));
-        debugOut(" Last modified timestamp: " + md.getLastModifiedTimestamp());
+        DebugUtil.debugOut(MetaDataUtil.class, " Last modified timestamp: " + md.getLastModifiedTimestamp());
 
         // parts
         int numPartSets = RemoteUtil.readInt(is);
-        debugOut(" Part set count: " + numPartSets);
+        DebugUtil.debugOut(MetaDataUtil.class, " Part set count: " + numPartSets);
         for (int i = 0; i < numPartSets; i++) {
             BigHash finalEncodingHash = RemoteUtil.readBigHash(is);
-            debugOut("  Part set " + i + ": " + finalEncodingHash);
+            DebugUtil.debugOut(MetaDataUtil.class, "  Part set " + i + ": " + finalEncodingHash);
             int numParts = RemoteUtil.readInt(is);
-            debugOut("  Part count: " + numParts);
+            DebugUtil.debugOut(MetaDataUtil.class, "  Part count: " + numParts);
             ArrayList<BigHash> parts = new ArrayList<BigHash>();
             for (int j = 0; j < numParts; j++) {
                 BigHash partHash = RemoteUtil.readBigHash(is);
-                debugOut("   Part " + j + ": " + partHash);
+                DebugUtil.debugOut(MetaDataUtil.class, "   Part " + j + ": " + partHash);
                 parts.add(partHash);
             }
             md.setParts(finalEncodingHash, parts);
@@ -528,7 +526,7 @@ public class MetaDataUtil {
      * @throws java.io.IOException Should any exception occur.
      */
     public static final void write(MetaData md, OutputStream out) throws Exception {
-        debugOut("Writing.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Writing.");
         // update the last modified timestamp
         md.setLastModifiedTimestamp(TimeUtil.getTrancheTimestamp());
 
@@ -600,7 +598,7 @@ public class MetaDataUtil {
     }
 
     private static final void writeVersionOne(MetaData md, OutputStream out) throws Exception {
-        debugOut("Writing version one.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Writing version one.");
         writeHeader(md, out);
 
         // if the GZIP flag is set, GZIP compress
@@ -683,7 +681,7 @@ public class MetaDataUtil {
     }
 
     private static final void writeVersionTwo(MetaData md, OutputStream out) throws Exception {
-        debugOut("Writing version two.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Writing version two.");
         writeHeader(md, out);
 
         // if the GZIP flag is set, GZIP compress
@@ -767,7 +765,7 @@ public class MetaDataUtil {
     }
 
     private static final void writeVersionThree(MetaData md, OutputStream out) throws Exception {
-        debugOut("Writing version three.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Writing version three.");
         writeHeader(md, out);
 
         // if the GZIP flag is set, GZIP compress
@@ -859,7 +857,7 @@ public class MetaDataUtil {
     }
 
     private static final void writeVersionFour(MetaData md, OutputStream out) throws Exception {
-        debugOut("Writing version four.");
+        DebugUtil.debugOut(MetaDataUtil.class, "Writing version four.");
         writeHeader(md, out);
 
         // write out the last modified timestamp
@@ -943,42 +941,6 @@ public class MetaDataUtil {
             // write the version number
             RemoteUtil.writeLine(md.getVersion(), out);
             out.flush();
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        MetaDataUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(MetaDataUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

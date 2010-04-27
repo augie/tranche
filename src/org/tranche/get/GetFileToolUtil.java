@@ -24,6 +24,7 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.Base16;
 import org.tranche.hash.BigHash;
 import org.tranche.logs.LogUtil;
@@ -33,7 +34,6 @@ import org.tranche.time.TimeUtil;
 import org.tranche.util.EmailUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Contains methods that are commonly used along with or at several points within the GetFileTool class.</p>
@@ -61,7 +61,7 @@ public class GetFileToolUtil {
         }
         // download only the parts in the set
         for (ProjectFilePart part : parts) {
-            regex = regex + "^" + Text.forRegex(part.getRelativeName()) + "$|";
+            regex = regex + "^" + TextUtil.escapeForRegEx(part.getRelativeName()) + "$|";
         }
         // clean up
         if (regex.length() > 0) {
@@ -106,7 +106,7 @@ public class GetFileToolUtil {
             return;
         }
 
-        final String logURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_DOWNLOAD_URL);
+        final String logURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_DOWNLOAD_URL);
         if (logURL == null || logURL.equals("")) {
             return;
         }
@@ -144,17 +144,17 @@ public class GetFileToolUtil {
 
         try {
             String[] emailRecipients = ConfigureTranche.getAdminEmailAccounts();
-            String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Failed Download @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+            String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Failed Download @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
 
             StringBuffer message = new StringBuffer();
-            message.append("A download failed @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " on " + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "\n\n");
+            message.append("A download failed @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " on " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "\n\n");
             message.append("--------------------------------------------------------------------------------------------\n");
             for (PropagationExceptionWrapper pew : report.getFailureExceptions()) {
-                message.append(pew.toString() + Text.getNewLine());
+                message.append(pew.toString() + "\n");
                 for (StackTraceElement ste : pew.exception.getStackTrace()) {
-                    message.append("    " + ste + Text.getNewLine());
+                    message.append("    " + ste + "\n");
                 }
-                message.append(Text.getNewLine());
+                message.append("\n");
             }
             message.append("--------------------------------------------------------------------------------------------\n");
             message.append("\n");
@@ -226,7 +226,7 @@ public class GetFileToolUtil {
                     }
                 }
 
-                EmailUtil.sendEmail(subject, emailRecipients, message.toString(), tempFile);
+                EmailUtil.sendEmailHttp(subject, emailRecipients, message.toString(), tempFile);
             } finally {
                 IOUtil.safeDelete(tempFile);
             }
@@ -234,7 +234,7 @@ public class GetFileToolUtil {
             e.printStackTrace();
         }
 
-        final String logFailureURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_DOWNLOAD_FAILURE);
+        final String logFailureURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_DOWNLOAD_FAILURE);
         if (logFailureURL == null || logFailureURL.equals("")) {
             return;
         }

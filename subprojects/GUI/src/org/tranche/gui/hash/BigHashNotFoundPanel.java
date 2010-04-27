@@ -135,7 +135,7 @@ public class BigHashNotFoundPanel extends JPanel {
 
             public void run() {
 //                final long start = TimeUtil.getTrancheTimestamp();
-//                printTracer("Started calculating distances at " + Text.getFormattedDate(start));
+//                printTracer("Started calculating distances at " + TextUtil.getFormattedDate(start));
 //
 //                setWaitingForProjectsToLoad();
 //                ProjectSummaryCache.waitForStartup();
@@ -161,7 +161,7 @@ public class BigHashNotFoundPanel extends JPanel {
 //
 //                        int strDifference = Text.getCharacterDifferenceBetweenStrings(nextProjectHashStr, hashStrWithoutData);
 //
-//                        printTracer("Finished hash #" + currentProjectCount + ", found difference char count of " + strDifference + ", took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - distanceStart));
+//                        printTracer("Finished hash #" + currentProjectCount + ", found difference char count of " + strDifference + ", took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - distanceStart));
 //                        setStartedMatchingSimilarStringsOrdered(currentProjectCount, totalProjectCount);
 //
 //                        // Add the hash with its score if meets cut-off
@@ -175,7 +175,7 @@ public class BigHashNotFoundPanel extends JPanel {
 //                        }
 //                    }
 //                }
-//                printTracer("Finished looking for most similar hashes, took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+//                printTracer("Finished looking for most similar hashes, took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - start));
 //
 //                //
 //                currentProjectCount = 0;
@@ -195,7 +195,7 @@ public class BigHashNotFoundPanel extends JPanel {
 //                        int strDifference = Text.getCharacterCountDifferenceBetweenBase64Strings(
 //                                nextProjectHashStr, hashStrWithoutData);
 //
-//                        printTracer("Finished hash #" + currentProjectCount + ", found difference char count of " + strDifference + ", took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - distanceStart));
+//                        printTracer("Finished hash #" + currentProjectCount + ", found difference char count of " + strDifference + ", took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - distanceStart));
 //                        setStartedMatchingSimilarStringsUnordered(currentProjectCount, totalProjectCount);
 //
 //                        // Add the hash with its score if meets cut-off
@@ -209,7 +209,7 @@ public class BigHashNotFoundPanel extends JPanel {
 //                        }
 //                    }
 //                }
-//                printTracer("Finished looking for most similar hashes, took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+//                printTracer("Finished looking for most similar hashes, took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - start));
 //
 //                //
 //                currentProjectCount = 0;
@@ -225,7 +225,7 @@ public class BigHashNotFoundPanel extends JPanel {
 //                        final long distanceStart = TimeUtil.getTrancheTimestamp();
 //                        long distance = Text.getLevenshteinDistance(hashStrWithoutData, project.projectHash.toString());
 //
-//                        printTracer("Finished hash #" + currentProjectCount + ", found a distance of " + distance + ", took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - distanceStart));
+//                        printTracer("Finished hash #" + currentProjectCount + ", found a distance of " + distance + ", took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - distanceStart));
 //                        setStartedCalculatingDistances(currentProjectCount, totalProjectCount);
 //
 //                        // Add the hash with its score if meets cut-off
@@ -240,11 +240,11 @@ public class BigHashNotFoundPanel extends JPanel {
 //                    }
 //                }
 //
-//                printTracer("Finished calculating distances, took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+//                printTracer("Finished calculating distances, took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - start));
 //
 //                setFinishedFindingMatches();
 //                checkForNoSuggestedHashes();
-//                printTracer("Finished finding suggested hashes, took: " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start));
+//                printTracer("Finished finding suggested hashes, took: " + TextUtil.formatTime(TimeUtil.getTrancheTimestamp() - start));
             }
         };
         t.setDaemon(true);
@@ -395,7 +395,7 @@ public class BigHashNotFoundPanel extends JPanel {
         this.progressBar.setIndeterminate(false);
         this.progressBar.setValue(100);
     }
-    private final static int RECOMMENDED_MARGIN = 5;
+    private static final int RECOMMENDED_MARGIN = 5;
     private static int RECOMMENDED_ROW = 0;
     private static final Component strut = Box.createVerticalStrut(1);
 
@@ -451,7 +451,7 @@ public class BigHashNotFoundPanel extends JPanel {
             gbc.gridx = 0; // <-- Cell
             gbc.gridy = RECOMMENDED_ROW++; // <-- Row
 
-            JTextArea description = new JTextArea("Unfortunately, we could not find a close enough match. Please verify the hash, and if the data is unavailable, contact us at " + ConfigureTranche.get(ConfigureTranche.PROP_CONTACT_EMAIL) + " and offer us details about the suspected missing data.");
+            JTextArea description = new JTextArea("Unfortunately, we could not find a close enough match. Please verify the hash, and if the data is unavailable, contact us at " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_CONTACT_EMAIL) + " and offer us details about the suspected missing data.");
             description.setEditable(false);
             description.setWrapStyleWord(true);
             description.setLineWrap(true);

@@ -30,8 +30,8 @@ import org.tranche.util.PreferencesUtil;
 public class UploadPool {
 
     private static int uploadPoolSize = 3;
-    private final static ArrayList<UploadSummary> pool = new ArrayList<UploadSummary>();
-    private final static List<UploadPoolListener> listeners = new ArrayList<UploadPoolListener>();
+    private static final ArrayList<UploadSummary> pool = new ArrayList<UploadSummary>();
+    private static final List<UploadPoolListener> listeners = new ArrayList<UploadPoolListener>();
 
 
     static {

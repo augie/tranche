@@ -61,7 +61,7 @@ public class ModulePanel extends JPanel {
     private static boolean moduleListLoaded = false;    // Reference to file to hold module info
     private static final File moduleListFile = new File(GUIUtil.getGUIDirectory() + File.separator + "modules.list");    // Callback
     private JFrame frame = null;    // Default size
-    public final static Dimension RECOMMENDED_DIMENSION = new Dimension(750, 600);    // Controls
+    public static final Dimension RECOMMENDED_DIMENSION = new Dimension(750, 600);    // Controls
     private JButton loadFromDiskButton = null,  loadFromNetworkButton = null,  infoButton = null,  saveButton = null,  removeModuleButton = null;    // Styles
     private final int MARGIN = 12;    // Tables and models
     private GenericTable installedModulesTable,  networkModulesTable;
@@ -651,14 +651,14 @@ public class ModulePanel extends JPanel {
                 // Get the module list
                 GetFileTool gft = new GetFileTool();
                 gft.setValidate(false);
-                gft.setHash(BigHash.createHashFromString(ConfigureTrancheGUI.get(ConfigureTrancheGUI.PROP_MODULE_LIST_HASH)));
+                gft.setHash(BigHash.createHashFromString(ConfigureTrancheGUI.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_MODULE_LIST_HASH)));
                 gft.setSaveFile(ModulePanel.moduleListFile);
                 gft.getFile();
             } catch (Exception e) {
                 System.err.println(e.getMessage());
                 // Problem getting file, fall back on server
                 try {
-                    URL url = new URL(ConfigureTrancheGUI.get(ConfigureTrancheGUI.PROP_MODULE_LIST_URL));
+                    URL url = new URL(ConfigureTrancheGUI.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_MODULE_LIST_URL));
                     IOUtil.setBytes(IOUtil.getBytes(url.openStream()), ModulePanel.moduleListFile);
                 } catch (Exception f) {
                     if (!ModulePanel.moduleListFile.exists()) {

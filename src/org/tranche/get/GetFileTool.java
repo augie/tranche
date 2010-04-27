@@ -37,6 +37,9 @@ import java.util.regex.Pattern;
 import org.tranche.ConfigureTranche;
 import org.tranche.FileEncoding;
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.Debuggable;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.CantVerifySignatureException;
 import org.tranche.exceptions.CouldNotFindMetaDataException;
 import org.tranche.exceptions.PassphraseRequiredException;
@@ -61,11 +64,9 @@ import org.tranche.time.TimeUtil;
 import org.tranche.timeestimator.ContextualTimeEstimator;
 import org.tranche.timeestimator.TimeEstimator;
 import org.tranche.util.CompressionUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>A tool for downloading from a Tranche repository.</p>
@@ -73,9 +74,8 @@ import org.tranche.util.Text;
  * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
-public class GetFileTool {
+public class GetFileTool extends Debuggable {
 
-    private static boolean debug = false;
     /**
      * Default parameters
      */
@@ -95,7 +95,7 @@ public class GetFileTool {
     // we don't want to use up too much memory with big meta data - so need to keep track of total size of the data
     //  this meta data references
     // limit of size on disk == 13 MB of meta data in memory, or roughly 175 GB of data references
-    private final static long LIMIT_META_DATA_SIZE_ON_DISK = Long.valueOf("187904819200");
+    private static final long LIMIT_META_DATA_SIZE_ON_DISK = Long.valueOf("187904819200");
     /**
      * Startup runtime parameters
      */
@@ -720,7 +720,7 @@ public class GetFileTool {
 //                    ConnectionUtil.connectURL(url, true);
 //                } catch (Exception e) {
 //                    System.err.println(e.getClass().getSimpleName() + " occurred while connecting to external server " + url + ": " + e.getMessage());
-//                    e.printStackTrace(System.err);
+//                    e.printStackTrace();
 //                    ConnectionUtil.reportExceptionURL(url, e);
 //                    debugErr(e);
 //                    fire("Could not connect to external server " + url + ".");
@@ -1428,23 +1428,12 @@ public class GetFileTool {
             } else if (fe.getName().equals(FileEncoding.LZMA)) {
                 bytes = CompressionUtil.lzmaDecompress(bytes);
             } else if (fe.getName().equals(FileEncoding.AES)) {
-                BigHash nextHash = null;
-                // temporary check for project file
-                // data has a wacky problem where validating the hash on decryption is invalid: edB5lhN5O6X4bTRc+nKDHNL738Bmm0cjvCVd/plfS5JfB5Ctc4X2Ub/jvgC9BDXugkUyK+q+/LXj3E1k06UDXjyvuaoAAAAAAAHV9g==
-                // have to do this so it still downloads properly
-                if (metaData.isProjectFile()) {
-                    if (i > 0) {
-                        nextHash = encodings.get(i - 1).getHash();
-                    } else {
-                        nextHash = fileHash;
-                    }
-                }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {
-                    bytes = SecurityUtil.decryptInMemory(fe.getProperty(FileEncoding.PROP_PASSPHRASE), bytes, nextHash);
+                    bytes = SecurityUtil.decryptInMemory(fe.getProperty(FileEncoding.PROP_PASSPHRASE), bytes);
                 } else {
                     debugOut("Decoding (in memory) using passphrase: " + passphrase);
-                    bytes = SecurityUtil.decryptInMemory(passphrase, bytes, nextHash);
+                    bytes = SecurityUtil.decryptInMemory(passphrase, bytes);
                 }
             }
         }
@@ -1490,23 +1479,12 @@ public class GetFileTool {
             } else if (fe.getName().equals(FileEncoding.LZMA)) {
                 tempFile = CompressionUtil.lzmaDecompress(tempFile);
             } else if (fe.getName().equals(FileEncoding.AES)) {
-                BigHash nextHash = null;
-                // temporary check for project file
-                // data has a wacky problem where validating the hash on decryption is invalid: edB5lhN5O6X4bTRc+nKDHNL738Bmm0cjvCVd/plfS5JfB5Ctc4X2Ub/jvgC9BDXugkUyK+q+/LXj3E1k06UDXjyvuaoAAAAAAAHV9g==
-                // have to do this so it still downloads properly
-                if (metaData.isProjectFile()) {
-                    if (i > 0) {
-                        nextHash = encodings.get(i - 1).getHash();
-                    } else {
-                        nextHash = fileHash;
-                    }
-                }
                 // if no global passphrase, use the one in the encoding
                 if (passphrase == null) {
-                    tempFile = SecurityUtil.decryptDiskBacked(fe.getProperty(FileEncoding.PROP_PASSPHRASE), tempFile, nextHash);
+                    tempFile = SecurityUtil.decryptDiskBacked(fe.getProperty(FileEncoding.PROP_PASSPHRASE), tempFile);
                 } else {
                     debugOut("Decoding (disk backed) using passphrase: " + passphrase);
-                    tempFile = SecurityUtil.decryptDiskBacked(passphrase, tempFile, nextHash);
+                    tempFile = SecurityUtil.decryptDiskBacked(passphrase, tempFile);
                 }
             }
         }
@@ -2190,8 +2168,7 @@ public class GetFileTool {
             // print and exit flags
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
+                    DebugUtil.setDebug(GetFileTool.class, true);
                 } else if (args[i].equals("-n") || args[i].equals("--buildnumber") || args[i].equals("-V") || args[i].equals("--version")) {
                     System.out.println("Tranche, build #@buildNumber");
                     if (!TestUtil.isTesting()) {
@@ -2213,9 +2190,7 @@ public class GetFileTool {
             try {
                 ConfigureTranche.load(args);
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                e.printStackTrace(System.err);
-                debugErr(e);
+                e.printStackTrace();
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -2312,9 +2287,7 @@ public class GetFileTool {
                 // set the save location
                 gft.setSaveFile(new File(args[args.length - 1]));
             } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                e.printStackTrace(System.err);
-                debugErr(e);
+                e.printStackTrace();
                 if (!TestUtil.isTesting()) {
                     System.exit(4);
                 } else {
@@ -2348,7 +2321,7 @@ public class GetFileTool {
                     System.out.println(gft.getSaveFile().getAbsolutePath());
                     // show summary
                     if (showSummary) {
-                        System.out.println("Time elapsed: " + Text.getPrettyEllapsedTimeString(report.getTimeToFinish()));
+                        System.out.println("Time elapsed: " + TextUtil.formatTimeLength(report.getTimeToFinish()));
                     }
                     // Aware of JUnit tests calling GetFileTool.main
                     if (!TestUtil.isTesting()) {
@@ -2389,7 +2362,7 @@ public class GetFileTool {
                 return;
             }
         } catch (Exception e) {
-            debugErr(e);
+            e.printStackTrace();
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
@@ -2411,42 +2384,6 @@ public class GetFileTool {
             if (this.listeners.contains(this.failedChunksListener)) {
                 this.listeners.add(this.failedChunksListener);
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        GetFileTool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(GetFileTool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 

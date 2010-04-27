@@ -32,16 +32,16 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebugUtil;
 import org.tranche.get.GetFileTool;
 import org.tranche.get.GetFileToolReport;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.security.EasySSLProtocolSocketFactory;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * Utility to retrieve and parse project cache file, as well as manage aspects of cache.
@@ -54,7 +54,6 @@ public class ProjectSummaryCache {
         // load the HTTPS protocol just once on startup
         Protocol.registerProtocol("https", new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
     }
-    private static boolean debug = false;
     private static final Set<ProjectSummary> projects = new HashSet<ProjectSummary>();
     private static boolean startedLoading = false;
     private static final Thread cacheLoadingThread = new Thread("Project Cache Loading Thread") {
@@ -68,9 +67,9 @@ public class ProjectSummaryCache {
                 // get from the repository
                 boolean haveCacheFile = false;
 
-                String url = ConfigureTranche.get(ConfigureTranche.PROP_PROJECT_CACHE_URL);
+                String url = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_PROJECT_CACHE_URL);
                 if (!haveCacheFile && url != null && !url.equals("")) {
-                    debugOut("Loading cache from URL: " + url);
+                    DebugUtil.debugOut(ProjectSummaryCache.class, "Loading cache from URL: " + url);
                     InputStream is = null;
                     FileWriter fw = null;
                     try {
@@ -79,20 +78,20 @@ public class ProjectSummaryCache {
                         GetMethod gm = new GetMethod(url);
                         try {
                             int returnCode = hc.executeMethod(gm);
-                            debugOut("HTTP Return code: " + returnCode);
+                            DebugUtil.debugOut(ProjectSummaryCache.class, "HTTP Return code: " + returnCode);
                             if (returnCode == 200) {
                                 haveCacheFile = true;
                                 fw.write(gm.getResponseBodyAsString());
                             }
                         } catch (SSLException ssle) {
-                            debugErr(ssle);
+                            DebugUtil.debugErr(ProjectSummaryCache.class, ssle);
                         } catch (IOException ioe) {
-                            debugErr(ioe);
+                            DebugUtil.debugErr(ProjectSummaryCache.class, ioe);
                         } finally {
                             gm.releaseConnection();
                         }
                     } catch (Exception e) {
-                        debugErr(e);
+                        DebugUtil.debugErr(ProjectSummaryCache.class, e);
                     } finally {
                         IOUtil.safeClose(is);
                         IOUtil.safeClose(fw);
@@ -101,9 +100,9 @@ public class ProjectSummaryCache {
 
                 if (!haveCacheFile) {
                     List<BigHash> hashesToTry = getNewestProjectCacheHashes();
-                    debugOut("Total of " + hashesToTry.size() + " project cache hashes to try...");
+                    DebugUtil.debugOut(ProjectSummaryCache.class, "Total of " + hashesToTry.size() + " project cache hashes to try...");
                     for (BigHash h : hashesToTry) {
-                        debugOut("* Trying cache: " + h);
+                        DebugUtil.debugOut(ProjectSummaryCache.class, "* Trying cache: " + h);
                         GetFileTool gft = new GetFileTool();
                         gft.setHash(h);
                         gft.setSaveFile(cacheFile);
@@ -123,10 +122,10 @@ public class ProjectSummaryCache {
 
                 readCacheFile(cacheFile);
 
-                debugOut("Time to load cache: " + (TimeUtil.getTrancheTimestamp() - start) / 1000 + " seconds.");
-                debugOut("Projects loaded from cache: " + projects.size());
+                DebugUtil.debugOut(ProjectSummaryCache.class, "Time to load cache: " + (TimeUtil.getTrancheTimestamp() - start) / 1000 + " seconds.");
+                DebugUtil.debugOut(ProjectSummaryCache.class, "Projects loaded from cache: " + projects.size());
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(ProjectSummaryCache.class, e);
             } finally {
                 IOUtil.safeDelete(cacheFile);
             }
@@ -245,7 +244,7 @@ public class ProjectSummaryCache {
         // read the hash
         BigHash newestCacheHash = null;
         try {
-            newestCacheHash = BigHash.createHashFromString(ConfigureTranche.get(ConfigureTranche.PROP_PROJECT_CACHE_HASH));
+            newestCacheHash = BigHash.createHashFromString(ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_PROJECT_CACHE_HASH));
             newestHashes.add(newestCacheHash);
         } catch (Exception e) {
             return Collections.unmodifiableList(newestHashes);
@@ -268,11 +267,11 @@ public class ProjectSummaryCache {
                 }
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(ProjectSummaryCache.class, e);
         }
 
-        debugOut("Checking for new cache took " + (TimeUtil.getTrancheTimestamp() - startTime) / 1000 + "s.");
-        debugOut("Newest cache hash: " + newestCacheHash);
+        DebugUtil.debugOut(ProjectSummaryCache.class, "Checking for new cache took " + (TimeUtil.getTrancheTimestamp() - startTime) / 1000 + "s.");
+        DebugUtil.debugOut(ProjectSummaryCache.class, "Newest cache hash: " + newestCacheHash);
         Collections.reverse(newestHashes);
         return Collections.unmodifiableList(newestHashes);
     }
@@ -290,7 +289,7 @@ public class ProjectSummaryCache {
             }
         }
         while (!startedLoading) {
-            ThreadUtil.safeSleep(1000);
+            ThreadUtil.sleep(1000);
         }
         while (cacheLoadingThread.isAlive()) {
             try {
@@ -310,41 +309,5 @@ public class ProjectSummaryCache {
             list.addAll(projects);
         }
         return Collections.unmodifiableCollection(list);
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        ProjectSummaryCache.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(ProjectSummaryCache.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

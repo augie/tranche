@@ -27,8 +27,8 @@ import org.tranche.TrancheServer;
 import org.tranche.streams.PrettyPrintStream;
 import org.tranche.annotations.Todo;
 import org.tranche.annotations.TodoList;
+import org.tranche.commons.DebuggableThread;
 import org.tranche.server.Server;
-import org.tranche.util.DebugUtil;
 
 /**
  * <p>
@@ -46,9 +46,8 @@ import org.tranche.util.DebugUtil;
  * @author Jayson Falkner - jfalkner@umich.edu
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class TrancheServerCommandLineClient extends Thread {
+public class TrancheServerCommandLineClient extends DebuggableThread {
 
-    private static boolean debug = false;
     private InputStream in;
     private InputStreamReader isr;
     private BufferedReader br;
@@ -134,7 +133,7 @@ public class TrancheServerCommandLineClient extends Thread {
         ServerItem clci = (ServerItem) items.get("server");
         // start the server
         clci.preDoAction("server command=start port=" + port + " secure=" + secure, new BufferedReader(new InputStreamReader(in)), out);
-        
+
         return clci.getServer();
     }
 
@@ -192,7 +191,7 @@ public class TrancheServerCommandLineClient extends Thread {
                                 }
                             } // catch "illegal seek" exceptions
                             catch (Exception e) {
-                                
+
                                 // -------------------------------------------------------------------------------
                                 // WHEN ADMIN DISCONNECTS FROM REMOTE SERVER (E.G., SSH)...
                                 //
@@ -336,41 +335,5 @@ public class TrancheServerCommandLineClient extends Thread {
      */
     public boolean isRun() {
         return run;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        TrancheServerCommandLineClient.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(TrancheServerCommandLineClient.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

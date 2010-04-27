@@ -15,6 +15,7 @@
  */
 package org.tranche.hash;
 
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.*;
 import org.tranche.security.SecurityUtil;
 import org.tranche.util.IOUtil;
@@ -475,13 +476,13 @@ public class BigHashTest extends TrancheTestCase {
 
             assertTrue("Expecting hash to start with prefix " + prefix + ", but doesn't: " + nextHash, nextHash.toString().startsWith(prefix));
 
-//            System.out.println("  "+String.valueOf(i+1)+" of "+String.valueOf(numChunksToTest)+") Took "+Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp()-start)+" to get chunk of size "+Text.getFormattedBytes(dataChunk.length)+", hash="+nextHash);
+//            System.out.println("  "+String.valueOf(i+1)+" of "+String.valueOf(numChunksToTest)+") Took "+TextUtil.formatTime(TimeUtil.getTrancheTimestamp()-start)+" to get chunk of size "+TextUtil.getFormattedBytes(dataChunk.length)+", hash="+nextHash);
         }
 
 //        final long totalRuntime = TimeUtil.getTrancheTimestamp()-totalStart;
 //        final double avg = (double)totalRuntime/(double)numChunksToTest;
 //        System.out.println();
-//        System.out.println("Test ran for "+Text.getPrettyEllapsedTimeString(totalRuntime)+" with average chunk taking "+Text.getPrettyEllapsedTimeString(avg)+" time to generate.");
+//        System.out.println("Test ran for "+TextUtil.formatTime(totalRuntime)+" with average chunk taking "+TextUtil.formatTime(avg)+" time to generate.");
     }
 
     public void testCreateDataChunkNotStartWithPrefixOfSize1() throws Exception {
@@ -534,12 +535,12 @@ public class BigHashTest extends TrancheTestCase {
 
             assertFalse("Expecting hash to not start with prefix " + prefix + ", but does: " + nextHash, nextHash.toString().startsWith(prefix));
 
-//            System.out.println("  "+String.valueOf(i+1)+" of "+String.valueOf(numChunksToTest)+") Took "+Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp()-start)+" to get chunk of size "+Text.getFormattedBytes(dataChunk.length)+", hash="+nextHash);
+//            System.out.println("  "+String.valueOf(i+1)+" of "+String.valueOf(numChunksToTest)+") Took "+TextUtil.formatTime(TimeUtil.getTrancheTimestamp()-start)+" to get chunk of size "+TextUtil.getFormattedBytes(dataChunk.length)+", hash="+nextHash);
         }
 
 //        final long totalRuntime = TimeUtil.getTrancheTimestamp()-totalStart;
 //        final double avg = (double)totalRuntime/(double)numChunksToTest;
 //        System.out.println();
-//        System.out.println("Test ran for "+Text.getPrettyEllapsedTimeString(totalRuntime)+" with average chunk taking "+Text.getPrettyEllapsedTimeString(avg)+" time to generate.");
+//        System.out.println("Test ran for "+TextUtil.formatTime(totalRuntime)+" with average chunk taking "+TextUtil.formatTime(avg)+" time to generate.");
     }
 }

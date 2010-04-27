@@ -69,14 +69,13 @@ import org.tranche.servers.ServerUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.User;
 import org.tranche.FileEncoding;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.NoHostProvidedException;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
 import org.tranche.util.AssertionUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>An implementation of the TrancheServer interface that relies on the underlying operating system's filesystem.</p>
@@ -88,7 +87,6 @@ import org.tranche.util.ThreadUtil;
  */
 public class FlatFileTrancheServer extends TrancheServer {
 
-    private static boolean debug = false;
     // Actual home directory
     private final File homeDirectory;
     // Default home directory. Must be tested first.
@@ -207,7 +205,7 @@ public class FlatFileTrancheServer extends TrancheServer {
         }
 
         // fall back on
-        throw new RuntimeException("Can't create a temporary directory. Do you have write permissions on this computer?" + Text.getNewLine() + "Can't create a persistent directory.");
+        throw new RuntimeException("Can't create a temporary directory. Do you have write permissions on this computer?" + "\n" + "Can't create a persistent directory.");
     }
 
     /**
@@ -221,7 +219,7 @@ public class FlatFileTrancheServer extends TrancheServer {
         boolean permission = false;
 
         // make the default home directory
-        String possibleHomeDir = ConfigureTranche.get(ConfigureTranche.PROP_SERVER_DIRECTORY);
+        String possibleHomeDir = ConfigureTranche.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_DIRECTORY);
         // check for a user directory -- most every OS has this
         try {
             String userHome = System.getProperty("user.home");
@@ -442,9 +440,9 @@ public class FlatFileTrancheServer extends TrancheServer {
                 if (config.getValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_WORKING) == null) {
                     config.setValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_WORKING, String.valueOf(false));
                 }
-                config.setValue(ConfigKeys.TOTAL_SIZE, Text.getFormattedBytes(totalSize) + (totalSizeOverflowed ? " (Value has overflowed: " + totalSize + " bytes)" : " (" + totalSize + " bytes)"));
-                config.setValue(ConfigKeys.TOTAL_SIZE_UNUSED, Text.getFormattedBytes(totalSizeAvailable) + (totalSizeAvailableOverflowed ? " (Value calculated from overflowed values: " + totalSizeAvailable + " bytes)" : " (" + totalSizeAvailable + " bytes)"));
-                config.setValue(ConfigKeys.TOTAL_SIZE_USED, Text.getFormattedBytes(totalSizeUsed) + (totalSizeUsedOverflowed ? " (Value has overflowed: " + totalSizeUsed + " bytes)" : " (" + totalSizeUsed + " bytes)"));
+                config.setValue(ConfigKeys.TOTAL_SIZE, TextUtil.formatBytes(totalSize) + (totalSizeOverflowed ? " (Value has overflowed: " + totalSize + " bytes)" : " (" + totalSize + " bytes)"));
+                config.setValue(ConfigKeys.TOTAL_SIZE_UNUSED, TextUtil.formatBytes(totalSizeAvailable) + (totalSizeAvailableOverflowed ? " (Value calculated from overflowed values: " + totalSizeAvailable + " bytes)" : " (" + totalSizeAvailable + " bytes)"));
+                config.setValue(ConfigKeys.TOTAL_SIZE_USED, TextUtil.formatBytes(totalSizeUsed) + (totalSizeUsedOverflowed ? " (Value has overflowed: " + totalSizeUsed + " bytes)" : " (" + totalSizeUsed + " bytes)"));
 
                 // set the RAM info
                 Runtime r = Runtime.getRuntime();
@@ -522,11 +520,11 @@ public class FlatFileTrancheServer extends TrancheServer {
 
                 config.setValue(ConfigKeys.HASHSPANFIX_CURRENT_HASH_SPAN_FIXING_THREAD_ACTIVITY, this.hashSpanFixingThread.getCurrentActivity());
 
-                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DELETING, Text.getPrettyEllapsedTimeString(this.hashSpanFixingThread.getTimeSpentDeleting()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDeleting() + ")");
-                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DOING_NOTHING, Text.getPrettyEllapsedTimeString(this.hashSpanFixingThread.getTimeSpentDoingNothing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDoingNothing() + ")");
-                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DOWNLOADING, Text.getPrettyEllapsedTimeString(this.hashSpanFixingThread.getTimeSpentDownloading()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDownloading() + ")");
-                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_HEALING, Text.getPrettyEllapsedTimeString(this.hashSpanFixingThread.getTimeSpentHealing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentHealing() + ")");
-                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_BALANCING, Text.getPrettyEllapsedTimeString(this.hashSpanFixingThread.getTimeSpentBalancing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentBalancing() + ")");
+                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DELETING, TextUtil.formatTimeLength(this.hashSpanFixingThread.getTimeSpentDeleting()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDeleting() + ")");
+                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DOING_NOTHING, TextUtil.formatTimeLength(this.hashSpanFixingThread.getTimeSpentDoingNothing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDoingNothing() + ")");
+                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_DOWNLOADING, TextUtil.formatTimeLength(this.hashSpanFixingThread.getTimeSpentDownloading()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentDownloading() + ")");
+                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_HEALING, TextUtil.formatTimeLength(this.hashSpanFixingThread.getTimeSpentHealing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentHealing() + ")");
+                config.setValue(ConfigKeys.HASHSPANFIX_TIME_SPENT_BALANCING, TextUtil.formatTimeLength(this.hashSpanFixingThread.getTimeSpentBalancing()) + " (" + this.hashSpanFixingThread.getEstimatedPercentageTimeSpentBalancing() + ")");
                 config.setValue(ConfigKeys.HASHSPANFIX_TOTAL_DATABLOCKS_MOVED_TO_BALANCE, String.valueOf(this.getDataBlockUtil().getTotalDataBlocksMovedWhileBalancing()));
 
                 try {
@@ -871,7 +869,7 @@ public class FlatFileTrancheServer extends TrancheServer {
      */
     public void waitToLoadExistingDataBlocks() {
         while (!doneLoadingDataBlocks && !closed) {
-            ThreadUtil.safeSleep(500);
+            ThreadUtil.sleep(500);
         }
     }
 
@@ -974,7 +972,7 @@ public class FlatFileTrancheServer extends TrancheServer {
 
         findAvailableDataInvocationCount++;
 
-        debugOut("Starting up project-finding thread at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". Total invocations: " + findAvailableDataInvocationCount + ". Reason: " + reason);
+        debugOut("Starting up project-finding thread at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". Total invocations: " + findAvailableDataInvocationCount + ". Reason: " + reason);
         this.projectFindingThread = new ProjectFindingThread(FlatFileTrancheServer.this);
         this.projectFindingThread.setDaemon(true);
         this.projectFindingThread.start();
@@ -1368,7 +1366,7 @@ public class FlatFileTrancheServer extends TrancheServer {
 
             @Override
             public void run() {
-                ThreadUtil.safeSleep(2000);
+                ThreadUtil.sleep(2000);
                 // Close the server. This is a really weird way of doing this!
                 close();
             }
@@ -1520,7 +1518,7 @@ public class FlatFileTrancheServer extends TrancheServer {
 
             debugOut("New configuration set.");
             for (DataDirectoryConfiguration ddc : c.getDataDirectories()) {
-                this.dataBlockUtil.add(ddc, "A new configuration was set at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                this.dataBlockUtil.add(ddc, "A new configuration was set at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
             }
 
             // restart the project finding thread
@@ -2560,41 +2558,5 @@ public class FlatFileTrancheServer extends TrancheServer {
      */
     public void setAuthPrivateKey(PrivateKey authPrivateKey) {
         this.authPrivateKey = authPrivateKey;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        FlatFileTrancheServer.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(FlatFileTrancheServer.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

@@ -22,7 +22,7 @@ package org.tranche.exceptions;
  */
 public class TodoException extends UnsupportedOperationException {
 
-    public final static String MESSAGE = "The operation you called has not been implemented yet.";
+    public static final String MESSAGE = "The operation you called has not been implemented yet.";
 
     /**
      * <p>Used when functionality not implemented yet, but planned.</p>

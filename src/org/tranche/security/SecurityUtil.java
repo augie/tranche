@@ -55,13 +55,13 @@ import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.PassphraseRequiredException;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.BigHashMaker;
 import org.tranche.users.UserCertificateUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TempFileUtil;
 
 /**
@@ -72,7 +72,6 @@ import org.tranche.util.TempFileUtil;
  */
 public class SecurityUtil {
 
-    private static boolean debug = false;
     private static final byte[] ENCRYPTION_SALT = new byte[8];
     private static final int ENCRYPTION_ITERATIONS = 1000;
     private static String adminCertificateLocation = "/org/tranche/test/admin.public.certificate", writeCertificateLocation = "/org/tranche/test/write.public.certificate", userCertificateLocation = "/org/tranche/test/user.public.certificate", readCertificateLocation = "/org/tranche/test/read.public.certificate", autocertCertificateLocation = "/org/tranche/test/autocert.public.certificate", anonCertificateLocation = "/org/tranche/test/anonymous.public.certificate", anonPrivateKeyLocation = "/org/tranche/test/anonymous.private.key", emailCertificateLocation = "/org/tranche/test/email.public.certificate", emailPrivateKeyLocation = "/org/tranche/test/email.private.key";
@@ -1153,7 +1152,7 @@ public class SecurityUtil {
         if (passphrase == null) {
             throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
         }
-        debugOut("Decrypting " + file.getAbsolutePath() + " using passphrase " + passphrase);
+        DebugUtil.debugOut(SecurityUtil.class, "Decrypting " + file.getAbsolutePath() + " using passphrase " + passphrase);
 
         // make the AES encryption engine
         AESFastEngine encrypt = new AESFastEngine();
@@ -1224,8 +1223,8 @@ public class SecurityUtil {
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
             if (paddingLength < 0) {
-                debugOut("Expected Padding length: " + paddingLength);
-                debugOut("Buffer length: " + encryptedBuffer.length);
+                DebugUtil.debugOut(SecurityUtil.class, "Expected Padding length: " + paddingLength);
+                DebugUtil.debugOut(SecurityUtil.class, "Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
             } else if (paddingLength > encryptedBuffer.length) {
                 paddingLength = encryptedBuffer.length;
@@ -1236,7 +1235,7 @@ public class SecurityUtil {
                 bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
                 BigHash actualHash = BigHash.createFromBytes(bhm.finish());
                 if (!actualHash.equals(expectedHash)) {
-                    debugOut("Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
+                    DebugUtil.debugOut(SecurityUtil.class, "Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
                     throw new WrongPassphraseException();
                 }
             }
@@ -1277,7 +1276,7 @@ public class SecurityUtil {
         if (passphrase == null) {
             throw new PassphraseRequiredException("Can't decrypt file. No passphrase specified.");
         }
-        debugOut("Decrypting file in memory using passphrase " + passphrase);
+        DebugUtil.debugOut(SecurityUtil.class, "Decrypting file in memory using passphrase " + passphrase);
         // make the AES encryption engine
         AESFastEngine encrypt = new AESFastEngine();
         // make up some params
@@ -1343,8 +1342,8 @@ public class SecurityUtil {
             // take the last block and remove padding
             int paddingLength = (int) (0xff & encryptedBuffer[encryptedBuffer.length - 1]);
             if (paddingLength < 0) {
-                debugOut("Expected Padding length: " + paddingLength);
-                debugOut("Buffer length: " + encryptedBuffer.length);
+                DebugUtil.debugOut(SecurityUtil.class, "Expected Padding length: " + paddingLength);
+                DebugUtil.debugOut(SecurityUtil.class, "Buffer length: " + encryptedBuffer.length);
                 throw new WrongPassphraseException();
             } else if (paddingLength > encryptedBuffer.length) {
                 paddingLength = encryptedBuffer.length;
@@ -1355,7 +1354,7 @@ public class SecurityUtil {
                 bhm.update(encryptedBuffer, 0, encryptedBuffer.length - paddingLength);
                 BigHash actualHash = BigHash.createFromBytes(bhm.finish());
                 if (!actualHash.equals(expectedHash)) {
-                    debugOut("Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
+                    DebugUtil.debugOut(SecurityUtil.class, "Expected " + expectedHash + " (" + expectedHash.getLength() + ") but actually " + actualHash + " (" + actualHash.getLength() + ")");
                     throw new WrongPassphraseException();
                 }
             }
@@ -1444,7 +1443,7 @@ public class SecurityUtil {
         if (SecurityUtil.adminCertificateLocation == null || !SecurityUtil.adminCertificateLocation.equals(adminCertificateLocation)) {
             adminCert = null;
             SecurityUtil.adminCertificateLocation = adminCertificateLocation;
-            debugOut("admin: " + adminCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "admin: " + adminCertificateLocation);
         }
     }
 
@@ -1464,7 +1463,7 @@ public class SecurityUtil {
         if (SecurityUtil.userCertificateLocation == null || !SecurityUtil.userCertificateLocation.equals(userCertificateLocation)) {
             userCert = null;
             SecurityUtil.userCertificateLocation = userCertificateLocation;
-            debugOut("user: " + userCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "user: " + userCertificateLocation);
         }
     }
 
@@ -1484,7 +1483,7 @@ public class SecurityUtil {
         if (SecurityUtil.writeCertificateLocation == null || !SecurityUtil.writeCertificateLocation.equals(writeCertificateLocation)) {
             writeOnlyCert = null;
             SecurityUtil.writeCertificateLocation = writeCertificateLocation;
-            debugOut("write: " + writeCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "write: " + writeCertificateLocation);
         }
     }
 
@@ -1504,7 +1503,7 @@ public class SecurityUtil {
         if (SecurityUtil.readCertificateLocation == null || !SecurityUtil.readCertificateLocation.equals(readCertificateLocation)) {
             readOnlyCert = null;
             SecurityUtil.readCertificateLocation = readCertificateLocation;
-            debugOut("read: " + readCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "read: " + readCertificateLocation);
         }
     }
 
@@ -1524,7 +1523,7 @@ public class SecurityUtil {
         if (SecurityUtil.autocertCertificateLocation == null || !SecurityUtil.autocertCertificateLocation.equals(autocertCertificateLocation)) {
             SecurityUtil.autoCert = null;
             SecurityUtil.autocertCertificateLocation = autocertCertificateLocation;
-            debugOut("auto: " + autocertCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "auto: " + autocertCertificateLocation);
         }
     }
 
@@ -1552,7 +1551,7 @@ public class SecurityUtil {
         if (SecurityUtil.anonCertificateLocation == null || !SecurityUtil.anonCertificateLocation.equals(anonCertificateLocation)) {
             anonCert = null;
             SecurityUtil.anonCertificateLocation = anonCertificateLocation;
-            debugOut("anon (cert): " + anonCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "anon (cert): " + anonCertificateLocation);
         }
     }
 
@@ -1564,7 +1563,7 @@ public class SecurityUtil {
         if (SecurityUtil.anonPrivateKeyLocation == null || !SecurityUtil.anonPrivateKeyLocation.equals(anonPrivateKeyLocation)) {
             anonKey = null;
             SecurityUtil.anonPrivateKeyLocation = anonPrivateKeyLocation;
-            debugOut("anon (key): " + anonCertificateLocation);
+            DebugUtil.debugOut(SecurityUtil.class, "anon (key): " + anonCertificateLocation);
         }
     }
 
@@ -1603,42 +1602,6 @@ public class SecurityUtil {
         if (SecurityUtil.emailPrivateKeyLocation == null || !SecurityUtil.emailPrivateKeyLocation.equals(emailPrivateKeyLocation)) {
             emailKey = null;
             SecurityUtil.emailPrivateKeyLocation = emailPrivateKeyLocation;
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        SecurityUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(SecurityUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

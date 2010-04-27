@@ -22,11 +22,10 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.tranche.commons.TextUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.Base16;
 import org.tranche.network.NetworkUtil;
-import org.tranche.network.StatusTableRow;
-import org.tranche.time.TimeUtil;
 
 /**
  * <p>A helper class for the code to determine if it is being run in test mode or not. If the code is run in test mode, it shouldn't spawn unneeded background threads or otherwise use resources intended solely for a live environment.</p>
@@ -501,5 +500,37 @@ public class TestUtil {
      */
     public static void clearFFTSForURL() {
         URLToFFTSMap.clear();
+    }
+
+    /**
+     * <p>Prints out breadth-first directory structure for humans. Nice to see files quickly.</p>
+     * @param root
+     */
+    public static void printRecursiveDirectoryStructure(File root) {
+        recursivePrintRecursiveDirectoryStructure(new File[] {root}, 0);
+    }
+
+    /**
+     * <p>Prints out breadth-first directory structure for humans. Nice to see files quickly.</p>
+     * @param files
+     * @param indent Number of spaces to indent files/directories for each subdirectory
+     */
+    private static void recursivePrintRecursiveDirectoryStructure(File[] files, int indent) {
+
+        // Build up indentation
+        StringBuffer indentation = new StringBuffer();
+        for (int i = 0; i < indent; i++) {
+            indentation.append(" ");
+        }
+
+        // Recursively print
+        for (File f : files) {
+            if (f.isDirectory()) {
+                System.out.println(indentation.toString() + f.getName() + "/");
+                recursivePrintRecursiveDirectoryStructure(f.listFiles(), indent + 2);
+            } else {
+                System.out.println(indentation.toString() + f.getName() + ": " + TextUtil.formatBytes(f.length()));
+            }
+        }
     }
 }

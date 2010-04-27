@@ -40,7 +40,7 @@ import org.tranche.project.ProjectSummary;
 import org.tranche.remote.RemoteUtil;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  *
@@ -48,13 +48,13 @@ import org.tranche.util.ThreadUtil;
  */
 public class DownloadSummary implements ClipboardOwner {
 
-    public final static String STATUS_STARTING = "Starting";
-    public final static String STATUS_QUEUED = "Queued";
-    public final static String STATUS_DOWNLOADING = "Downloading";
-    public final static String STATUS_PAUSED = "Paused";
-    public final static String STATUS_STOPPED = "Stopped";
-    public final static String STATUS_FINISHED = "Finished";
-    public final static String STATUS_FAILED = "Failed";
+    public static final String STATUS_STARTING = "Starting";
+    public static final String STATUS_QUEUED = "Queued";
+    public static final String STATUS_DOWNLOADING = "Downloading";
+    public static final String STATUS_PAUSED = "Paused";
+    public static final String STATUS_STOPPED = "Stopped";
+    public static final String STATUS_FINISHED = "Finished";
+    public static final String STATUS_FAILED = "Failed";
     private int version = 1;
     private final GetFileTool getFileTool;
     private GetFileToolProgressBar progressBar;
@@ -181,7 +181,7 @@ public class DownloadSummary implements ClipboardOwner {
                                             break;
                                         }
                                     }
-                                    ThreadUtil.safeSleep(200);
+                                    ThreadUtil.sleep(200);
                                 }
                             }
                         };

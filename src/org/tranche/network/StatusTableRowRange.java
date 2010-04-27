@@ -16,8 +16,8 @@
 package org.tranche.network;
 
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.Debuggable;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 
 /**
  * <p>Status table row ranges are used in the status table update process for servers. They are used to help propagate status updates across the network.</p>
@@ -25,10 +25,9 @@ import org.tranche.util.DebugUtil;
  * @author James "Augie" Hill - augman85@gmail.com
  * @author Bryan Smith - bryanesmith@gmail.com
  */
-public class StatusTableRowRange extends Object {
+public class StatusTableRowRange extends Debuggable {
 
-    private static boolean debug = false;
-    private String fromHost,  connectionHost,  toHost;
+    private String fromHost, connectionHost, toHost;
     private boolean registeredWithConnectionHost = false;
     private long registrationTimestamp = 0;
 
@@ -68,7 +67,7 @@ public class StatusTableRowRange extends Object {
      * @return Whether the connection host has been registered with.
      */
     protected boolean isRegisteredWithConnectionHost() {
-        int timeBetweenRegistrations = ConfigureTranche.getInt(ConfigureTranche.PROP_SERVER_TIME_BETWEEN_REGISTRATIONS);
+        int timeBetweenRegistrations = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_TIME_BETWEEN_REGISTRATIONS);
         if (timeBetweenRegistrations > 0 && TimeUtil.getTrancheTimestamp() - registrationTimestamp > timeBetweenRegistrations) {
             return true;
         }
@@ -121,41 +120,5 @@ public class StatusTableRowRange extends Object {
     @Override()
     public String toString() {
         return fromHost + " through " + toHost + " (connected to: " + connectionHost + ")";
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        StatusTableRowRange.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(StatusTableRowRange.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

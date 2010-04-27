@@ -19,10 +19,11 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
 import org.tranche.TrancheServer;
 import org.tranche.TrancheServerTest;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.NoHostProvidedException;
 import org.tranche.exceptions.PropagationUnfulfillableHostException;
 import org.tranche.exceptions.TodoException;
@@ -37,7 +38,7 @@ import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -54,30 +55,30 @@ public class RemoteTrancheServerTest extends TrancheServerTest {
     /**
      * <p>Used to try to replicate sporadic failures. Set to 1 to run every test only once.</p>
      */
-    final static int TEST_COUNT = 1;
+    static final int TEST_COUNT = 1;
     private final boolean wasTestingHealingThread = TestUtil.isTestingHashSpanFixingThread();
 
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
         TestUtil.setTestingHashSpanFixingThread(false);
-        RemoteTrancheServer.setDebug(true);
+        DebugUtil.setDebug(RemoteTrancheServer.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
         TestUtil.setTestingHashSpanFixingThread(wasTestingHealingThread);
-        RemoteTrancheServer.setDebug(false);
+        DebugUtil.setDebug(RemoteTrancheServer.class, false);
     }
     /**
      * Create a set of table rows. Will be used for each test
      */
-    final static String HOST1 = "ardvark.org";
-    final static String HOST2 = "batman.org";
-    final static String HOST3 = "catwoman.org";
-    final static String HOST4 = "darwin.edu";
-    final static String HOST5 = "edgar.com";
+    static final String HOST1 = "ardvark.org";
+    static final String HOST2 = "batman.org";
+    static final String HOST3 = "catwoman.org";
+    static final String HOST4 = "darwin.edu";
+    static final String HOST5 = "edgar.com";
 
     public void testGetData() throws Exception {
         TestUtil.printTitle("RemoteTrancheServerTest:testGetData()");

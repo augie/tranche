@@ -32,7 +32,8 @@ public class SignInFrame extends GenericPopupFrame {
         super("Sign In", new SignInPanel());
         logInPanel = (SignInPanel) super.getComponent();
         int height = 300;
-        if (ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL) == null || ConfigureTranche.get(ConfigureTranche.PROP_SIGN_UP_URL).equals("")) {
+        String signUpURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_SIGN_UP_URL);
+        if (signUpURL == null || signUpURL.equals("")) {
             height -= 50;
         }
         setSize(400, height);

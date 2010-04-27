@@ -16,9 +16,9 @@
 package org.tranche.add;
 
 import java.io.File;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -244,7 +244,7 @@ public class AddFileToolEvent {
         if (serverHostName != null) {
             returnStr = returnStr + "Server: " + serverHostName + ";  ";
         }
-        returnStr = returnStr + "Date: " + Text.getFormattedDate(timestamp) + ";  ";
+        returnStr = returnStr + "Date: " + TextUtil.getFormattedDate(timestamp) + ";  ";
         return returnStr;
     }
 }

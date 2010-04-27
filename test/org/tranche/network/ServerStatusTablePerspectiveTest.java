@@ -15,6 +15,7 @@
  */
 package org.tranche.network;
 
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.TodoException;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
@@ -28,13 +29,13 @@ public class ServerStatusTablePerspectiveTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        ServerStatusTablePerspective.setDebug(true);
+        DebugUtil.setDebug(ServerStatusTablePerspective.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        ServerStatusTablePerspective.setDebug(false);
+        DebugUtil.setDebug(ServerStatusTablePerspective.class, false);
     }
 
     public void testTodo() throws Exception {

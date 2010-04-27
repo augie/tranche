@@ -20,9 +20,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.regex.Pattern;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.SortableTableModel;
 import org.tranche.gui.util.GUIUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -157,7 +157,7 @@ public class UploadsTableModel extends SortableTableModel {
                     return us.getAddFileTool().getTitle();
                 case 1:
                     if (us.getAddFileTool().getSize() != UploadSummary.DEFAULT_INT_VALUE) {
-                        return Text.getFormattedBytes(us.getAddFileTool().getSize());
+                        return TextUtil.formatBytes(us.getAddFileTool().getSize());
                     } else {
                         return "";
                     }

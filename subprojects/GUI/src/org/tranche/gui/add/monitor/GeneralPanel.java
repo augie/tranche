@@ -20,12 +20,12 @@ import java.awt.GridLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import org.tranche.add.AddFileToolEvent;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.add.UploadSummary;
 import org.tranche.gui.monitor.InfoColumn;
 import org.tranche.gui.util.GUIUtil;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.users.UserCertificateUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -100,7 +100,7 @@ public class GeneralPanel extends JPanel {
         }
         left.put("Encrypted", String.valueOf(us.getAddFileTool().getPassphrase() != null && !us.getAddFileTool().getPassphrase().equals("")));
         left.put("Files", GUIUtil.integerFormat.format(us.getAddFileTool().getFileCount()));
-        left.put("Size", Text.getFormattedBytes(us.getAddFileTool().getSize()));
+        left.put("Size", TextUtil.formatBytes(us.getAddFileTool().getSize()));
         left.put("User", String.valueOf(UserCertificateUtil.readUserName(us.getAddFileTool().getUserCertificate())));
         left.put("", " ");
         left.put("Compress", String.valueOf(us.getAddFileTool().isCompress()));
@@ -127,11 +127,11 @@ public class GeneralPanel extends JPanel {
         right.clear();
         right.put("Status", us.getStatus());
         if (us.getReport() != null) {
-            right.put("Elapsed Time", Text.getShortPrettyEllapsedTimeString(us.getReport().getTimeToFinish()));
-            right.put("Uploaded", Text.getFormattedBytes(us.getReport().getBytesUploaded()));
+            right.put("Elapsed Time", TextUtil.formatTimeLength(us.getReport().getTimeToFinish()));
+            right.put("Uploaded", TextUtil.formatBytes(us.getReport().getBytesUploaded()));
         } else if (us.getAddFileTool().getTimeEstimator() != null) {
             right.put("Time Remaining", us.getAddFileTool().getTimeEstimator().getTimeLeftString());
-            right.put("Uploaded", Text.getFormattedBytes(us.getAddFileTool().getBytesUploaded()) + " / " + Text.getFormattedBytes(us.getAddFileTool().getBytesToUpload()));
+            right.put("Uploaded", TextUtil.formatBytes(us.getAddFileTool().getBytesUploaded()) + " / " + TextUtil.formatBytes(us.getAddFileTool().getBytesToUpload()));
         }
         right.put("", " ");
         right.put("Data", "");

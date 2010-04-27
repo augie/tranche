@@ -34,7 +34,7 @@ import javax.swing.SwingConstants;
  * @author James "Augie" Hill - augman85@gmail.com
  */
 import javax.swing.SwingUtilities;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 
 public class DidYouKnowPanel extends JPanel {
 

@@ -77,7 +77,7 @@ public class GetNetworkStatusItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, OutputStream out) throws Exception {
         writeRequest(writeHeader, null, null, out);
     }
 
@@ -89,7 +89,7 @@ public class GetNetworkStatusItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, String fromHost, String toHost, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, String fromHost, String toHost, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_NETWORK_STATUS_PORTION, out);
         }

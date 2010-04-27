@@ -15,18 +15,10 @@
  */
 package org.tranche.flatfile;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.concurrent.ArrayBlockingQueue;
-import org.tranche.TrancheServer;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
-import org.tranche.meta.MetaData;
-import org.tranche.meta.MetaDataUtil;
-import org.tranche.network.ConnectionUtil;
-import org.tranche.servers.ServerUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.IOUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Thread replaces any missing chunks from a corrupted data block. Reads requests for corrupted DataBlock objects from a queue.</p>
@@ -37,7 +29,7 @@ public class ReplaceCorruptedDataBlockThread extends Thread {
     /**
      * 
      */
-    private final static boolean isDebug = false;
+    private static final boolean isDebug = false;
     /**
      * 
      */
@@ -45,7 +37,7 @@ public class ReplaceCorruptedDataBlockThread extends Thread {
     /**
      * <p>Maximum size before allowed queue blocks.</p>
      */
-    public final static int MAX_QUEUE_SIZE = 5000;
+    public static final int MAX_QUEUE_SIZE = 5000;
     /**
      * 
      */
@@ -84,11 +76,11 @@ public class ReplaceCorruptedDataBlockThread extends Thread {
 //        synchronized (singletonLock) {
 //            if (nullSingleton || outdatedDBU) {
 //                if (nullSingleton) {
-//                    printTracer("Created singleton at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+//                    printTracer("Created singleton at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 //                } else if (outdatedDBU) {
-//                    printTracer("Replace previous singleton because DBU outdated at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+//                    printTracer("Replace previous singleton because DBU outdated at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 //                } else {
-//                    printTracer("Not sure why instantiated singleton at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+//                    printTracer("Not sure why instantiated singleton at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
 //                }
 //                singleton = new ReplaceCorruptedDataBlockThread(dbu);
 //            }
@@ -405,7 +397,7 @@ public class ReplaceCorruptedDataBlockThread extends Thread {
             hasWaitedLongEnough = TimeUtil.getTrancheTimestamp() - start > maxTimeToWaitMillis;
         }
         if (!this.isQueueEmpty() || hasWaitedLongEnough || isCurrentlyServicing) {
-            printTracer("Waited " + Text.getPrettyEllapsedTimeString(TimeUtil.getTrancheTimestamp() - start) + " for queue to empty, but still has " + getQueueSize() + " items. <Is " + (isCurrentlyServicing ? "" : "not") + " currently servicing a chunk>");
+            printTracer("Waited " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start) + " for queue to empty, but still has " + getQueueSize() + " items. <Is " + (isCurrentlyServicing ? "" : "not") + " currently servicing a chunk>");
         }
     }
 

@@ -15,6 +15,7 @@
  */
 package org.tranche.util;
 
+import org.tranche.commons.RandomUtil;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -275,8 +276,8 @@ public class IOUtilTest extends TrancheTestCase {
             IOUtil.recursiveCopyFiles(src, dest);
 
             // For my benefit, print to std out
-            Text.printRecursiveDirectoryStructure(src);
-            Text.printRecursiveDirectoryStructure(dest);
+            TestUtil.printRecursiveDirectoryStructure(src);
+            TestUtil.printRecursiveDirectoryStructure(dest);
 
             assertTrue("Better exist.", src.exists());
             assertTrue("Better exist.", dest.exists());

@@ -69,7 +69,7 @@ public class GetConfigurationNoSigItem extends ServerItem {
      * @param out
      * @throws java.lang.Exception
      */
-    public final static void writeRequest(boolean writeHeader, OutputStream out) throws Exception {
+    public static final void writeRequest(boolean writeHeader, OutputStream out) throws Exception {
         if (writeHeader) {
             RemoteUtil.writeBytes(Token.GET_CONFIGURATION_NO_SIG, out);
         }

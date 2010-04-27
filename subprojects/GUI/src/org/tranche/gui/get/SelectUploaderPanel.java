@@ -27,6 +27,7 @@ import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JPanel;
+import org.tranche.commons.TextUtil;
 import org.tranche.gui.DisplayTextArea;
 import org.tranche.gui.GenericScrollPane;
 import org.tranche.gui.InformationPanel;
@@ -36,7 +37,6 @@ import org.tranche.gui.util.GUIUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.meta.MetaData;
 import org.tranche.project.ProjectSummary;
-import org.tranche.util.Text;
 
 /**
  *
@@ -49,7 +49,7 @@ public class SelectUploaderPanel extends JPanel {
     private final InformationPanel infoPanel = new InformationPanel();
     private BigHash hash;
     private MetaData metaData;
-    private String uploaderName,  relativePath;
+    private String uploaderName, relativePath;
     private Long uploadTimestamp;
     private int selectedUploader = 0;
 
@@ -101,7 +101,7 @@ public class SelectUploaderPanel extends JPanel {
                 gbc.weightx = 1;
                 for (int i = 0; i < metaData.getUploaderCount(); i++) {
                     metaData.selectUploader(i);
-                    final DisplayTextArea uploader = new DisplayTextArea("Uploaded by " + metaData.getSignature().getUserName() + " on " + Text.getFormattedDate(metaData.getTimestampUploaded()));
+                    final DisplayTextArea uploader = new DisplayTextArea("Uploaded by " + metaData.getSignature().getUserName() + " on " + TextUtil.getFormattedDate(metaData.getTimestampUploaded()));
                     uploader.setBorder(BorderFactory.createCompoundBorder(Styles.UNDERLINE_BLACK, BorderFactory.createEmptyBorder(5, 5, 5, 5)));
                     uploader.setOpaque(true);
                     uploader.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -133,14 +133,14 @@ public class SelectUploaderPanel extends JPanel {
                             ProjectSummary ps = ProjectPool.get(hash, uploaderName, uploadTimestamp);
                             if (ps != null) {
                                 infoPanel.set("Title", ps.title);
-                                infoPanel.set("Size", GUIUtil.integerFormat.format(ps.files) + " files" + ", " + Text.getFormattedBytes(ps.size));
+                                infoPanel.set("Size", GUIUtil.integerFormat.format(ps.files) + " files" + ", " + TextUtil.formatBytes(ps.size));
                                 infoPanel.set("Description", ps.description);
                             } else if (!metaData.isProjectFile()) {
                                 if (metaData.getRelativePathInDataSet() != null) {
                                     infoPanel.set("Path", metaData.getRelativePathInDataSet());
                                 }
                                 infoPanel.set("Name", metaData.getName());
-                                infoPanel.set("Size", Text.getFormattedBytes(hash.getLength()));
+                                infoPanel.set("Size", TextUtil.formatBytes(hash.getLength()));
                                 if (metaData.getMimeType() != null) {
                                     infoPanel.set("MIME Type", metaData.getMimeType());
                                 }
@@ -156,7 +156,7 @@ public class SelectUploaderPanel extends JPanel {
                                     }
                                 }
                                 if (metaData.getDataSetSize() > 0) {
-                                    size = size + Text.getFormattedBytes(metaData.getDataSetSize());
+                                    size = size + TextUtil.formatBytes(metaData.getDataSetSize());
                                 }
                                 if (!size.equals("")) {
                                     infoPanel.set("Size", size);

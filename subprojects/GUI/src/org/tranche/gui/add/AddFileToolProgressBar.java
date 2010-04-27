@@ -31,9 +31,9 @@ import javax.swing.SwingUtilities;
 import org.tranche.add.AddFileTool;
 import org.tranche.add.AddFileToolEvent;
 import org.tranche.add.AddFileToolListener;
+import org.tranche.commons.TextUtil;
 import org.tranche.server.PropagationExceptionWrapper;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * A spiffy progress bar that shows both overall progress.
@@ -274,7 +274,7 @@ public class AddFileToolProgressBar extends JPanel implements AddFileToolListene
                     string = string + "Calculating...";
                 }
             }
-            string = string + "; " + Text.getFormattedBytes(aft.getBytesUploaded()) + " / " + Text.getFormattedBytes(aft.getBytesToUpload());
+            string = string + "; " + TextUtil.formatBytes(aft.getBytesUploaded()) + " / " + TextUtil.formatBytes(aft.getBytesToUpload());
         }
 
         // pick the font
@@ -347,7 +347,7 @@ public class AddFileToolProgressBar extends JPanel implements AddFileToolListene
         public void run() {
             while (!closed) {
                 repaint();
-                ThreadUtil.safeSleep(500);
+                ThreadUtil.sleep(500);
             }
             repaint();
         }

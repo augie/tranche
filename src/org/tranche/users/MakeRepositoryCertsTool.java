@@ -18,9 +18,9 @@ package org.tranche.users;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import org.tranche.commons.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.TestUtil;
 
 /**
@@ -29,7 +29,7 @@ import org.tranche.util.TestUtil;
  */
 public class MakeRepositoryCertsTool {
 
-    private static boolean debug = false, verbose = false;
+    private static boolean verbose = false;
 
     /**
      * <p>Prints a message to System.out.</p>
@@ -89,10 +89,9 @@ public class MakeRepositoryCertsTool {
             // flags
             for (int i = 0; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
-                    DebugUtil.setDebug(true);
-                    setDebug(true);
-                    MakeUserZipFileTool.setDebug(true);
-                    UserZipFile.setDebug(true);
+                    DebugUtil.setDebug(MakeRepositoryCertsTool.class, true);
+                    DebugUtil.setDebug(MakeUserZipFileTool.class, true);
+                    DebugUtil.setDebug(UserZipFile.class, true);
                 } else if (args[0].equals("-n") || args[0].equals("--buildnumber") || args[0].equals("-V") || args[0].equals("--version")) {
                     System.out.println("Tranche, build #@buildNumber");
                     if (!TestUtil.isTesting()) {
@@ -118,7 +117,7 @@ public class MakeRepositoryCertsTool {
                 directory = new File(args[args.length - 1]);
             } catch (Exception e) {
                 System.err.println("ERROR: Invalid value for output directory.");
-                debugErr(e);
+                DebugUtil.debugErr(MakeRepositoryCertsTool.class, e);
                 if (!TestUtil.isTesting()) {
                     System.exit(2);
                 } else {
@@ -603,48 +602,12 @@ public class MakeRepositoryCertsTool {
                 return;
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(MakeRepositoryCertsTool.class, e);
             if (!TestUtil.isTesting()) {
                 System.exit(1);
             } else {
                 return;
             }
-        }
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        MakeRepositoryCertsTool.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(MakeRepositoryCertsTool.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
         }
     }
 }

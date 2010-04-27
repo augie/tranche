@@ -21,13 +21,14 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebugUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.logs.LogUtil;
 import org.tranche.meta.MetaDataAnnotation;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.time.TimeUtil;
 import org.tranche.users.UserCertificateUtil;
 import org.tranche.util.EmailUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Utility that contains methods for the AddFileTool.</p>
@@ -48,7 +49,7 @@ public class AddFileToolUtil {
      * @param report
      */
     public static void registerUpload(final AddFileTool aft, final AddFileToolReport report) {
-        final String logURL = ConfigureTranche.get(ConfigureTranche.PROP_LOG_UPLOAD_URL);
+        final String logURL = ConfigureTranche.get(ConfigureTranche.CATEGORY_LOGGING, ConfigureTranche.PROP_LOG_UPLOAD_URL);
         if (logURL == null || logURL.equals("")) {
             return;
         }
@@ -99,15 +100,15 @@ public class AddFileToolUtil {
 
             // If registrar failed to send email, do so here...
             if (statusCode != 200 && ConfigureTranche.getAdminEmailAccounts().length != 0) {
-                String message = "You are receiving this message from the AddFileTool because the the upload registrar returned an HTTP code of " + statusCode + ".\n\n" +
-                        "Submitted by: " + UserCertificateUtil.readUserName(aft.getUserCertificate()) + "\n" +
-                        "Hash: " + report.getHash().toString() + "\n" +
-                        "Title: " + report.getTitle() + "\n" +
-                        "Description: " + report.getDescription() + "\n";
-                EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Registration Failed @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()), ConfigureTranche.getAdminEmailAccounts(), message);
+                String message = "You are receiving this message from the AddFileTool because the the upload registrar returned an HTTP code of " + statusCode + ".\n\n"
+                        + "Submitted by: " + UserCertificateUtil.readUserName(aft.getUserCertificate()) + "\n"
+                        + "Hash: " + report.getHash().toString() + "\n"
+                        + "Title: " + report.getTitle() + "\n"
+                        + "Description: " + report.getDescription() + "\n";
+                EmailUtil.safeSendEmail("[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Upload Registration Failed @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()), ConfigureTranche.getAdminEmailAccounts(), message);
             }
         } catch (Exception e) {
-            AddFileTool.debugErr(e);
+            DebugUtil.debugErr(AddFileToolUtil.class, e);
         } finally {
             pm.releaseConnection();
         }
@@ -129,7 +130,7 @@ public class AddFileToolUtil {
      * @return
      */
     public static String getEmailReceiptSubject(AddFileToolReport report) {
-        return "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Receipt: " + report.getTitle();
+        return "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Upload Receipt: " + report.getTitle();
     }
 
     /**
@@ -138,51 +139,51 @@ public class AddFileToolUtil {
      * @return
      */
     public static String getEmailReceiptMessage(AddFileToolReport report) {
-        String message = "This is a receipt for your upload of \"" + report.getTitle() + "\" at " + Text.getFormattedDate(report.getTimestampStart()) + "." + Text.getNewLine() + Text.getNewLine() +
-                "This is the hash that represents your data:" + Text.getNewLine() + Text.getNewLine() +
-                report.getHash().toString() + Text.getNewLine() + Text.getNewLine() +
-                "More information about this upload:" + Text.getNewLine() + Text.getNewLine() +
-                "          Network: " + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + Text.getNewLine() +
-                "          Title: " + report.getTitle() + Text.getNewLine() +
-                "          Description: " + report.getDescription() + Text.getNewLine() +
-                "          Uploaded: " + Text.getFormattedDate(report.getTimestampStart()) + Text.getNewLine();
+        String message = "This is a receipt for your upload of \"" + report.getTitle() + "\" at " + TextUtil.getFormattedDate(report.getTimestampStart()) + "." + "\n" + "\n"
+                + "This is the hash that represents your data:" + "\n" + "\n"
+                + report.getHash().toString() + "\n" + "\n"
+                + "More information about this upload:" + "\n" + "\n"
+                + "          Network: " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "\n"
+                + "          Title: " + report.getTitle() + "\n"
+                + "          Description: " + report.getDescription() + "\n"
+                + "          Uploaded: " + TextUtil.getFormattedDate(report.getTimestampStart()) + "\n";
         if (report.isEncrypted()) {
-            message = message +
-                    "          Encrypted - [passphrase ommitted for your protection]" + Text.getNewLine();
+            message = message
+                    + "          Encrypted - [passphrase ommitted for your protection]" + "\n";
         }
-        message = message + Text.getNewLine();
+        message = message + "\n";
         if (report.isEncrypted()) {
-            message = message + "Note that your data set is " + (report.isShowMetaDataIfEncrypted() ? "encrypted" : "encrypted and hidden") + ". When you want your data set to be available to the public, you will need to log in, and go to 'Manage your Tranche data'. There, you need to:" + Text.getNewLine() + Text.getNewLine();
-            message = message +
-                    "          Select your data set and choose \"Make Public\"" + Text.getNewLine();
+            message = message + "Note that your data set is " + (report.isShowMetaDataIfEncrypted() ? "encrypted" : "encrypted and hidden") + ". When you want your data set to be available to the public, you will need to log in, and go to 'Manage your Tranche data'. There, you need to:" + "\n" + "\n";
+            message = message
+                    + "          Select your data set and choose \"Make Public\"" + "\n";
             if (!report.isShowMetaDataIfEncrypted()) {
-                message = message +
-                        "          Select your data set and choose \"Set as Visible\"" + Text.getNewLine();
+                message = message
+                        + "          Select your data set and choose \"Set as Visible\"" + "\n";
             }
             if (!report.isShowMetaDataIfEncrypted()) {
-                message = message + Text.getNewLine() + "Making a data set public is different from making it visible when it is hidden, and hence requires the actions noted above.";
+                message = message + "\n" + "Making a data set public is different from making it visible when it is hidden, and hence requires the actions noted above.";
             }
         }
-        message = message + Text.getNewLine() + Text.getNewLine();
-        if (ConfigureTranche.get(ConfigureTranche.PROP_DOWNLOAD_TOOL_URL) != null && !ConfigureTranche.get(ConfigureTranche.PROP_DOWNLOAD_TOOL_URL).equals("")) {
-            message = message + "The following is a URL to download the data. Please do not include this URL in your citation." + Text.getNewLine() + Text.getNewLine() +
-                    "          " + ConfigureTranche.get(ConfigureTranche.PROP_DOWNLOAD_TOOL_URL) + "?fileName=" + report.getHash().toWebSafeString() + Text.getNewLine() + Text.getNewLine();
+        message = message + "\n" + "\n";
+        if (ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DOWNLOAD_TOOL_URL) != null && !ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DOWNLOAD_TOOL_URL).equals("")) {
+            message = message + "The following is a URL to download the data. Please do not include this URL in your citation." + "\n" + "\n"
+                    + "          " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DOWNLOAD_TOOL_URL) + "?fileName=" + report.getHash().toWebSafeString() + "\n" + "\n";
         }
-        if (ConfigureTranche.get(ConfigureTranche.PROP_DATA_URL) != null && !ConfigureTranche.get(ConfigureTranche.PROP_DATA_URL).equals("")) {
-            message = message + "The following is a URL to your data page, which includes all annotated information about your data set. Please do not include this URL in your citation." + Text.getNewLine() + Text.getNewLine() +
-                    "          " + ConfigureTranche.get(ConfigureTranche.PROP_DATA_URL) + "?id=" + report.getHash().toWebSafeString() + Text.getNewLine() + Text.getNewLine();
+        if (ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DATA_URL) != null && !ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DATA_URL).equals("")) {
+            message = message + "The following is a URL to your data page, which includes all annotated information about your data set. Please do not include this URL in your citation." + "\n" + "\n"
+                    + "          " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_DATA_URL) + "?id=" + report.getHash().toWebSafeString() + "\n" + "\n";
         }
-        if (report.isEncrypted() && ConfigureTranche.get(ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL) != null && !ConfigureTranche.get(ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL).equals("")) {
-            message = message + "Because your upload is encrypted, it is only accessible with the proper passphrase. When you want to make your data public, you can publish the passphrase. Publishing the passphrase will make the data publicly available without showing the passphrase. Here is the URL where you can publish your passphrase:" + Text.getNewLine() + Text.getNewLine() +
-                    "          " + ConfigureTranche.get(ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL) + "?hash=" + report.getHash().toWebSafeString() + Text.getNewLine() + Text.getNewLine();
+        if (report.isEncrypted() && ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL) != null && !ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL).equals("")) {
+            message = message + "Because your upload is encrypted, it is only accessible with the proper passphrase. When you want to make your data public, you can publish the passphrase. Publishing the passphrase will make the data publicly available without showing the passphrase. Here is the URL where you can publish your passphrase:" + "\n" + "\n"
+                    + "          " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_PUBLISH_PASSPHRASE_URL) + "?hash=" + report.getHash().toWebSafeString() + "\n" + "\n";
         }
-        message = message + "You should cite your data in the following manner:" + Text.getNewLine() + Text.getNewLine() +
-                "---------------------------------------------------------------------------" + Text.getNewLine() +
-                "          The data associated with this manuscript may be downloaded from " + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + " using the following hash: " + Text.getNewLine() + Text.getNewLine() +
-                "          " + report.getHash().toString() + Text.getNewLine() + Text.getNewLine() +
-                "          The hash may be used to prove exactly what files were published as part of this manuscript's data set, and the hash may also be used to check that the data has not changed since publication." + Text.getNewLine() +
-                "---------------------------------------------------------------------------" + Text.getNewLine() + Text.getNewLine() +
-                "We ask that you please DO NOT include any other URLs in your citation." + Text.getNewLine() + Text.getNewLine();
+        message = message + "You should cite your data in the following manner:" + "\n" + "\n"
+                + "---------------------------------------------------------------------------" + "\n"
+                + "          The data associated with this manuscript may be downloaded from " + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + " using the following hash: " + "\n" + "\n"
+                + "          " + report.getHash().toString() + "\n" + "\n"
+                + "          The hash may be used to prove exactly what files were published as part of this manuscript's data set, and the hash may also be used to check that the data has not changed since publication." + "\n"
+                + "---------------------------------------------------------------------------" + "\n" + "\n"
+                + "We ask that you please DO NOT include any other URLs in your citation." + "\n" + "\n";
         return message;
     }
 
@@ -191,32 +192,35 @@ public class AddFileToolUtil {
      * @param recipients
      * @param aft
      * @param report
-     * @param wait
      */
-    public static void emailFailureNotice(final String[] recipients, final AddFileTool aft, final AddFileToolReport report) {
-        String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Failure: " + aft.getTitle();
+    public static void emailFailureNotice(String[] recipients, AddFileTool aft, AddFileToolReport report) {
+        String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Failed Upload @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
         final StringBuffer message = new StringBuffer();
-        message.append("An upload failed at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " due to:" + Text.getNewLine() + Text.getNewLine());
-        for (PropagationExceptionWrapper e : report.getFailureExceptions()) {
-            message.append("* " + e.exception.getClass().getName() + ": " + e.exception.getMessage() + Text.getNewLine());
+        try {
+            message.append("An upload failed at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " due to:" + "\n" + "\n");
+            for (PropagationExceptionWrapper e : report.getFailureExceptions()) {
+                message.append("* " + e.exception.getClass().getName() + ": " + e.exception.getMessage() + "\n");
 
-            for (StackTraceElement ste : e.exception.getStackTrace()) {
-                message.append("    - " + ste.toString() + Text.getNewLine());
-            }
+                for (StackTraceElement ste : e.exception.getStackTrace()) {
+                    message.append("    - " + ste.toString() + "\n");
+                }
 
-            message.append(Text.getNewLine());
-        }
-        message.append("Title: " + aft.getTitle() + Text.getNewLine() + Text.getNewLine());
-        message.append("Description: " + aft.getDescription() + Text.getNewLine() + Text.getNewLine());
-        message.append(LogUtil.getTroubleshootingInformation() + Text.getNewLine() + Text.getNewLine());
-        // Build up string list of admin email addresses to which user can forward error
-        StringBuffer adminEmailListBuffer = new StringBuffer();
-        final String[] a = ConfigureTranche.getAdminEmailAccounts();
-        for (int i = 0; i < a.length; i++) {
-            adminEmailListBuffer.append(a[i]);
-            if (i < a.length - 1) {
-                adminEmailListBuffer.append(", ");
+                message.append("\n");
             }
+            message.append("Title: " + aft.getTitle() + "\n" + "\n");
+            message.append("Description: " + aft.getDescription() + "\n" + "\n");
+            message.append(LogUtil.getTroubleshootingInformation() + "\n" + "\n");
+            // Build up string list of admin email addresses to which user can forward error
+            StringBuffer adminEmailListBuffer = new StringBuffer();
+            final String[] a = ConfigureTranche.getAdminEmailAccounts();
+            for (int i = 0; i < a.length; i++) {
+                adminEmailListBuffer.append(a[i]);
+                if (i < a.length - 1) {
+                    adminEmailListBuffer.append(", ");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         EmailUtil.safeSendEmail(subject, recipients, message.toString());

@@ -30,7 +30,7 @@ import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.util.AssertionUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;

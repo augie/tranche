@@ -17,6 +17,7 @@ package org.tranche.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
 import org.tranche.hash.span.HashSpan;
@@ -24,7 +25,7 @@ import org.tranche.remote.RemoteUtil;
 import org.tranche.remote.Token;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -39,15 +40,15 @@ public class HasMetaDataItemTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        FlatFileTrancheServer.setDebug(true);
-        Server.setDebug(true);
+        DebugUtil.setDebug(FlatFileTrancheServer.class, true);
+        DebugUtil.setDebug(Server.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        FlatFileTrancheServer.setDebug(false);
-        Server.setDebug(false);
+        DebugUtil.setDebug(FlatFileTrancheServer.class, false);
+        DebugUtil.setDebug(Server.class, false);
     }
 
     public void testDoAction() throws Exception {

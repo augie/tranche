@@ -16,8 +16,8 @@
 package org.tranche.flatfile;
 
 import java.io.File;
+import org.tranche.commons.TextUtil;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>A simple cap on the directories to use and the amount of data to put in them. Size is noted in bytes.</p>
@@ -147,7 +147,7 @@ public class DataDirectoryConfiguration implements Comparable {
                 System.err.println();
                 System.err.println("///////////////////////////////////////////////////////////////////////////////");
                 System.err.println("///// DETECTED OVERFLOW FOR DDC: " + this.getDirectory());
-                System.err.println("  At: " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                System.err.println("  At: " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                 System.err.println();
                 System.err.println("  Prev actual used bytes: " + prevSize);
                 System.err.println("  Curr actual used bytes: " + this.actualSize);

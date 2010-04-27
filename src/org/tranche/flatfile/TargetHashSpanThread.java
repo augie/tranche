@@ -21,10 +21,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.tranche.Tertiary;
+import org.tranche.commons.Tertiary;
 import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.Configuration;
+import org.tranche.commons.DebuggableThread;
+import org.tranche.commons.TextUtil;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.NoMatchingServersException;
 import org.tranche.hash.BigHash;
@@ -37,20 +39,17 @@ import org.tranche.network.StatusTableRow;
 import org.tranche.server.PropagationExceptionWrapper;
 import org.tranche.server.PropagationReturnWrapper;
 import org.tranche.time.TimeUtil;
-import org.tranche.util.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
-import org.tranche.util.ThreadUtil;
+import org.tranche.commons.ThreadUtil;
 
 /**
  * <p>Thread that monitors for target hash spans and starts moving everything off this server not in the target hash spans.</p>
  * @author Bryan Smith - bryanesmith@gmail.com
  * @author James "Augie" Hill - augman85@gmail.com
  */
-public class TargetHashSpanThread extends Thread {
+public class TargetHashSpanThread extends DebuggableThread {
 
-    private static boolean debug = false;
     private boolean closed = false;
     private final FlatFileTrancheServer ffts;
     private int minRequiredCopies = ConfigKeys.DEFAULT_NUMBER_TOTAL_REPS_IN_HASH_SPAN_REQUIRED_DELETE;
@@ -117,12 +116,12 @@ public class TargetHashSpanThread extends Thread {
 
                 if (!TestUtil.isTesting()) {
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
-                    debugOut(" Found " + this.ffts.getConfiguration().getTargetHashSpans().size() + " target hash span(s) at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                    debugOut(" Found " + this.ffts.getConfiguration().getTargetHashSpans().size() + " target hash span(s) at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                     for (HashSpan targetHashSpan : this.ffts.getConfiguration().getTargetHashSpans()) {
                         debugOut("    Start: " + targetHashSpan.getFirst());
                         debugOut("    End:   " + targetHashSpan.getLast());
                     }
-                    debugOut(" Found " + this.ffts.getConfiguration().getHashSpans().size() + " hash span(s) at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                    debugOut(" Found " + this.ffts.getConfiguration().getHashSpans().size() + " hash span(s) at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                     for (HashSpan hashSpan : this.ffts.getConfiguration().getHashSpans()) {
                         debugOut("    Start: " + hashSpan.getFirst());
                         debugOut("    End:   " + hashSpan.getLast());
@@ -136,7 +135,7 @@ public class TargetHashSpanThread extends Thread {
                 } catch (Exception e) { /* nope */ }
 
                 try {
-                    ffts.getConfiguration(false).setValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_MESSAGE, "Started (" + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
+                    ffts.getConfiguration(false).setValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_MESSAGE, "Started (" + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
                 } catch (Exception e) { /* nope */ }
 
                 final Set<HashSpan> startingTargetHashSpans = new HashSet();
@@ -161,7 +160,7 @@ public class TargetHashSpanThread extends Thread {
                         break DATA;
                     } catch (NoMatchingServersException ne) {
                         // Cannot find an appropriate hash span for chunk on network. Continue and hope that changes later
-                        debugOut("Could not find a hash span on the network at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " for data chunk: " + ne.getMessage());
+                        debugOut("Could not find a hash span on the network at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " for data chunk: " + ne.getMessage());
                         ne.printStackTrace(System.err);
                         continue RUN;
                     } catch (Exception e) {
@@ -186,7 +185,7 @@ public class TargetHashSpanThread extends Thread {
 
                 if (!TestUtil.isTesting()) {
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
-                    debugOut(" STEP 1 of 3: Finished injecting data (total: " + injected + ") at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                    debugOut(" STEP 1 of 3: Finished injecting data (total: " + injected + ") at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
                 }
 
@@ -205,7 +204,7 @@ public class TargetHashSpanThread extends Thread {
                         break META;
                     } catch (NoMatchingServersException ne) {
                         // Cannot find an appropriate hash span for chunk on network. Continue and hope that changes later
-                        debugOut("Could not find a hash span on the network at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " for meta data chunk: " + ne.getMessage());
+                        debugOut("Could not find a hash span on the network at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + " for meta data chunk: " + ne.getMessage());
                         ne.printStackTrace(System.err);
                         continue RUN;
                     } catch (Exception e) {
@@ -230,7 +229,7 @@ public class TargetHashSpanThread extends Thread {
 
                 if (!TestUtil.isTesting()) {
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
-                    debugOut(" STEP 2 of 3: Finished injecting meta data (total: " + injected + ") at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                    debugOut(" STEP 2 of 3: Finished injecting meta data (total: " + injected + ") at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
                 }
 
@@ -252,7 +251,7 @@ public class TargetHashSpanThread extends Thread {
 
                 if (!TestUtil.isTesting()) {
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
-                    debugOut(" STEP 3 of 3: Updated configuration at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()));
+                    debugOut(" STEP 3 of 3: Updated configuration at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()));
                     debugOut("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
                 }
             } catch (Exception e) {
@@ -264,7 +263,7 @@ public class TargetHashSpanThread extends Thread {
                 try {
                     ffts.getConfiguration(false).removeKeyValuePair(ConfigKeys.TARGET_HASH_SPAN_THREAD_MESSAGE);
                 } catch (Exception e) { /* nope */ }
-                ThreadUtil.safeSleep(getTimeToSleep());
+                ThreadUtil.sleep(getTimeToSleep());
             }
         }
     }
@@ -329,7 +328,7 @@ public class TargetHashSpanThread extends Thread {
         while (hashes != null && hashes.length > 0) {
 
             try {
-                ffts.getConfiguration(false).setValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_MESSAGE, "Injecting "+offset.toString()+" through "+offset.add(batchSize).toString()+" of "+(isMetaData?"meta data":"data")+" chunks (" + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
+                ffts.getConfiguration(false).setValue(ConfigKeys.TARGET_HASH_SPAN_THREAD_MESSAGE, "Injecting " + offset.toString() + " through " + offset.add(batchSize).toString() + " of " + (isMetaData ? "meta data" : "data") + " chunks (" + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ")");
             } catch (Exception e) { /* nope */ }
 
             if (!HashSpanCollection.areEqual(startingTargetHashSpans, ffts.getConfiguration(false).getTargetHashSpans())) {
@@ -456,7 +455,7 @@ public class TargetHashSpanThread extends Thread {
                     // Make sure there are enough copies or fail.
                     if (nowHasCount < this.minRequiredCopies) {
 
-                        debugOut("Found total of " + unacceptableExceptions.size() + " exception while trying to inject chunk to network so can delete to reach target hash span at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". (Note: Failed injection. Insufficient copies on network. Requires: " + this.minRequiredCopies + ", instead: " + nowHasCount + " for: " + hash + ")");
+                        debugOut("Found total of " + unacceptableExceptions.size() + " exception while trying to inject chunk to network so can delete to reach target hash span at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". (Note: Failed injection. Insufficient copies on network. Requires: " + this.minRequiredCopies + ", instead: " + nowHasCount + " for: " + hash + ")");
                         for (PropagationExceptionWrapper pew : unacceptableExceptions) {
                             debugOut("    * Found unacceptable " + pew.exception.getClass().getSimpleName() + ": " + pew.exception.getMessage());
                         }
@@ -494,7 +493,7 @@ public class TargetHashSpanThread extends Thread {
 
                     // Make sure there are enough copies or fail.
                     if (nowHasCount < this.minRequiredCopies) {
-                        debugOut("Found total of " + unacceptableExceptions.size() + " exception while trying to inject chunk to network so can delete to reach target hash span at " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". (Note: Failed injection. Insufficient copies on network. Requires: " + this.minRequiredCopies + ", instead: " + nowHasCount + " for: " + hash + ")");
+                        debugOut("Found total of " + unacceptableExceptions.size() + " exception while trying to inject chunk to network so can delete to reach target hash span at " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ". (Note: Failed injection. Insufficient copies on network. Requires: " + this.minRequiredCopies + ", instead: " + nowHasCount + " for: " + hash + ")");
                         for (PropagationExceptionWrapper pew : unacceptableExceptions) {
                             debugOut("    * Found unacceptable " + pew.exception.getClass().getSimpleName() + ": " + pew.exception.getMessage());
                         }
@@ -546,41 +545,5 @@ public class TargetHashSpanThread extends Thread {
      */
     public void setTimeToSleep(int timeToSleep) {
         this.timeToSleep = timeToSleep;
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static final void setDebug(boolean debug) {
-        TargetHashSpanThread.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static final boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static final void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(TargetHashSpanThread.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param e
-     */
-    private static final void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

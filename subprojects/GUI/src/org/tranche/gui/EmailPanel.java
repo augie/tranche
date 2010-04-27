@@ -23,7 +23,6 @@ import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import org.tranche.util.EmailUtil;
-import org.tranche.util.Text;
 
 /**
  *
@@ -31,7 +30,7 @@ import org.tranche.util.Text;
  */
 public class EmailPanel extends JPanel implements ActionListener {
 
-    private DisplayTextArea emailSubjectArea = new DisplayTextArea(),  emailTextArea = new DisplayTextArea();
+    private DisplayTextArea emailSubjectArea = new DisplayTextArea(), emailTextArea = new DisplayTextArea();
     private GenericTextField addressField = new GenericTextField();
     private JFrame disposeOnSend;
 
@@ -112,7 +111,7 @@ public class EmailPanel extends JPanel implements ActionListener {
                     }
                     GenericOptionPane.showMessageDialog(EmailPanel.this.getParent(), "An email was sent to <" + address + ">.");
                 } catch (Exception ex) {
-                    GenericOptionPane.showMessageDialog(EmailPanel.this.getParent(), "ERROR: Could not send message to <" + address + ">. Please try again. If the this fails again, you could save your message instead." + Text.getNewLine() + ex.getMessage());
+                    GenericOptionPane.showMessageDialog(EmailPanel.this.getParent(), "ERROR: Could not send message to <" + address + ">. Please try again. If the this fails again, you could save your message instead." + "\n" + ex.getMessage());
                     ex.printStackTrace();
                 }
             }

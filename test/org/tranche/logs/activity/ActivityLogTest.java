@@ -26,12 +26,12 @@ import org.tranche.network.ConnectionUtil;
 import org.tranche.time.TimeUtil;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
-import org.tranche.util.RandomUtil;
+import org.tranche.commons.RandomUtil;
+import org.tranche.commons.TextUtil;
 import org.tranche.util.TempFileUtil;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
-import org.tranche.util.Text;
 import org.tranche.util.TrancheTestCase;
 
 /**
@@ -40,7 +40,7 @@ import org.tranche.util.TrancheTestCase;
  */
 public class ActivityLogTest extends TrancheTestCase {
 
-    final static int TEST_REPLICATIONS = 1;
+    static final int TEST_REPLICATIONS = 1;
 
     @Override()
     protected void setUp() throws Exception {
@@ -76,7 +76,7 @@ public class ActivityLogTest extends TrancheTestCase {
             tmpDir = TempFileUtil.createTemporaryDirectory("testReadAndWrite");
             log = new ActivityLog(tmpDir);
 
-//            Text.printRecursiveDirectoryStructure(tmpDir);
+//            TestUtil.printRecursiveDirectoryStructure(tmpDir);
 
             // Must be 25 or greater or test will fail
             final int toAdd = 30;
@@ -231,8 +231,8 @@ public class ActivityLogTest extends TrancheTestCase {
             assertEquals("Expecting certain number of entries.", setDataCount, log.getActivityCount(Long.MIN_VALUE, Long.MAX_VALUE, Activity.SET_DATA));
             assertEquals("Expecting certain number of entries.", setMetaDataCount, log.getActivityCount(Long.MIN_VALUE, Long.MAX_VALUE, Activity.SET_META_DATA));
 
-            System.out.println("    Avg. time writing: " + Text.getPrettyEllapsedTimeString(log.getAvgWriteTimeInMillis()));
-            System.out.println("    Avg. time reading: " + Text.getPrettyEllapsedTimeString(log.getAvgReadTimeInMillis()));
+            System.out.println("    Avg. time writing: " + TextUtil.formatTimeLength(log.getAvgWriteTimeInMillis()));
+            System.out.println("    Avg. time reading: " + TextUtil.formatTimeLength(log.getAvgReadTimeInMillis()));
         } finally {
             try {
                 log.close();

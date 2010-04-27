@@ -23,6 +23,7 @@ import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 import org.tranche.ConfigureTranche;
+import org.tranche.commons.DebugUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 
 /**
@@ -32,7 +33,6 @@ import org.tranche.flatfile.FlatFileTrancheServer;
  */
 public class PreferencesUtil {
 
-    private static boolean debug = false;
     public static final File PREFERENCES_FILE = new File(FlatFileTrancheServer.getDefaultHomeDir() + File.separator + "preferences");
     public static final String PREF_DOWNLOAD_FILE = "download.file";
     public static final String PREF_USER_FILE_LOCATION = "user.file";
@@ -68,7 +68,7 @@ public class PreferencesUtil {
                     IOUtil.safeClose(in);
                 }
             } catch (Exception e) {
-                debugErr(e);
+                DebugUtil.debugErr(PreferencesUtil.class, e);
             }
         }
     };
@@ -102,7 +102,7 @@ public class PreferencesUtil {
      * @throws java.lang.Exception
      */
     public synchronized static void save() {
-        debugOut("Saving.");
+        DebugUtil.debugOut(PreferencesUtil.class, "Saving.");
         try {
             // Delete file if exists
             PREFERENCES_FILE.delete();
@@ -128,7 +128,7 @@ public class PreferencesUtil {
                 IOUtil.safeClose(out);
             }
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(PreferencesUtil.class, e);
         }
     }
 
@@ -181,7 +181,7 @@ public class PreferencesUtil {
             value = preferences.get(name);
         }
         if (value == null || value.equals("")) {
-            value = ConfigureTranche.get(name);
+            value = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, name);
         }
         return value;
 
@@ -196,7 +196,7 @@ public class PreferencesUtil {
         try {
             return Integer.valueOf(get(name));
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(PreferencesUtil.class, e);
         }
         return 0;
     }
@@ -210,7 +210,7 @@ public class PreferencesUtil {
         try {
             return Boolean.valueOf(get(name));
         } catch (Exception e) {
-            debugErr(e);
+            DebugUtil.debugErr(PreferencesUtil.class, e);
         }
         return false;
     }
@@ -247,41 +247,5 @@ public class PreferencesUtil {
             preferences.clear();
         }
         save();
-    }
-
-    /**
-     * <p>Sets the flag for whether the output and error information should be written.</p>
-     * @param debug The flag for whether the output and error information should be written.</p>
-     */
-    public static void setDebug(boolean debug) {
-        PreferencesUtil.debug = debug;
-    }
-
-    /**
-     * <p>Returns whether the output and error information is being written.</p>
-     * @return Whether the output and error information is being written.
-     */
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugOut(String line) {
-        if (debug) {
-            DebugUtil.printOut(PreferencesUtil.class.getName() + "> " + line);
-        }
-    }
-
-    /**
-     *
-     * @param line
-     */
-    private static void debugErr(Exception e) {
-        if (debug) {
-            DebugUtil.reportException(e);
-        }
     }
 }

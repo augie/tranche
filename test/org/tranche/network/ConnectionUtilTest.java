@@ -15,6 +15,7 @@
  */
 package org.tranche.network;
 
+import org.tranche.commons.DebugUtil;
 import org.tranche.exceptions.TodoException;
 import org.tranche.util.TestUtil;
 import org.tranche.util.TrancheTestCase;
@@ -29,13 +30,13 @@ public class ConnectionUtilTest extends TrancheTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        ConnectionUtil.setDebug(true);
+        DebugUtil.setDebug(ConnectionUtil.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        ConnectionUtil.setDebug(false);
+        DebugUtil.setDebug(ConnectionUtil.class, false);
     }
 
     public void testConnectHost() throws Exception {

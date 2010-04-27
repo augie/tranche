@@ -15,6 +15,8 @@
  */
 package org.tranche.network;
 
+import org.tranche.commons.DebugUtil;
+
 /**
  *
  * @author James "Augie" Hill - augman85@gmail.com
@@ -24,12 +26,12 @@ public class ClientStatusUpdateProcessTest extends NetworkPackageTestCase {
     @Override()
     protected void setUp() throws Exception {
         super.setUp();
-        ClientStatusUpdateProcess.setDebug(true);
+        DebugUtil.setDebug(ClientStatusUpdateProcess.class, true);
     }
 
     @Override()
     protected void tearDown() throws Exception {
         super.tearDown();
-        ClientStatusUpdateProcess.setDebug(false);
+        DebugUtil.setDebug(ClientStatusUpdateProcess.class, false);
     }
 }

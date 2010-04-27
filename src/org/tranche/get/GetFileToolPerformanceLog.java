@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.tranche.ConfigureTranche;
 import org.tranche.TrancheServer;
+import org.tranche.commons.TextUtil;
 import org.tranche.hash.BigHash;
 import org.tranche.logs.ConnectionDiagnosticsLog;
 import org.tranche.network.ConnectionUtil;
@@ -36,7 +37,6 @@ import org.tranche.util.CompressionUtil;
 import org.tranche.util.EmailUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.util.TempFileUtil;
-import org.tranche.util.Text;
 
 /**
  * <p>Used to help troubleshoot performance issues for client.</p>
@@ -45,7 +45,7 @@ import org.tranche.util.Text;
 public class GetFileToolPerformanceLog implements GetFileToolListener {
 
     private final Map<String, RemoteTrancheServerPerformanceListener> rtsListenerMap;
-    private final static Object classLock = new Object();
+    private static final Object classLock = new Object();
     private static int classInstances = 0;
     private final int objId;
     private final ConnectionDiagnosticsLog rtsDiagnosticsLog,  gftDiagnosticsLog;
@@ -83,7 +83,7 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
      */
     public void message(String msg) {
         synchronized (this.out) {
-            this.out.println(Text.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ": " + msg);
+            this.out.println(TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp()) + ": " + msg);
         }
     }
 
@@ -419,11 +419,11 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
     private void sendEmailAndDeleteFile() {
         File zippedFile = null;
         try {
-            String subject = "[" + ConfigureTranche.get(ConfigureTranche.PROP_NAME) + "] Upload Performance Log @ " + Text.getFormattedDate(TimeUtil.getTrancheTimestamp());
+            String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Upload Performance Log @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
             String message = "See attached file.";
 
             zippedFile = CompressionUtil.zipCompress(this.getFile());
-            EmailUtil.sendEmail(subject, ConfigureTranche.getAdminEmailAccounts(), message, zippedFile);
+            EmailUtil.sendEmailHttp(subject, ConfigureTranche.getAdminEmailAccounts(), message, zippedFile);
 
             IOUtil.safeDelete(zippedFile);
             IOUtil.safeDelete(this.getFile());

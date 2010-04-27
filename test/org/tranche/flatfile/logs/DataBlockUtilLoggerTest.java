@@ -189,7 +189,7 @@ public class DataBlockUtilLoggerTest extends TrancheTestCase {
 //
 //            System.out.println(dlog);
 //
-//            System.out.println("*** DUMPING CONTENTS OF DISK-BACKED DISKUTIL LOG "+Text.getFormattedBytes(logFile.length())+"***");
+//            System.out.println("*** DUMPING CONTENTS OF DISK-BACKED DISKUTIL LOG "+TextUtil.getFormattedBytes(logFile.length())+"***");
 //            reader = new BufferedReader(new FileReader(logFile));
 //
 //            String line;
