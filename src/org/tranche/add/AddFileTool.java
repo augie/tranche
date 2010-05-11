@@ -2521,7 +2521,7 @@ public class AddFileTool extends Debuggable {
          * 
          * @throws java.lang.OutOfMemoryError
          */
-        private final void queueBufferContents() throws OutOfMemoryError {
+        private synchronized final void queueBufferContents() throws OutOfMemoryError {
             if (bufferOffset > 0) {
                 // create a data chunk
                 DataChunk chunk = new DataChunk(metaChunk, new BigHash(buffer, bufferOffset));
@@ -2560,7 +2560,7 @@ public class AddFileTool extends Debuggable {
          * @throws java.io.IOException
          */
         @Override()
-        public final void write(byte[] b, int off, int len) throws IOException {
+        public synchronized final void write(byte[] b, int off, int len) throws IOException {
             for (int i = 0; i < len; i++) {
                 buffer[bufferOffset] = b[i];
                 bufferOffset++;

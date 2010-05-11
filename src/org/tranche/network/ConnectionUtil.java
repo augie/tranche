@@ -376,16 +376,15 @@ public class ConnectionUtil {
                 return;
             }
             DebugUtil.debugErr(ConnectionUtil.class, e);
-            // connection exceptions mean the server is absolutely offlikne
+            // connection exceptions mean the server is absolutely offline
             if (e instanceof ConnectException || e instanceof NoRouteToHostException) {
                 flagOffline(host, e.getClass().getSimpleName());
             } // timeout exceptions mean that the server is no longer responding for some reason (transmission error, offline, etc)
             else if (e instanceof TimeoutException || e instanceof UnresponsiveServerException) {
                 if (isConnected(host)) {
-                    // three timeouts in a row = offline
-                    int limit = 3;
-                    if (getConnection(host).getExceptionCount() >= limit) {
-                        for (int i = getConnection(host).getExceptionCount() - 3; i < getConnection(host).getExceptionCount(); i++) {
+                    int limit = ConfigureTranche.getInt(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_CONNECTION_TIMEOUTS);
+                    if (limit > 0 && getConnection(host).getExceptionCount() >= limit) {
+                        for (int i = getConnection(host).getExceptionCount() - limit; i < getConnection(host).getExceptionCount(); i++) {
                             Exception x = getConnection(host).getException(i);
                             if (!(x instanceof TimeoutException || x instanceof UnresponsiveServerException)) {
                                 break;

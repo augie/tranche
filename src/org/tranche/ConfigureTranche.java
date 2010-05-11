@@ -58,6 +58,10 @@ public class ConfigureTranche extends ConfigurationUtil {
      */
     public static final String PROP_KEEP_ALIVE_INTERVAL = "connection.keep.alive.interval";
     /**
+     * <p>The number of timeout exceptions to allow in a row before flagging a server offline.</p>
+     */
+    public static final String PROP_CONNECTION_TIMEOUTS = "connection.timeout.exceptions";
+    /**
      * <p>The email address for users to contact.</p>
      */
     public static final String PROP_CONTACT_EMAIL = "contact.email";
