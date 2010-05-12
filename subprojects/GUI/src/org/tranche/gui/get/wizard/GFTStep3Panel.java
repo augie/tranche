@@ -105,7 +105,15 @@ public class GFTStep3Panel extends GenericWizardPanel {
                         @Override
                         public void run() {
                             fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                            File previousDir = new File(PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE));
+
+                            String previousDirStr = PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE);
+
+                            File previousDir = null;
+
+                            if (previousDirStr != null) {
+                                previousDir = new File(PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE));
+                            }
+
                             if (previousDir != null && previousDir.exists()) {
                                 fc.setCurrentDirectory(previousDir);
                             }
