@@ -108,7 +108,7 @@ public class AddFileTool extends Debuggable {
     public static boolean DEFAULT_SHOW_SUMMARY = false;
     public static boolean DEFAULT_SHOW_META_DATA_IF_ENCRYPTED = false;
     public static boolean DEFAULT_EMAIL_ON_FAILURE = false;
-    public static boolean DEFAULT_USE_PERFORMANCE_LOG = false;
+    public static boolean DEFAULT_USE_PERFORMANCE_LOG = true;
     /**
      * Startup runtime parameters
      */

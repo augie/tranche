@@ -81,7 +81,7 @@ public class GetFileTool extends Debuggable {
      */
     private static String TEMP_FILE_DENOTATION = ".tranche-temp.";
     public static boolean DEFAULT_BATCH = true;
-    public static boolean DEFAULT_VALIDATE = true;
+    public static boolean DEFAULT_VALIDATE = false;
     public static String DEFAULT_REG_EX = ".";
     public static boolean DEFAULT_USE_UNSPECIFIED_SERVERS = true;
     public static Long DEFAULT_UPLOAD_TIMESTAMP = null;
@@ -91,7 +91,7 @@ public class GetFileTool extends Debuggable {
     public static boolean DEFAULT_SHOW_SUMMARY = false;
     public static boolean DEFAULT_CONTINUE_ON_FAILURE = true;
     public static int DEFAULT_DATA_QUEUE_SIZE = 100;
-    public static boolean DEFAULT_USE_PERFORMANCE_LOG = false;
+    public static boolean DEFAULT_USE_PERFORMANCE_LOG = true;
     // we don't want to use up too much memory with big meta data - so need to keep track of total size of the data
     //  this meta data references
     // limit of size on disk == 13 MB of meta data in memory, or roughly 175 GB of data references
