@@ -80,6 +80,7 @@ public class GetFileTool extends Debuggable {
      * Default parameters
      */
     private static String TEMP_FILE_DENOTATION = ".tranche-temp.";
+    public static final boolean DEFAULT_KEEP_LAST_MODIFIED = true;
     public static boolean DEFAULT_BATCH = true;
     public static boolean DEFAULT_VALIDATE = false;
     public static String DEFAULT_REG_EX = ".";
@@ -108,6 +109,7 @@ public class GetFileTool extends Debuggable {
     /**
      * User parameters
      */
+    private boolean keepLastModified = DEFAULT_KEEP_LAST_MODIFIED;
     private boolean batch = DEFAULT_BATCH, validate = DEFAULT_VALIDATE, continueOnFailure = DEFAULT_CONTINUE_ON_FAILURE, useUnspecifiedServers = DEFAULT_USE_UNSPECIFIED_SERVERS, sendPerformanceInfo = DEFAULT_USE_PERFORMANCE_LOG;
     private BigHash hash;
     private File saveTo;
@@ -1449,7 +1451,9 @@ public class GetFileTool extends Debuggable {
         // save the decoded bytes to the expected file
         IOUtil.setBytes(bytes, saveAs);
         // set last modified timestamp
-        saveAs.setLastModified(metaData.getTimestampFileModified());
+        if (isKeepLastModified()) {
+            saveAs.setLastModified(metaData.getTimestampFileModified());
+        }
         // done
         fireFinishedFile(fileHash, part);
     }
@@ -1525,7 +1529,9 @@ public class GetFileTool extends Debuggable {
         // finally, rename the decoded file to the expected one
         IOUtil.renameFallbackCopy(tempFile, saveAs);
         // set last modified timestamp
-        saveAs.setLastModified(metaData.getTimestampFileModified());
+        if (isKeepLastModified()) {
+            saveAs.setLastModified(metaData.getTimestampFileModified());
+        }
         // done
         fireFinishedFile(fileHash, part);
     }
@@ -2135,6 +2141,7 @@ public class GetFileTool extends Debuggable {
         System.out.println("    -b, --batch                 Value: true/false.     Enables faster uploads by simulateously downloading small chunks of data together. Default value is " + DEFAULT_BATCH + ".");
         System.out.println("    -c, --continue              Value: true/false.     Upon failure, continue to download as much as possible. Default value is " + DEFAULT_CONTINUE_ON_FAILURE + ".");
         System.out.println("    -F, --performance           Value: true/false.     Monitors performance of tool and connections and emails to development team. Default value is " + DEFAULT_USE_PERFORMANCE_LOG + ".");
+        System.out.println("    -l, --lastmodified          Value: true/false.     If true, preserves original last modified timestamp for downloaded files. Default value is "+DEFAULT_KEEP_LAST_MODIFIED+".");
         System.out.println("    -m, --tempdir               Value: any string.     Path to use for temporary directory instead of default. Default is based on different heuristics for OS and filesystem permissions. Default value is " + TempFileUtil.getTemporaryDirectory() + ".");
         System.out.println("    -t, --threads               Value: any number.     The maximum number of threads to use. Increasing may require more memory, and may result in increased CPU usage, increased bandwidth, increased disk accesses and faster downloads. Default value is " + DEFAULT_THREADS + ".");
         System.out.println();
@@ -2217,6 +2224,8 @@ public class GetFileTool extends Debuggable {
                     String arg = args[i];
                     if (arg.equals("-d") || arg.equals("--debug")) {
                         i--;
+                    } else if (arg.equals("-l") || arg.equals("--lastmodified")) {
+                        gft.setKeepLastModified(Boolean.parseBoolean(args[i+1]));
                     } else if (arg.equals("-v") || arg.equals("--verbose")) {
                         gft.addListener(new CommandLineGetFileToolListener(gft, System.out));
                         i--;
@@ -2389,6 +2398,22 @@ public class GetFileTool extends Debuggable {
 
     public GetFileToolFailedChunksListener getFailedChunksListener() {
         return failedChunksListener;
+    }
+
+    /**
+     * <p>If true, uses original last-modified timestamp for original files. Otherwise, the last-modified will be assigned by the OS/filesystem.</p>
+     * @return the keepLastModified
+     */
+    public boolean isKeepLastModified() {
+        return keepLastModified;
+    }
+
+    /**
+     * <p>If true, uses original last-modified timestamp for original files. Otherwise, the last-modified will be assigned by the OS/filesystem.</p>
+     * @param keepLastModified the keepLastModified to set
+     */
+    public void setKeepLastModified(boolean keepLastModified) {
+        this.keepLastModified = keepLastModified;
     }
 
     private class FileDecoding {
