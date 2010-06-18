@@ -57,7 +57,6 @@ public class TempFileUtil {
     // the file that the temp directory is in
     private static File tempDirectory;
 
-
     static {
         // load the temp directory attribute
         try {
@@ -125,9 +124,8 @@ public class TempFileUtil {
             e.printStackTrace();
             throw e;
         } finally {
-//            System.out.println("Temporary directory: " + tempDirectory);
+            System.out.println("Temporary directory: " + tempDirectory);
         }
-
     }
 
     /**
@@ -145,45 +143,35 @@ public class TempFileUtil {
             }
 
             // try to get a lock
-            File tempDir = new File(lockToTry, "lock.file");
+            File tempDirLock = new File(lockToTry, "lock.file");
             // make as a file...not a directory
-            if (!tempDir.exists()) {
-                if (!tempDir.createNewFile()) {
+            if (!tempDirLock.exists()) {
+                if (!tempDirLock.createNewFile()) {
                     return false;
                 }
             }
-            FileChannel fc = new RandomAccessFile(tempDir, "rw").getChannel();
-            FileLock lock = fc.tryLock();
-            if (lock == null) {
-                fc.close();
+
+            // Try (and keep lock), or fail
+            if (!canLockFile(tempDirLock, false)) {
                 return false;
             }
+
             // otherwise, set the references an return true
             tempDirectory = lockToTry;
 
             // clean up the old temp directory
-            recursiveDeleteSkipLockFiles(tempDir);
+            recursiveDeleteSkipLockFiles(tempDirLock);
 
             // before returning, purge any directories that already exist
             for (int i = 1; i < maxTempDirAttempts; i++) {
                 File checkExistingDir = new File(lockToTry.getAbsolutePath() + "-" + i);
                 if (checkExistingDir.exists()) {
                     // try to lock it
-                    File purgeDir = new File(checkExistingDir, "lock.file");
-                    FileChannel purgeChannel = new RandomAccessFile(purgeDir, "rw").getChannel();
-                    try {
-                        // try to get a lock on the file
-                        FileLock purgeLock = purgeChannel.tryLock();
-                        // if no lock, skip. Don't purge a directory in use
-                        if (purgeLock == null) {
-                            continue;
-                        }
-                        // release the lock
-                        purgeLock.release();
-                        // clean up the old temp directory
-                        recursiveDeleteSkipLockFiles(purgeDir);
-                    } finally {
-                        purgeChannel.close();
+                    File purgeDirLock = new File(checkExistingDir, "lock.file");
+
+                    // Try (but don't keep) lock
+                    if (canLockFile(purgeDirLock, true)) {
+                        recursiveDeleteSkipLockFiles(checkExistingDir);
                     }
                 }
             }
@@ -193,6 +181,66 @@ public class TempFileUtil {
         catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * <p>Handles logic of testing a file lock on file and, if locking not implemented on file system, test an alternative lock.</p>
+     * @param lockFile
+     * @return
+     * @throws Exception
+     */
+    private static boolean canLockFile(File lockFile, boolean isReleaseLockAfterTest) throws Exception {
+        FileChannel fc = new RandomAccessFile(lockFile, "rw").getChannel();
+        FileLock lock = null;
+        try {
+            lock = fc.tryLock();
+
+            // --------------------------------------------------------------------------------------
+            // Note: everything that is NOT tryLock should go in the safe try-catch block below.
+            //       tryLock is the only thing allowed to throw an IOException, since this behavior
+            //       indicated that file system does not permit locks, and the work-around must be
+            //       used.
+            // --------------------------------------------------------------------------------------
+            try {
+                if (lock == null) {
+
+                    fc.close();
+
+                    // Something else has lock, so can't secure
+                    return false;
+                }
+
+                if (isReleaseLockAfterTest) {
+                    lock.release();
+                }
+            } catch (Exception nope) { /* safe close */ }
+
+        } catch (IOException ioe) {
+            // ----------------------------------------------------------------------------------------------
+            // The only IOException candidate in above try block must be tryLock!
+            //
+            // Happens on file system that does not support file locking. (Distributed? E.g., work/ volume on Queen Bee)
+            // Instead, see whether work around lock, lock-workaround.file, exists
+            // ----------------------------------------------------------------------------------------------
+            File workAround = new File(lockFile.getParentFile(),"lock-workaround.file");
+
+            if (workAround.exists()) {
+                // Work around used by other process, so can't secure
+                return false;
+            }
+            if (!workAround.createNewFile()) {
+                // Can't write to directory/file, so bail
+                return false;
+            }
+
+            System.out.println("WARNING: Could not open file lock, so using a work-around file \"lock\" at: " + workAround.getAbsolutePath());
+
+            // This is normally bad b/c not guarenteed to execute and consumes memory.
+            // However, since this is a single, empty file for special environments that can be
+            // manually cleaned up, it is the best solution.
+            workAround.deleteOnExit();
+        }
+        return true;
     }
 
     /**
@@ -206,7 +254,7 @@ public class TempFileUtil {
         while (filesToDelete.size() > 0) {
             File fileToDelete = filesToDelete.remove(0);
             // skip the lock file
-            if (fileToDelete.getName().equals("lock.file")) {
+            if (fileToDelete.getName().equals("lock.file") || fileToDelete.getName().equals("lock-workaround.file")) {
                 continue;
             }
             // purge all files in directories

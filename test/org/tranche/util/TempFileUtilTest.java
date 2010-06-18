@@ -83,15 +83,15 @@ public class TempFileUtilTest extends TrancheTestCase {
         File cacheDir1 = TempFileUtil.createTemporaryDirectory("cache");
         File cacheDir2 = TempFileUtil.createTemporaryDirectory("cache");
 
-        assertEquals("Expecting certain directory name, instead found: " + tmpDir0.getName(), "dir0", tmpDir0.getName());
+        assertEquals("Expecting certain directory name, instead found: " + tmpDir0.getName(), "dir", tmpDir0.getName());
         assertEquals("Expecting certain directory name, instead found: " + tmpDir1.getName(), "dir1", tmpDir1.getName());
         assertEquals("Expecting certain directory name, instead found: " + tmpDir2.getName(), "dir2", tmpDir2.getName());
         assertEquals("Expecting certain directory name, instead found: " + tmpDir3.getName(), "dir3", tmpDir3.getName());
 
-        assertEquals("Expecting certain directory name", "build0", buildDir0.getName());
+        assertEquals("Expecting certain directory name", "build", buildDir0.getName());
         assertEquals("Expecting certain directory name", "build1", buildDir1.getName());
 
-        assertEquals("Expecting certain directory name", "cache0", cacheDir0.getName());
+        assertEquals("Expecting certain directory name", "cache", cacheDir0.getName());
         assertEquals("Expecting certain directory name", "cache1", cacheDir1.getName());
         assertEquals("Expecting certain directory name", "cache2", cacheDir2.getName());
     }
