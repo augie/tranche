@@ -158,9 +158,9 @@ public class CommandLineGetFileToolListener implements GetFileToolListener {
      */
     public void failedFile(GetFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
         if (event.getFileName() == null) {
-            out.println("Failed to download " + event.getFileHash());
+            out.println("Failed to download file: " + event.getFileHash());
         } else {
-            out.println("Failed to download " + event.getFileName() + ", hash: " + event.getFileHash());
+            out.println("Failed to download file: " + event.getFileName() + ", hash: " + event.getFileHash());
         }
         for (PropagationExceptionWrapper e : exceptions) {
             out.println(e.exception.getClass().getName() + ": " + e.exception.getMessage());
