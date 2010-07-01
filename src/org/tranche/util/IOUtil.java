@@ -48,6 +48,8 @@ import org.tranche.security.Signature;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
+import org.tranche.hash.DiskBackedBigHashList;
+import org.tranche.hash.DiskBackedBigHashSet;
 import org.tranche.project.ProjectFile;
 import org.tranche.remote.RemoteTrancheServer;
 import org.tranche.server.PropagationReturnWrapper;
@@ -282,6 +284,30 @@ public class IOUtil {
                 in.close();
             } catch (Exception e) {
             }
+        }
+    }
+
+    /**
+     * <p>Helper method to safely close disk-backed colletion.</p>
+     * @param list
+     */
+    public static final void safeClose(DiskBackedBigHashSet set) {
+        if (set != null) {
+            try {
+                set.close();
+            } catch (Exception nope) {}
+        }
+    }
+
+    /**
+     * <p>Helper method to safely close disk-backed colletion.</p>
+     * @param list
+     */
+    public static final void safeClose(DiskBackedBigHashList list) {
+        if (list != null) {
+            try {
+                list.close();
+            } catch (Exception nope) {}
         }
     }
 
