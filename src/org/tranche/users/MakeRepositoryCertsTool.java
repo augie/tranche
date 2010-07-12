@@ -18,6 +18,7 @@ package org.tranche.users;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import org.tranche.ConfigureTranche;
 import org.tranche.commons.DebugUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.security.SecurityUtil;
@@ -26,6 +27,7 @@ import org.tranche.util.TestUtil;
 /**
  * <p>Creates a new default set of certificates that are to be used for a Tranche repository.</p>
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - bryanesmith@gmail.com
  */
 public class MakeRepositoryCertsTool {
 
@@ -86,8 +88,10 @@ public class MakeRepositoryCertsTool {
                 }
             }
 
+            ConfigureTranche.load(args);
+
             // flags
-            for (int i = 0; i < args.length; i++) {
+            for (int i = 1; i < args.length; i++) {
                 if (args[i].equals("-d") || args[i].equals("--debug")) {
                     DebugUtil.setDebug(MakeRepositoryCertsTool.class, true);
                     DebugUtil.setDebug(MakeUserZipFileTool.class, true);
@@ -604,6 +608,8 @@ public class MakeRepositoryCertsTool {
         } catch (Exception e) {
             DebugUtil.debugErr(MakeRepositoryCertsTool.class, e);
             if (!TestUtil.isTesting()) {
+                System.err.println(e.getClass().getSimpleName()+": "+e.getMessage());
+                e.printStackTrace(System.err);
                 System.exit(1);
             } else {
                 return;
