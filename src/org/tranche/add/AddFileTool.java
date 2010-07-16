@@ -687,7 +687,10 @@ public class AddFileTool extends Debuggable {
      * <p>Stops the upload.</p>
      */
     public void stop() {
-        this.stopped = true;
+        stopped = true;
+        synchronized (AddFileTool.this) {
+            notifyAll();
+        }
     }
 
     /**
@@ -1239,7 +1242,7 @@ public class AddFileTool extends Debuggable {
                 report.setHash(null);
             }
             // register our upload only if there were no failures
-            if (!dataOnly && !TestUtil.isTesting()) {
+            if (!dataOnly && !stopped && !TestUtil.isTesting()) {
                 if (!report.isFailed()) {
                     AddFileToolUtil.registerUpload(this, report);
                     if (emailConfirmationSet != null && !emailConfirmationSet.isEmpty()) {
@@ -1437,11 +1440,11 @@ public class AddFileTool extends Debuggable {
      * @param event An event.
      */
     private void fire(AddFileToolEvent event) {
-        // break point
+        // break/pause point
+        waitHereOnPause();
         if (stopped) {
             return;
         }
-        waitHereOnPause();
         for (AddFileToolListener l : getListeners()) {
             try {
                 if (event.getType() == AddFileToolEvent.TYPE_METADATA) {
@@ -1489,11 +1492,11 @@ public class AddFileTool extends Debuggable {
      * @param propagationExceptions
      */
     private void fireFailure(AddFileToolEvent event, Collection<PropagationExceptionWrapper> exceptions) {
-        // break point
+        // break/pause point
+        waitHereOnPause();
         if (stopped) {
             return;
         }
-        waitHereOnPause();
         for (AddFileToolListener l : getListeners()) {
             try {
                 if (event.getType() == AddFileToolEvent.TYPE_METADATA) {

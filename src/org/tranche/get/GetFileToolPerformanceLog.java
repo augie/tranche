@@ -419,7 +419,7 @@ public class GetFileToolPerformanceLog implements GetFileToolListener {
     private void sendEmailAndDeleteFile() {
         File zippedFile = null;
         try {
-            String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Upload Performance Log @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
+            String subject = "[" + ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, ConfigureTranche.PROP_NAME) + "] Download Performance Log @ " + TextUtil.getFormattedDate(TimeUtil.getTrancheTimestamp());
             String message = "See attached file.";
 
             zippedFile = CompressionUtil.zipCompress(this.getFile());

@@ -1493,7 +1493,7 @@ public class AddFileToolTest extends TrancheTestCase {
             t.start();
 
             Thread.yield();
-            Thread.sleep(500);
+            Thread.sleep(5000);
 
             assertTrue("Should be executing.", aft.isExecuting());
 
@@ -1504,10 +1504,8 @@ public class AddFileToolTest extends TrancheTestCase {
             assertFalse("Thread shouldn't be running.", t.isAlive());
             assertTrue("Since it was stopped, should be finished.", reportArr[0].isFinished());
             assertNull("Shouldn't have a hash.", reportArr[0].getHash());
-
         } finally {
             testNetwork.stop();
-
             IOUtil.recursiveDelete(testDir);
         }
     }
