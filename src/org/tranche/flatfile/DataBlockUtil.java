@@ -990,7 +990,12 @@ public class DataBlockUtil {
      * @return
      */
     public File getDataDeletionLog() {
-        return new File(this.ffts.getHomeDirectory(), "deleted-data-chunks.log");
+        final String log = "deleted-data-chunks.log";
+        if (this.ffts != null) {
+            return new File(this.ffts.getHomeDirectory(), log);
+        }
+
+        return new File(log);
     }
 
     /**
@@ -1032,7 +1037,11 @@ public class DataBlockUtil {
      * @return
      */
     public File getCorruptedDataBlocksLog() {
-        return new File(this.ffts.getHomeDirectory(), "corrupted-datablocks.log");
+        final String log = "corrupted-datablocks.log";
+        if (this.ffts != null) {
+            return new File(this.ffts.getHomeDirectory(), log);
+        }
+        return new File(log);
     }
 
     /**
@@ -1040,7 +1049,11 @@ public class DataBlockUtil {
      * @return
      */
     public File getMetaDataDeletionLog() {
-        return new File(this.ffts.getHomeDirectory(), "deleted-meta-data-chunks.log");
+        final String log = "deleted-meta-data-chunks.log";
+        if (this.ffts != null) {
+            return new File(this.ffts.getHomeDirectory(), log);
+        }
+        return new File(log);
     }
     private boolean lastLogDataDeletions = ConfigKeys.DEFAULT_LOG_DATA_CHUNK_DELETIONS;
 
