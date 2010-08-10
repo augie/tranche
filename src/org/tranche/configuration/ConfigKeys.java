@@ -534,7 +534,7 @@ public class ConfigKeys {
         /***********************************************************************
          *              <--- Server's information (memory, URL, users, etc.) -->
          **********************************************************************/
-        permissions.put(ConfigKeys.CURRENTLY_CONNECTED_USERS, CAN_READ);
+        permissions.put(CURRENTLY_CONNECTED_USERS, CAN_READ);
         permissions.put(URL, CAN_READ);
         permissions.put(FREE_MEMORY, CAN_READ);
         permissions.put(TOTAL_MEMORY, CAN_READ);

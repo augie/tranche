@@ -718,26 +718,26 @@ public class IOUtil {
     }
 
     /**
-     * <p>Adding meta-data and data bytes is near-identical. This  method abstracts that work.</p>
+     * 
      * @param dfs
      * @param cert
      * @param key
      * @return
      * @throws java.lang.Exception
+     * @deprecated Use getConfiguration(TrancheServer) instead
      */
     public static final Configuration getConfiguration(TrancheServer dfs, X509Certificate cert, PrivateKey key) throws Exception {
-        // get a nonce from the server
-        byte[] nonce = getNonce(dfs);
+        return getConfiguration(dfs);
+    }
 
-        // sign the bytes
-        String algorithm = SecurityUtil.getSignatureAlgorithm(key);
-        byte[] sig = SecurityUtil.sign(new ByteArrayInputStream(nonce), key, algorithm);
-
-        // make a proper signature object
-        Signature signature = new Signature(sig, algorithm, cert);
-
-        // request the configuration
-        return dfs.getConfiguration(signature, nonce);
+    /**
+     *
+     * @param dfs
+     * @return
+     * @throws Exception
+     */
+    public static final Configuration getConfiguration(TrancheServer dfs) throws Exception {
+        return dfs.getConfiguration();
     }
 
     /**
