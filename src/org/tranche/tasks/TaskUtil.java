@@ -258,7 +258,7 @@ public class TaskUtil {
 
         Collection<MultiServerRequestStrategy> updateStrategies = MultiServerRequestStrategy.findFastestStrategiesUsingConnectedCoreServers(writableHostsToUse, Tertiary.DONT_CARE, Tertiary.DONT_CARE);
         if (updateStrategies.size() == 0) {
-            throw new Exception("Could not find a strategy to propogate to " + writableHostsToUse.size() + " server(s); cannot delete.");
+            throw new Exception("Could not find a strategy to propogate to " + writableHostsToUse.size() + " server(s); cannot continue.");
         }
 
         out.println("Host(s) to use (writable, has appropriate hash span): " + writableHostsToUse.size());
@@ -305,6 +305,11 @@ public class TaskUtil {
         out.println();
 
         boolean found = selectUploaderInMetaData(metaData, uploaderName, relativePathInDataSet, uploadTimestamp);
+        // close enough if there is one uploader and it's the right name
+        if (!found && metaData.getUploaderCount() == 1) {
+            metaData.selectUploader(0);
+            found = metaData.getSignature().getUserName().equals(uploaderName);
+        }
         if (!found) {
             throw new Exception("Could not find user information in meta data, so cannot modify.");
         }

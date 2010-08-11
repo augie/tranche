@@ -378,7 +378,6 @@ public class ConfigureTranche extends ConfigurationUtil {
      */
     public synchronized static void load(InputStream configFileStream) {
         try {
-            clear();
             ConfigurationUtil.load(configFileStream);
 
             // distribute
