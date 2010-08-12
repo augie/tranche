@@ -30,6 +30,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.table.TableCellRenderer;
+import org.tranche.gui.ErrorFrame;
 import org.tranche.gui.GenericPopupListener;
 import org.tranche.gui.GenericTable;
 import org.tranche.gui.Styles;
@@ -120,6 +121,7 @@ public class UploadsTable extends GenericTable {
         private JMenuItem stopMenuItem = new JMenuItem("Stop");
         private JMenuItem removeMenuItem = new JMenuItem("Remove");
         private JMenuItem showErrorsMenuItem = new JMenuItem("Show Errors");
+        private JMenuItem retryMenuItem = new JMenuItem("Retry");
         private JMenuItem monitorMenuItem = new JMenuItem("Monitor");
         private JMenuItem emailReceiptMenuItem = new JMenuItem("Email Receipt");
 
@@ -239,6 +241,28 @@ public class UploadsTable extends GenericTable {
                     t.start();
                 }
             });
+            retryMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread("Retry") {
+
+                        @Override
+                        public void run() {
+                            for (UploadSummary us : getSelected()) {
+                                try {
+                                    if (us.isFinished() && us.getStatus().equals(UploadSummary.STATUS_FAILED)) {
+                                        us.retry();
+                                    }
+                                } catch (Exception e) {
+                                    new ErrorFrame().show(e, GUIUtil.getAdvancedGUI());
+                                }
+                            }
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
             monitorMenuItem.addActionListener(new ActionListener() {
 
                 public void actionPerformed(ActionEvent e) {
@@ -302,6 +326,7 @@ public class UploadsTable extends GenericTable {
                         showHashMenuItem.setEnabled(rows.length == 1 && model.getRow(rows[0]).getReport().getHash() != null);
                         copyHashMenuItem.setEnabled(showHashMenuItem.isEnabled());
                         showErrorsMenuItem.setEnabled(failed);
+                        retryMenuItem.setEnabled(failed);
                         monitorMenuItem.setEnabled(rows.length > 0);
                         emailReceiptMenuItem.setEnabled(showHashMenuItem.isEnabled());
                     } catch (Exception ee) {
@@ -322,6 +347,7 @@ public class UploadsTable extends GenericTable {
             add(stopMenuItem);
             add(removeMenuItem);
             add(showErrorsMenuItem);
+            add(retryMenuItem);
             add(monitorMenuItem);
             add(emailReceiptMenuItem);
         }

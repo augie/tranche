@@ -25,6 +25,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import org.tranche.gui.ErrorFrame;
 import org.tranche.gui.GenericScrollPane;
 import org.tranche.gui.Styles;
 import org.tranche.gui.add.UploadPool;
@@ -99,6 +100,7 @@ public class UploadsPanel extends JPanel {
         private JButton removeMenuItem = LeftMenu.createLeftMenuButton("Remove");
         private JButton monitorMenuItem = LeftMenu.createLeftMenuButton("Monitor");
         private JButton showErrorsMenuItem = LeftMenu.createLeftMenuButton("Show Errors");
+        private JButton retryMenuItem = LeftMenu.createLeftMenuButton("Retry");
         private JButton saveReceiptMenuItem = LeftMenu.createLeftMenuButton("Save Receipt");
         private JButton emailReceiptMenuItem = LeftMenu.createLeftMenuButton("Email Receipt");
 
@@ -255,6 +257,31 @@ public class UploadsPanel extends JPanel {
             });
             addButton(showErrorsMenuItem);
 
+            retryMenuItem.setToolTipText("Starts a new instance of a failed upload.");
+            retryMenuItem.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    Thread t = new Thread("Retry") {
+
+                        @Override
+                        public void run() {
+                            for (UploadSummary us : table.getSelected()) {
+                                try {
+                                    if (us.isFinished() && us.getStatus().equals(UploadSummary.STATUS_FAILED)) {
+                                        us.retry();
+                                    }
+                                } catch (Exception e) {
+                                    new ErrorFrame().show(e, GUIUtil.getAdvancedGUI());
+                                }
+                            }
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
+            addButton(retryMenuItem);
+
             saveReceiptMenuItem.setToolTipText("Save a receipt for this upload.");
             saveReceiptMenuItem.addActionListener(new ActionListener() {
 
@@ -297,10 +324,11 @@ public class UploadsPanel extends JPanel {
             resumeMenuItem.setEnabled(false);
             stopMenuItem.setEnabled(false);
             removeMenuItem.setEnabled(false);
-            showErrorsMenuItem.setEnabled(false);
             showHashMenuItem.setEnabled(false);
             copyHashMenuItem.setEnabled(false);
             monitorMenuItem.setEnabled(false);
+            showErrorsMenuItem.setEnabled(false);
+            retryMenuItem.setEnabled(false);
             saveReceiptMenuItem.setEnabled(false);
             emailReceiptMenuItem.setEnabled(false);
         }
@@ -341,6 +369,7 @@ public class UploadsPanel extends JPanel {
                 showHashMenuItem.setEnabled(rows.length == 1 && table.getUploadsTableModel().getRow(rows[0]).getReport().getHash() != null);
                 copyHashMenuItem.setEnabled(showHashMenuItem.isEnabled());
                 showErrorsMenuItem.setEnabled(failed);
+                retryMenuItem.setEnabled(failed);
                 saveReceiptMenuItem.setEnabled(showHashMenuItem.isEnabled());
                 emailReceiptMenuItem.setEnabled(showHashMenuItem.isEnabled());
             } catch (Exception e) {

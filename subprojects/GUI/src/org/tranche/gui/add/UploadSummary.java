@@ -231,6 +231,35 @@ public class UploadSummary implements ClipboardOwner {
         deserialize(in);
     }
 
+    public UploadSummary(UploadSummary summary) throws Exception {
+        // parameters
+        timeStarted = summary.getTimeStarted();
+        addFileTool = new AddFileTool();
+        progressBar = new AddFileToolProgressBar(addFileTool);
+        addFileTool.addListener(progressBar);
+        addFileTool.setFile(summary.getAddFileTool().getFile());
+        addFileTool.setTitle(summary.getAddFileTool().getTitle());
+        addFileTool.setDescription(summary.getAddFileTool().getDescription());
+        addFileTool.setUserCertificate(summary.getAddFileTool().getUserCertificate());
+        addFileTool.setUserPrivateKey(summary.getAddFileTool().getUserPrivateKey());
+        addFileTool.setPassphrase(summary.getAddFileTool().getPassphrase());
+        addFileTool.setCompress(summary.getAddFileTool().isCompress());
+        addFileTool.setDataOnly(summary.getAddFileTool().isDataOnly());
+        addFileTool.setExplodeBeforeUpload(summary.getAddFileTool().isExplodeBeforeUpload());
+        addFileTool.setShowMetaDataIfEncrypted(summary.getAddFileTool().isShowMetaDataIfEncrypted());
+        addFileTool.setUseUnspecifiedServers(summary.getAddFileTool().isUsingUnspecifiedServers());
+        addFileTool.setThreadCount(summary.getAddFileTool().getThreadCount());
+        addFileTool.addConfirmationEmails(summary.getAddFileTool().getConfirmationEmails());
+        addFileTool.addServersToUse(summary.getAddFileTool().getServersToUse());
+        addFileTool.addStickyServers(summary.getAddFileTool().getStickyServers());
+        for (MetaDataAnnotation mda : summary.getAddFileTool().getMetaDataAnnotations()) {
+            addFileTool.addMetaDataAnnotation(mda);
+        }
+        if (summary.getAddFileTool().getLicense() != null) {
+            addFileTool.setLicense(summary.getAddFileTool().getLicense());
+        }
+    }
+
     public void showReportGUI(Component relativeTo) {
         if (reportGUI == null) {
             reportGUI = new AddFileToolReportFrame(this);
@@ -529,6 +558,15 @@ public class UploadSummary implements ClipboardOwner {
         uploadThread.interrupt();
         // notify
         setStatus(STATUS_STOPPED);
+    }
+
+    public void retry() throws Exception {
+        // only failed
+        if (!isFinished() || !getStatus().equals(STATUS_FAILED)) {
+            return;
+        }
+        // start a new equivalent upload
+        UploadPool.set(new UploadSummary(this));
     }
 
     public void serialize(OutputStream out) throws Exception {
