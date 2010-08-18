@@ -35,6 +35,7 @@ public class PreferencesUtil {
 
     public static final File PREFERENCES_FILE = new File(FlatFileTrancheServer.getDefaultHomeDir() + File.separator + "preferences");
     public static final String PREF_DOWNLOAD_FILE = "download.file";
+    public static final String PREF_TEMPORARY_FILE_DIRECTORY = "temp.dir";
     public static final String PREF_USER_FILE_LOCATION = "user.file";
     public static final String PREF_UPLOAD_LOCATION = "uploader.file";
     private static final Map<String, String> preferences = new HashMap<String, String>();
@@ -170,20 +171,29 @@ public class PreferencesUtil {
     }
 
     /**
-     * 
+     *
      * @param name
      * @return String value of the given preference. <i>null</i> if preference does not exist.
      */
-    public static String get(String name) {
+    public static String get(String category, String name) {
         waitForStartup();
         String value = null;
         synchronized (preferences) {
             value = preferences.get(name);
         }
         if (value == null || value.equals("")) {
-            value = ConfigureTranche.get(ConfigureTranche.CATEGORY_GENERAL, name);
+            value = ConfigureTranche.get(category, name);
         }
         return value;
+    }
+
+    /**
+     * 
+     * @param name
+     * @return String value of the given preference. <i>null</i> if preference does not exist.
+     */
+    public static String get(String name) {
+        return get(ConfigureTranche.CATEGORY_GENERAL, name);
 
     }
 
@@ -199,6 +209,15 @@ public class PreferencesUtil {
             DebugUtil.debugErr(PreferencesUtil.class, e);
         }
         return 0;
+    }
+
+    public static boolean getBoolean(String category, String name) {
+        try {
+            return Boolean.valueOf(get(category, name));
+        } catch (Exception e) {
+            DebugUtil.debugErr(PreferencesUtil.class, e);
+        }
+        return false;
     }
 
     /**

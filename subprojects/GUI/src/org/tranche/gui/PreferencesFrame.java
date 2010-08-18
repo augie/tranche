@@ -39,6 +39,7 @@ import org.tranche.ConfigureTranche;
 import org.tranche.LocalDataServer;
 import org.tranche.gui.get.DownloadPool;
 import org.tranche.gui.add.UploadPool;
+import org.tranche.util.TempFileUtil;
 
 /**
  * Panel meant for use with GenericPopupFrame.
@@ -250,6 +251,7 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
     private class GeneralPreferencesPanel extends JPanel {
 
+        private GenericTextField temporaryLocationField = new GenericTextField();
         private GenericCheckBox useHashComplete = new GenericCheckBox("Open Hash Auto-Completion Window");
 
         public GeneralPreferencesPanel() {
@@ -268,17 +270,72 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
             gbc.insets = new Insets(6, 0, 0, 0);
             add(hashAutoCompleteLabel, gbc);
 
-            DisplayTextArea hashAutoCompleteDescription = new DisplayTextArea("We keep a list of Tranche projects in the background. As you are " +
-                    "typing a Tranche hash, we can pop up a window with a list of projects that match what you are typing. Typing as few as 3 " +
-                    "characters will give you a unique project.");
+            DisplayTextArea hashAutoCompleteDescription = new DisplayTextArea("We keep a list of Tranche projects in the background. As you are "
+                    + "typing a Tranche hash, we can pop up a window with a list of projects that match what you are typing. Typing as few as 3 "
+                    + "characters will give you a unique project.");
             gbc.insets = new Insets(1, 5, 0, 0);
             add(hashAutoCompleteDescription, gbc);
 
             // hash auto complete checkbox
             useHashComplete.setBackground(getBackground());
             useHashComplete.addActionListener(PreferencesFrame.this);
-            gbc.insets = new Insets(3, 5, 0, 0);
+            gbc.insets = new Insets(3, 5, 10, 0);
             add(useHashComplete, gbc);
+
+            // temporary location
+            GenericLabel temporaryLocationLabel = new GenericLabel("Temporary File Directory");
+            temporaryLocationLabel.setFont(Styles.FONT_14PT_BOLD);
+            gbc.insets = new Insets(6, 0, 0, 0);
+            add(temporaryLocationLabel, gbc);
+
+            DisplayTextArea temporaryDescription = new DisplayTextArea("Set a default location for temporary files.");
+            gbc.insets = new Insets(1, 5, 0, 0);
+            add(temporaryDescription, gbc);
+
+            temporaryLocationField.setFont(Styles.FONT_11PT);
+            temporaryLocationField.addKeyListener(PreferencesFrame.this);
+            gbc.gridwidth = GridBagConstraints.RELATIVE;
+            gbc.weightx = 2;
+            gbc.insets = new Insets(3, 5, 0, 0);
+            add(temporaryLocationField, gbc);
+
+            GenericButton temporaryLocationButton = new GenericButton("Change");
+            temporaryLocationButton.setFont(Styles.FONT_10PT);
+            temporaryLocationButton.setBorder(BorderFactory.createCompoundBorder(Styles.BORDER_BLACK_1, BorderFactory.createEmptyBorder(0, 4, 0, 4)));
+            temporaryLocationButton.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    final JFileChooser fc = GUIUtil.makeNewFileChooser();
+                    fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                    fc.setApproveButtonText("Select");
+
+                    try {
+                        File previousDir = new File(temporaryLocationField.getText());
+                        if (previousDir != null && previousDir.exists()) {
+                            fc.setCurrentDirectory(previousDir);
+                        }
+                    } catch (Exception ex) {
+                    }
+
+                    // do not hold up the dispatch thread
+                    Thread t = new Thread() {
+
+                        @Override
+                        public void run() {
+                            int returnVal = fc.showOpenDialog(PreferencesFrame.this);
+                            if (returnVal == FileChooser.APPROVE_OPTION) {
+                                temporaryLocationField.setText(fc.getSelectedFile().getAbsolutePath());
+                                checkForChanges();
+                            }
+                        }
+                    };
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
+            gbc.weightx = 0;
+            gbc.gridwidth = GridBagConstraints.REMAINDER;
+            add(temporaryLocationButton, gbc);
 
             // padding to the bottom
             gbc.weighty = 2;
@@ -291,16 +348,28 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
         }
 
         public void loadPreferences() {
-            useHashComplete.setSelected(PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH));
+            useHashComplete.setSelected(PreferencesUtil.getBoolean(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH));
+            String tempDir = PreferencesUtil.get(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY);
+            if (tempDir == null || tempDir.equals("")) {
+                tempDir = TempFileUtil.getTemporaryDirectory();
+            }
+            temporaryLocationField.setText(tempDir);
         }
 
         public void applyChanges() throws Exception {
             PreferencesUtil.set(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH, String.valueOf(useHashComplete.isSelected()), false);
+            File temporaryFileDir = new File(temporaryLocationField.getText());
+            if (temporaryFileDir.exists() && !temporaryFileDir.isDirectory()) {
+                temporaryFileDir = temporaryFileDir.getParentFile();
+            }
+            TempFileUtil.setTemporaryDirectory(temporaryFileDir);
+            PreferencesUtil.set(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY, temporaryFileDir.getAbsolutePath(), false);
         }
 
         public boolean isChanged() {
             try {
-                return useHashComplete.isSelected() != PreferencesUtil.getBoolean(ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH);
+                return useHashComplete.isSelected() != PreferencesUtil.getBoolean(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_AUTO_COMPLETE_HASH)
+                        || PreferencesUtil.get(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY) == null || !temporaryLocationField.getText().equals(PreferencesUtil.get(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY));
             } catch (Exception e) {
                 return true;
             }
@@ -326,9 +395,9 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
             downloadLocationLabel.setFont(Styles.FONT_14PT_BOLD);
             add(downloadLocationLabel, gbc);
 
-            DisplayTextArea downloadDescription = new DisplayTextArea("Set a default download location for projects. " +
-                    "You will still be prompted upon starting a download. " +
-                    "This will make it faster to select download locations when using the download tool.");
+            DisplayTextArea downloadDescription = new DisplayTextArea("Set a default download location for projects. "
+                    + "You will still be prompted upon starting a download. "
+                    + "This will make it faster to select download locations when using the download tool.");
             gbc.insets = new Insets(1, 5, 0, 0);
             add(downloadDescription, gbc);
 
@@ -383,9 +452,9 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
             gbc.weightx = 1;
             add(poolSizeLabel, gbc);
 
-            DisplayTextArea poolSizesDescription = new DisplayTextArea("The pool size refers to number of concurrent downloads. " +
-                    "Larger pool size can make the most of network latency but requires more memory and processor resources. " +
-                    "Setting to 0 makes the pool size unlimited.");
+            DisplayTextArea poolSizesDescription = new DisplayTextArea("The pool size refers to number of concurrent downloads. "
+                    + "Larger pool size can make the most of network latency but requires more memory and processor resources. "
+                    + "Setting to 0 makes the pool size unlimited.");
             gbc.insets = new Insets(1, 5, 0, 0);
             add(poolSizesDescription, gbc);
 
@@ -425,7 +494,7 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
         public void loadPreferences() {
             downloadLocationField.setText(PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE));
-            downloadPoolSizeField.setText(PreferencesUtil.get(ConfigureTrancheGUI.PROP_DOWNLOAD_POOL_SIZE));
+            downloadPoolSizeField.setText(PreferencesUtil.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_DOWNLOAD_POOL_SIZE));
         }
 
         public void applyChanges() throws Exception {
@@ -437,8 +506,8 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
         public boolean isChanged() {
             try {
-                return !downloadLocationField.getText().equals(PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE)) ||
-                        !downloadPoolSizeField.getText().equals(PreferencesUtil.get(ConfigureTrancheGUI.PROP_DOWNLOAD_POOL_SIZE));
+                return !downloadLocationField.getText().equals(PreferencesUtil.get(PreferencesUtil.PREF_DOWNLOAD_FILE))
+                        || !downloadPoolSizeField.getText().equals(PreferencesUtil.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_DOWNLOAD_POOL_SIZE));
             } catch (Exception e) {
                 return true;
             }
@@ -464,9 +533,9 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
             poolSizeLabel.setFont(Styles.FONT_14PT_BOLD);
             gbc.insets = new Insets(0, 0, 0, 0);
             add(poolSizeLabel, gbc);
-            DisplayTextArea poolSizesDescription = new DisplayTextArea("The pool size refers to number of concurrent uploads. " +
-                    "Larger pool size can make the most of network latency but requires more memory and processor resources." +
-                    "Setting to 0 makes the pool size unlimited.");
+            DisplayTextArea poolSizesDescription = new DisplayTextArea("The pool size refers to number of concurrent uploads. "
+                    + "Larger pool size can make the most of network latency but requires more memory and processor resources."
+                    + "Setting to 0 makes the pool size unlimited.");
             gbc.insets = new Insets(1, 5, 0, 0);
             add(poolSizesDescription, gbc);
 
@@ -498,7 +567,7 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
         }
 
         public void loadPreferences() {
-            uploadPoolSizeField.setText(PreferencesUtil.get(ConfigureTrancheGUI.PROP_UPLOAD_POOL_SIZE));
+            uploadPoolSizeField.setText(PreferencesUtil.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_UPLOAD_POOL_SIZE));
         }
 
         public void applyChanges() throws Exception {
@@ -509,7 +578,7 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
         public boolean isChanged() {
             try {
-                return !uploadPoolSizeField.getText().equals(PreferencesUtil.get(ConfigureTrancheGUI.PROP_UPLOAD_POOL_SIZE));
+                return !uploadPoolSizeField.getText().equals(PreferencesUtil.get(ConfigureTrancheGUI.CATEGORY_GUI, ConfigureTrancheGUI.PROP_UPLOAD_POOL_SIZE));
             } catch (Exception e) {
                 return true;
             }
@@ -668,9 +737,9 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
         }
 
         public void loadPreferences() {
-            rootDirField.setText(PreferencesUtil.get(ConfigureTranche.PROP_SERVER_DIRECTORY));
-            ssl.setSelected(PreferencesUtil.getBoolean(ConfigureTranche.PROP_SERVER_SSL));
-            portField.setText(PreferencesUtil.get(ConfigureTranche.PROP_SERVER_PORT));
+            rootDirField.setText(PreferencesUtil.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_DIRECTORY));
+            ssl.setSelected(PreferencesUtil.getBoolean(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SSL));
+            portField.setText(PreferencesUtil.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT));
         }
 
         public void applyChanges() throws Exception {
@@ -681,9 +750,9 @@ public class PreferencesFrame extends GenericFrame implements ActionListener, Ke
 
         public boolean isChanged() {
             try {
-                return !rootDirField.getText().equals(String.valueOf(PreferencesUtil.get(ConfigureTranche.PROP_SERVER_DIRECTORY))) ||
-                        ssl.isSelected() != PreferencesUtil.getBoolean(ConfigureTranche.PROP_SERVER_SSL) ||
-                        !portField.getText().equals(PreferencesUtil.get(ConfigureTranche.PROP_SERVER_PORT));
+                return !rootDirField.getText().equals(String.valueOf(PreferencesUtil.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_DIRECTORY)))
+                        || ssl.isSelected() != PreferencesUtil.getBoolean(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_SSL)
+                        || !portField.getText().equals(PreferencesUtil.get(ConfigureTranche.CATEGORY_SERVER, ConfigureTranche.PROP_SERVER_PORT));
             } catch (Exception e) {
                 return true;
             }

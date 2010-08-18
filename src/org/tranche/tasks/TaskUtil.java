@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.tranche.commons.Tertiary;
 import org.tranche.TrancheServer;
+import org.tranche.commons.DebugUtil;
 import org.tranche.configuration.Configuration;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.exceptions.TodoException;
@@ -181,8 +182,7 @@ public class TaskUtil {
                     ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
                 }
             } catch (Exception e) {
-                out.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                e.printStackTrace(out);
+                DebugUtil.debugErr(TaskUtil.class, e);
             }
             out.println();
         }
@@ -354,8 +354,7 @@ public class TaskUtil {
                     ConnectionUtil.unlockConnection(strategy.getHostReceivingRequest());
                 }
             } catch (Exception e) {
-                out.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-                e.printStackTrace(out);
+                DebugUtil.debugErr(TaskUtil.class, e);
             }
             out.println();
         }
@@ -437,8 +436,7 @@ public class TaskUtil {
                     out.println("Finished checking for meta data to delete from " + host + " <attempt #" + attempt + ">. Deleted?: " + (deleted ? "yes" : "no"));
                     break ATTEMPTS;
                 } catch (Exception e) {
-                    out.println(e.getClass().getSimpleName() + " occured while attempting (#" + attempt + " of " + MAX_ATTEMPTS + ") to find meta data to delete from " + host + ": " + e.getMessage());
-                    e.printStackTrace(out);
+                    DebugUtil.debugErr(TaskUtil.class, e);
 
                     // Don't waste time -- the user cannot delete, so throw exception immediately
                     if (e instanceof GeneralSecurityException) {

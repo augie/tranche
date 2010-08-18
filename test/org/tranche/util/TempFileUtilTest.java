@@ -18,12 +18,23 @@ package org.tranche.util;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import org.tranche.commons.DebugUtil;
 
 /**
  *
  * @author Bryan E. Smith - bryanesmith@gmail.com
  */
 public class TempFileUtilTest extends TrancheTestCase {
+
+    @Override()
+    protected void setUp() throws Exception {
+        DebugUtil.setDebug(TempFileUtil.class, true);
+    }
+
+    @Override()
+    protected void tearDown() throws Exception {
+        DebugUtil.setDebug(TempFileUtil.class, false);
+    }
 
     /**
      * Tests capability of temp directory to create files with a specific name.

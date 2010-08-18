@@ -25,6 +25,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.tranche.commons.DebugUtil;
 
 /**
  * <p>This utility class creates a clean working temporary directory for storing files during runtime.
@@ -49,7 +50,7 @@ public class TempFileUtil {
     // default location that data is saved
     private static final String DEFAULT_TEMP_SUB_DIR = ".tranche-temp";
     // the max attempts to make when creating direcoties
-    private static final int maxTempDirAttempts = 20;
+    private static final int maxTempDirAttempts = 50;
     // to track temp files made
     private static int count = 0;
     // To track temp directories made!
@@ -58,74 +59,7 @@ public class TempFileUtil {
     private static File tempDirectory;
 
     static {
-        // load the temp directory attribute
-        try {
-
-            // check for temp dir variable
-            if (System.getProperty(JAVA_TEMP_DIR) != null && !System.getProperty(JAVA_TEMP_DIR).equals("")) {
-
-                // May change to not be a hidden directory for non-privileged Windows users
-                String subdir = DEFAULT_TEMP_SUB_DIR;
-
-                // try to lock on the 'trache-temp' directory
-                if (!tryLock(new File(System.getProperty(JAVA_TEMP_DIR), subdir))) {
-                    for (int i = 1; i < maxTempDirAttempts; i++) {
-                        File fileToTry = new File(System.getProperty(JAVA_TEMP_DIR), subdir + "-" + i);
-                        if (tryLock(fileToTry)) {
-                            break;
-                        }
-                        // if on the last, throw exception
-                        if (i == 19) {
-
-                            // Try to use a non-hidden file.
-                            // Should only happen once.
-                            if (subdir.startsWith(".")) {
-                                System.out.println("Cannot write to " + subdir);
-                                subdir = subdir.substring(1);
-                                System.out.println("Trying " + subdir);
-                                i = 1;
-                                continue;
-                            }
-
-                            throw new RuntimeException("Can't acquire a temporary directory lock! Tried 20 times.");
-                        }
-                    }
-                }
-            } // fall back on the default home directory for a file lock
-            else {
-                // May change to not be a hidden directory for non-privileged Windows users
-                String subdir = DEFAULT_TEMP_SUB_DIR;
-
-                if (!tryLock(new File(System.getProperty(JAVA_USER_HOME), subdir))) {
-                    for (int i = 1; i < maxTempDirAttempts; i++) {
-                        File fileToTry = new File(System.getProperty(JAVA_TEMP_DIR), subdir + "-" + i);
-                        if (tryLock(fileToTry)) {
-                            break;
-                        }
-                        // if on the last, throw exception
-                        if (i == maxTempDirAttempts - 1) {
-
-                            // Try to use a non-hidden file.
-                            // Should only happen once.
-                            if (subdir.startsWith(".")) {
-                                System.out.println("Cannot write to " + subdir);
-                                subdir = subdir.substring(1);
-                                System.out.println("Trying " + subdir);
-                                i = 1;
-                                continue;
-                            }
-
-                            throw new RuntimeException("Can't acquire a temporary directory lock! Tried 20 times.");
-                        }
-                    }
-                }
-            }
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw e;
-        } finally {
-            System.out.println("Temporary directory: " + tempDirectory);
-        }
+        loadTemporaryDirectory();
     }
 
     /**
@@ -133,7 +67,7 @@ public class TempFileUtil {
      * @param lockToTry
      * @return
      */
-    private static boolean tryLock(File lockToTry) {
+    private static synchronized boolean tryLock(File lockToTry) {
         try {
             // make if the file doesn't exist
             if (!lockToTry.exists()) {
@@ -189,7 +123,7 @@ public class TempFileUtil {
      * @return
      * @throws Exception
      */
-    private static boolean canLockFile(File lockFile, boolean isReleaseLockAfterTest) throws Exception {
+    private static synchronized boolean canLockFile(File lockFile, boolean isReleaseLockAfterTest) throws Exception {
         FileChannel fc = new RandomAccessFile(lockFile, "rw").getChannel();
         FileLock lock = null;
         try {
@@ -222,7 +156,7 @@ public class TempFileUtil {
             // Happens on file system that does not support file locking. (Distributed? E.g., work/ volume on Queen Bee)
             // Instead, see whether work around lock, lock-workaround.file, exists
             // ----------------------------------------------------------------------------------------------
-            File workAround = new File(lockFile.getParentFile(),"lock-workaround.file");
+            File workAround = new File(lockFile.getParentFile(), "lock-workaround.file");
 
             if (workAround.exists()) {
                 // Work around used by other process, so can't secure
@@ -247,7 +181,7 @@ public class TempFileUtil {
      * <p>Helper method to clean up old directories.</p>
      * @param directoryToDelete
      */
-    private static void recursiveDeleteSkipLockFiles(final File directoryToDelete) {
+    private static synchronized void recursiveDeleteSkipLockFiles(final File directoryToDelete) {
         // delete everything but the lock file
         ArrayList<File> filesToDelete = new ArrayList();
         filesToDelete.add(directoryToDelete);
@@ -433,7 +367,7 @@ public class TempFileUtil {
      * @param f
      * @return
      */
-    private static boolean tryToMakeFile(File f) {
+    private synchronized static boolean tryToMakeFile(File f) {
         try {
             // make the parent if needed
             File parent = f.getParentFile();
@@ -508,14 +442,67 @@ public class TempFileUtil {
      * @param directory
      * @throws java.io.IOException
      */
-    public static void setTemporaryDirectory(File directory) throws IOException {
+    public synchronized static void setTemporaryDirectory(File directory) throws IOException {
         if (!directory.isDirectory()) {
             throw new IOException(directory.getAbsolutePath() + " is not a directory. Cannot set as temp directory.");
         }
         if (!directory.canWrite() || !directory.canRead()) {
             throw new IOException(directory.getAbsolutePath() + " has constricting permissions (readable?=" + directory.canRead() + ", writeable?=" + directory.canWrite() + "). Cannot set as temp directory.");
         }
+        if (tempDirectory.getAbsolutePath().equals(directory.getAbsolutePath())) {
+            return;
+        }
+        // clear out the old temp dir
+        if (tempDirectory != null) {
+            clear();
+        }
         tempDirectory = directory;
+    }
+
+    /**
+     * 
+     */
+    public static synchronized void loadTemporaryDirectory() {
+        if (tempDirectory != null) {
+            clear();
+        }
+        try {
+            boolean success = false;
+            if (PreferencesUtil.get(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY) != null) {
+                success = loadTemporaryDirectory(new File(PreferencesUtil.get(PreferencesUtil.PREF_TEMPORARY_FILE_DIRECTORY)));
+            }
+            if (!success && System.getProperty(JAVA_TEMP_DIR) != null && !System.getProperty(JAVA_TEMP_DIR).equals("")) {
+                success = loadTemporaryDirectory(new File(System.getProperty(JAVA_TEMP_DIR), DEFAULT_TEMP_SUB_DIR));
+            }
+            if (!success) {
+                success = loadTemporaryDirectory(new File(System.getProperty(JAVA_USER_HOME), DEFAULT_TEMP_SUB_DIR));
+            }
+            if (!success && DEFAULT_TEMP_SUB_DIR.startsWith(".")) {
+                success = loadTemporaryDirectory(new File(System.getProperty(JAVA_USER_HOME), DEFAULT_TEMP_SUB_DIR.substring(1)));
+            }
+            if (!success) {
+                tempDirectory = null;
+            }
+        } catch (Exception e) {
+            DebugUtil.debugErr(TempFileUtil.class, e);
+        }
+    }
+
+    /**
+     * 
+     * @param startWith
+     * @return
+     */
+    private static final boolean loadTemporaryDirectory(File startWith) {
+        if (tryLock(startWith)) {
+            return true;
+        }
+        for (int i = 1; i < maxTempDirAttempts; i++) {
+            if (tryLock(new File(startWith.getParent(), startWith.getName() + "-" + i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -523,7 +510,10 @@ public class TempFileUtil {
      * <p>Note that the client should not attempt to create files from this directory directly, but instead should use methods in this class.</p>
      * @return
      */
-    public static String getTemporaryDirectory() {
+    public synchronized static String getTemporaryDirectory() {
+        if (tempDirectory == null) {
+            loadTemporaryDirectory();
+        }
         return tempDirectory.getAbsolutePath();
     }
 
