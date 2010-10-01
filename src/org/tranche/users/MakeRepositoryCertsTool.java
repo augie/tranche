@@ -88,7 +88,7 @@ public class MakeRepositoryCertsTool {
                 }
             }
 
-            ConfigureTranche.load(args);
+            ConfigureTranche.loadDefaults(ConfigureTranche.DEFAULT_CONFIG_FILE_LOCATION);
 
             // flags
             for (int i = 1; i < args.length; i++) {
