@@ -2507,7 +2507,7 @@ public class AddFileTool extends Debuggable {
     private final class ChunkQueueingStream extends OutputStream {
 
         private FileEncodingThread thread;
-        private byte[] buffer = new byte[DataBlockUtil.ONE_MB];
+        private byte[] buffer = new byte[DataBlockUtil.getMaxChunkSize()];
         private byte[] buf = new byte[1];
         private int bufferOffset = 0;
         private final PriorityBlockingQueue<DataChunk> dataChunkQueue;

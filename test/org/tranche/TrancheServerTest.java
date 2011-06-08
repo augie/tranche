@@ -134,7 +134,7 @@ public class TrancheServerTest extends TrancheTestCase {
 
     public static final void testDeleteMetaDataUploader(TrancheServer dfs, X509Certificate auth, PrivateKey key) throws Exception {
         // make up some meta-data and random data
-        byte[] bytes = Utils.makeRandomData(DataBlockUtil.ONE_MB);
+        byte[] bytes = Utils.makeRandomData(DataBlockUtil.getMaxChunkSize());
         BigHash hash = new BigHash(bytes);
         MetaData metaData = DevUtil.createRandomMetaData(2);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -180,7 +180,7 @@ public class TrancheServerTest extends TrancheTestCase {
      */
     public static final void testSetData(final TrancheServer dfs, X509Certificate auth, PrivateKey key) throws Exception {
         // random data
-        byte[] bytes = Utils.makeRandomData(DataBlockUtil.ONE_MB);
+        byte[] bytes = Utils.makeRandomData(DataBlockUtil.getMaxChunkSize());
         BigHash hash = new BigHash(bytes);
 
         // make the uri based on the MD5 hash
@@ -312,7 +312,7 @@ public class TrancheServerTest extends TrancheTestCase {
 
         // add a random number of sticky projects
         for (int i = 0; i < RandomUtil.getInt(20) + 1; i++) {
-            config.addStickyProject(DevUtil.getRandomBigHash(DataBlockUtil.ONE_MB));
+            config.addStickyProject(DevUtil.getRandomBigHash(DataBlockUtil.getMaxChunkSize()));
         }
 
         // add a random number of server configs
@@ -909,7 +909,7 @@ public class TrancheServerTest extends TrancheTestCase {
             // make the data
             for (int i = 0; i < RandomUtil.getInt(20) + 2; i++) {
                 // create some data
-                byte[] data = DevUtil.createRandomDataChunk(RandomUtil.getInt(DataBlockUtil.ONE_MB));
+                byte[] data = DevUtil.createRandomDataChunk(RandomUtil.getInt(DataBlockUtil.getMaxChunkSize()));
                 // make the hash
                 BigHash hash = new BigHash(data);
                 // should this one be uploaded?

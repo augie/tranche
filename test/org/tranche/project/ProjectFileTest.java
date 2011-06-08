@@ -105,7 +105,7 @@ public class ProjectFileTest extends TrancheTestCase {
         BigInteger size = BigInteger.ZERO;
         for (int i = 0; i < 10; i++) {
             String relativeName = RandomUtil.getString(20);
-            int fileSize = RandomUtil.getInt(DataBlockUtil.ONE_MB * 2);
+            int fileSize = RandomUtil.getInt(DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = DevUtil.getRandomBigHash(fileSize);
             // make a part
             parts.add(new ProjectFilePart(relativeName, hash, new byte[0]));

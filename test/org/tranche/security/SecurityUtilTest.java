@@ -49,7 +49,7 @@ public class SecurityUtilTest extends TrancheTestCase {
         // try lots of different sizes
         for (int i = 0; i < 20; i++) {
             // make some random data
-            byte[] data = new byte[(int) (DataBlockUtil.ONE_MB * Math.random())];
+            byte[] data = new byte[(int) (DataBlockUtil.getMaxChunkSize() * Math.random())];
             RandomUtil.getBytes(data);
             // check the data
             testEncryptionAndDecryption(data, passphrases[i % passphrases.length]);

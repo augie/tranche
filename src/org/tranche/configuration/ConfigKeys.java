@@ -82,7 +82,7 @@ public class ConfigKeys {
     /**
      * <p>Default for for variable: When moving, data block must have this much free space before a move is considered.</p>
      */
-    public static final int DEFAULT_MIN_SIZE_AVAILABLE_IN_TARGET_DATABLOCK_BEFORE_BALANCE = 10 * DataBlock.MAX_BLOCK_SIZE;
+    public static final int DEFAULT_MIN_SIZE_AVAILABLE_IN_TARGET_DATABLOCK_BEFORE_BALANCE = 10 * DataBlock.getMaxBlockSize();
     /**
      * <p>The required difference in percentage between the data directories with least and most available space before transfering.</p>
      * <p>This only matters if healing thread is set to auto balance.</p>
@@ -391,6 +391,10 @@ public class ConfigKeys {
      */
     public static final String DATABLOCK_KNOWN_META = "dataBlockUtil: KnownMetaDataFileCount";
     /**
+     *
+     */
+    public static final String DATABLOCK_STORE_DATABLOCK_REFERENCES = "dataBlockUtil: IsStoreDataBlockReferences";
+    /**
      * <p>Whether or not should record data chunk deletions.</p>
      */
     public static final String DATABLOCK_LOG_DATA_CHUNK_DELETIONS = "dataBlockUtil: logDataChunkDeletions";
@@ -558,6 +562,7 @@ public class ConfigKeys {
         permissions.put(DATABLOCK_TOTAL_MERGED, CAN_READ);
         permissions.put(DATABLOCK_LOG_DATA_CHUNK_DELETIONS, CAN_READ_EDIT);
         permissions.put(DATABLOCK_LOG_META_DATA_CHUNK_DELETIONS, CAN_READ_EDIT);
+        permissions.put(DATABLOCK_STORE_DATABLOCK_REFERENCES, CAN_READ_EDIT);
 
         // >>> Corruption in data block <<<
         permissions.put(CORRUPTED_DB_ALLOWED_TO_FIX, CAN_READ_EDIT);

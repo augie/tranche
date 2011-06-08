@@ -331,7 +331,7 @@ public class DataBlockTest extends TrancheTestCase {
             // make up some random data
             ArrayList<byte[]> randomData = new ArrayList();
             for (int i = 0; i < 10; i++) {
-                randomData.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.ONE_MB)));
+                randomData.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.getMaxChunkSize())));
             }
             // make up some random meta-data
             ArrayList<byte[]> randomMetaData = new ArrayList();
@@ -463,7 +463,7 @@ public class DataBlockTest extends TrancheTestCase {
         File dir = TempFileUtil.createTemporaryDirectory();
         try {
             // make up some random data
-            byte[] data = Utils.makeRandomData((int) (Math.random() * DataBlockUtil.ONE_MB));
+            byte[] data = Utils.makeRandomData((int) (Math.random() * DataBlockUtil.getMaxChunkSize()));
             byte[] metaData = Utils.makeRandomData((int) (Math.random() * 2024));
 
             // make the directory configuration
@@ -504,8 +504,8 @@ public class DataBlockTest extends TrancheTestCase {
             ArrayList<byte[]> randomData = new ArrayList();
             ArrayList<byte[]> randomDataToDelete = new ArrayList();
             for (int i = 0; i < 10; i++) {
-                randomData.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.ONE_MB)));
-                randomDataToDelete.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.ONE_MB)));
+                randomData.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.getMaxChunkSize())));
+                randomDataToDelete.add(Utils.makeRandomData((int) (Math.random() * DataBlockUtil.getMaxChunkSize())));
             }
 
             // make the directory configuration
@@ -642,7 +642,7 @@ public class DataBlockTest extends TrancheTestCase {
 
             int bytesWritten = 0;
             int maxFileSize = 100 * 1024;
-            while (bytesWritten <= DataBlock.MAX_BLOCK_SIZE * 2) {
+            while (bytesWritten <= DataBlock.getMaxBlockSize() * 2) {
                 // make some random data
                 byte[] randomData = Utils.makeRandomData((int) (Math.random() * maxFileSize));
                 // check that the hash starts with 'aa'
@@ -825,7 +825,7 @@ public class DataBlockTest extends TrancheTestCase {
             ArrayList<BigHash> realHashes = new ArrayList();
 
             // ensure four splits
-            long totalEntries = DataBlock.HEADERS_PER_FILE * 10;
+            long totalEntries = DataBlock.getHeadersPerFile() * 10;
             for (int i = 0; i < totalEntries; i++) {
                 // make some random data
                 byte[] randomData = Utils.makeRandomData((int) (Math.random() * 10 * 1024));
@@ -936,7 +936,7 @@ public class DataBlockTest extends TrancheTestCase {
             ArrayList<BigHash> realHashes = new ArrayList();
 
             // ensure four splits
-            long totalEntries = DataBlock.HEADERS_PER_FILE * 10;
+            long totalEntries = DataBlock.getHeadersPerFile() * 10;
             for (int i = 0; i < totalEntries; i++) {
                 // make some random data
 //                byte[] randomData = Utils.makeRandomData((int)(Math.random()*10*1024));
@@ -988,13 +988,13 @@ public class DataBlockTest extends TrancheTestCase {
             for (int i = 0; i < contrivedHashes.size(); i++) {
                 // get the bytes
                 Object o = IOUtil.getData(ffts, contrivedHashes.get(i), false).getReturnValueObject();
-                
+
                 byte[] data = null;
-                
+
                 if (o instanceof byte[]) {
-                    data = (byte[])o;
+                    data = (byte[]) o;
                 } else if (o instanceof byte[][]) {
-                    data = ((byte[][])o)[0];
+                    data = ((byte[][]) o)[0];
                 } else {
                     fail("Expected return object to be type byte[] or byte[][], but wasn't.");
                 }
@@ -1214,6 +1214,10 @@ public class DataBlockTest extends TrancheTestCase {
         testDataBlockHandlesBadChunks(50, 50, false, false, true);
     }
 
+    /*
+     * Takes too long...
+     *
+
     // these scenarios are really long time - comment out for standard testing
     public void testBadChunksEmpty1MBMediumBatch() throws Exception {
         TestUtil.printTitle("DataBlockTest:testBadChunksEmpty1MBMediumBatch()");
@@ -1235,16 +1239,18 @@ public class DataBlockTest extends TrancheTestCase {
         testDataBlockHandlesBadChunks(100, 100, false, false, false);
     }
 
+    
     public void testBadChunksEmpty1MBLargeBatch() throws Exception {
-        TestUtil.printTitle("DataBlockTest:testBadChunksEmpty1MBLargeBatch()");
-        testDataBlockHandlesBadChunks(500, 500, true, true, false);
+    TestUtil.printTitle("DataBlockTest:testBadChunksEmpty1MBLargeBatch()");
+    testDataBlockHandlesBadChunks(500, 500, true, true, false);
     }
 
     public void testBadChunksEmpty1MBLargeBatchWithFalseSizes() throws Exception {
-        TestUtil.printTitle("DataBlockTest:testBadChunksEmpty1MBLargeBatchWithFalseSizes()");
-        testDataBlockHandlesBadChunks(500, 500, true, true, true);
+    TestUtil.printTitle("DataBlockTest:testBadChunksEmpty1MBLargeBatchWithFalseSizes()");
+    testDataBlockHandlesBadChunks(500, 500, true, true, true);
     }
 
+     */
     /**
      * <p>This helper method allows many permutations. Pay attention to the parameters.</p>
      * <p>This test has three DataBlockUtil's. One will have only good meta and data chunks. The others will have some good and some bad.</p>
@@ -1622,7 +1628,7 @@ public class DataBlockTest extends TrancheTestCase {
             byte[] metaBytes = DevUtil.createRandomBigMetaDataChunk();
 
             // bytes should be more than 1MB
-            assertTrue("Expect meta data to be longer than 1MB.", metaBytes.length > DataBlockUtil.ONE_MB);
+            assertTrue("Expect meta data to be longer than 1MB.", metaBytes.length > DataBlockUtil.getMaxChunkSize());
 
             BigHash metaHash = new BigHash(metaBytes);
             assertFalse("Expecting meta data to not yet exist.", dbu.hasMetaData(metaHash));
@@ -1850,7 +1856,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertTrue("Should have meta hash.", dbu.hasMetaData(metaHash));
 
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
 
             dbu.add(ddc2);
 
@@ -1868,7 +1874,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertEquals("Expecting data directory to be empty.", 0, ddc1.getDirectoryFile().list().length);
             assertEquals("Expecting one data block in data directory.", 1, ddc2.getDirectoryFile().list().length);
             assertEquals("Expecting accurate bytes.", 0, ddc1.getActualSize());
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc2.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc2.getActualSize());
 
         } finally {
             IOUtil.recursiveDeleteWithWarning(dataDir1);
@@ -1918,7 +1924,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertTrue("Should have meta hash.", dbu.hasMetaData(metaHash));
 
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
 
             // Simulate full. This is what project finding thread does.
             ddc2.adjustUsedSpace(1024 * 1024 * 2);
@@ -1938,7 +1944,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertEquals("Data block should know it is still in DDC #1.", ddc1, db.ddc);
             assertEquals("Expecting data directory to be empty.", 0, ddc2.getDirectoryFile().list().length);
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
         } finally {
             IOUtil.recursiveDeleteWithWarning(dataDir1);
             IOUtil.recursiveDeleteWithWarning(dataDir2);
@@ -1990,7 +1996,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertTrue("Should have meta hash.", dbu.hasMetaData(metaHash));
 
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
 
             // Add the second data directory. It does not exist.
             dbu.add(ddc2);
@@ -2008,7 +2014,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertEquals("Expecting data directory to be empty.", 0, ddc1.getDirectoryFile().list().length);
             assertEquals("Expecting one data block in data directory.", 1, ddc2.getDirectoryFile().list().length);
             assertEquals("Expecting accurate bytes.", 0, ddc1.getActualSize());
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc2.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc2.getActualSize());
 
         } finally {
             IOUtil.recursiveDeleteWithWarning(dataDir1);
@@ -2057,7 +2063,7 @@ public class DataBlockTest extends TrancheTestCase {
             assertTrue("Should have meta hash.", dbu.hasMetaData(metaHash));
 
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
 
             // Add the second data directory.
             dbu.add(ddc2);
@@ -2083,7 +2089,7 @@ public class DataBlockTest extends TrancheTestCase {
 
             assertEquals("Data block should know it is in DDC #1 still.", ddc1, db.ddc);
             assertEquals("Expecting one data block in data directory.", 1, ddc1.getDirectoryFile().list().length);
-            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.HEADERS_PER_FILE * DataBlock.bytesPerEntry, ddc1.getActualSize());
+            assertEquals("Expecting accurate bytes.", dataChunk.length + metaChunk.length + DataBlock.getHeadersPerFile() * DataBlock.bytesPerEntry, ddc1.getActualSize());
             assertEquals("Expecting accurate bytes.", 0, ddc2.getActualSize());
         } finally {
             IOUtil.recursiveDeleteWithWarning(dataDir1);
@@ -2434,7 +2440,6 @@ public class DataBlockTest extends TrancheTestCase {
 //            IOUtil.recursiveDeleteWithWarning(data3);
 //        }
 //    }
-
     public void testDeleteDataChunksReturnsCorrectHashes() throws Exception {
         TestUtil.printTitle("DataBlockTest:testDeleteDataChunksReturnsCorrectHashes()");
         testDeleteChunksReturnsCorrectHashes(false);
@@ -2679,13 +2684,13 @@ public class DataBlockTest extends TrancheTestCase {
 //                byte[] bytes = (byte[]) IOUtil.getData(ffts, hash, false).getReturnValueObject();
                 // get the bytes
                 Object o = IOUtil.getData(ffts, hash, false).getReturnValueObject();
-                
+
                 byte[] data = null;
-                
+
                 if (o instanceof byte[]) {
-                    data = (byte[])o;
+                    data = (byte[]) o;
                 } else if (o instanceof byte[][]) {
-                    data = ((byte[][])o)[0];
+                    data = ((byte[][]) o)[0];
                 } else {
                     fail("Expected return object to be type byte[] or byte[][], but wasn't.");
                 }

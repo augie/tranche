@@ -1372,7 +1372,7 @@ public class IOUtil {
         int byteCount = IOUtil.readInt(i);
         if (byteCount == -1) {
             return null;
-        } else if (byteCount <= DataBlockUtil.ONE_MB) {
+        } else if (byteCount <= DataBlockUtil.getMaxChunkSize()) {
             return new ByteArrayInputStream(readBytes(byteCount, i));
         }
         // make a new file

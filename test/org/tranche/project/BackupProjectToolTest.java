@@ -26,7 +26,7 @@ import org.tranche.flatfile.DataBlockUtil;
  */
 public class BackupProjectToolTest extends TrancheTestCase {
 
-    long dataSize = DataBlockUtil.ONE_MB * 2;
+    long dataSize = DataBlockUtil.getMaxChunkSize() * 2;
 
     public void testProjectBackup() throws Exception {
         // need to update to use new connection scheme

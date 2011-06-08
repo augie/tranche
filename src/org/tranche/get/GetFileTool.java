@@ -1279,7 +1279,7 @@ public class GetFileTool extends Debuggable {
      * @throws WrongPassphraseException
      */
     private void downloadFile(ProjectFilePart part, MetaData metaData, File saveAs, byte[] padding) throws WrongPassphraseException {
-        if (metaData.getHash().getLength() > DataBlockUtil.ONE_MB) {
+        if (metaData.getHash().getLength() > DataBlockUtil.getMaxChunkSize()) {
             downloadFileDiskBacked(part, metaData, saveAs, padding);
         } else {
             downloadFileInMemory(part, metaData, saveAs, padding);
@@ -2581,7 +2581,7 @@ public class GetFileTool extends Debuggable {
         public synchronized FileDecoding getFileDecoding() throws Exception {
             if (fileDecoding == null) {
                 // only set up a file decoding object if the file is larger than 1MB
-                if (part != null && part.getHash().getLength() > DataBlockUtil.ONE_MB) {
+                if (part != null && part.getHash().getLength() > DataBlockUtil.getMaxChunkSize()) {
                     // make a temp file
                     File tempFile = createTemporaryFile(part.getRelativeName().replaceAll("[\\:*?\"<>|]", "-"), false);
                     // open the temp file for writing
@@ -2892,7 +2892,7 @@ public class GetFileTool extends Debuggable {
                 batchWaitingList.get(host).list.add(dataChunk);
                 batchWaitingList.get(host).size += dataChunk.hash.getLength();
                 // check whether it's time to download
-                if (batchWaitingList.get(host).size >= DataBlockUtil.ONE_MB || batchWaitingList.get(host).list.size() == RemoteTrancheServer.BATCH_GET_LIMIT) {
+                if (batchWaitingList.get(host).size >= DataBlockUtil.getMaxChunkSize() || batchWaitingList.get(host).list.size() == RemoteTrancheServer.BATCH_GET_LIMIT) {
                     // download from the host -- will handle all download logic and processing
                     list = batchWaitingList.remove(host).list;
                 }
@@ -3023,7 +3023,7 @@ public class GetFileTool extends Debuggable {
         private void processData(DataChunk dataChunk) throws Exception {
             debugOut("Processing data chunk " + dataChunk.hash);
             // writing to a random access file?
-            if (dataChunk.metaChunk.part.getHash().getLength() > DataBlockUtil.ONE_MB) {
+            if (dataChunk.metaChunk.part.getHash().getLength() > DataBlockUtil.getMaxChunkSize()) {
                 debugOut("Waiting for synchronization on file decoding while processing " + dataChunk.hash);
                 synchronized (dataChunk.metaChunk.getFileDecoding()) {
                     dataChunk.metaChunk.getFileDecoding().processDataChunk(dataChunk);

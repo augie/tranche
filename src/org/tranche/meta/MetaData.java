@@ -148,7 +148,7 @@ public class MetaData {
     /**
      * <p>Maximum size.</p>
      */
-    public static final long SIZE_MAX = 90 * DataBlockUtil.ONE_MB;
+    public static final long SIZE_MAX = 90 * DataBlockUtil.getMaxChunkSize();
     private String version = VERSION_LATEST;
     private int flags = GZIP_COMPRESSED_BIT;
     private long lastModifiedTimestamp = TimeUtil.getTrancheTimestamp();

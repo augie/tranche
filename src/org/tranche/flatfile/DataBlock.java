@@ -49,10 +49,23 @@ public class DataBlock extends Debuggable implements Comparable {
     /**
      * <p>The maximum DataBlock size, in bytes.</p>
      */
-    public static final int MAX_BLOCK_SIZE = 100 * 1024 * 1024;
+    public static final int DEFAULT_MAX_BLOCK_SIZE = 100 * 1024 * 1024;
     /**
      * <p>The amount of headers per file.</p>
      * <p>Each header's size in bytes is equal to BigHash.HASH_LENGTH + 1 + 1 + 4 + 4. Every new block will start with this many headers. To get the blocks size, you must also include all the data in the block.</p>
+     */
+    public static final int DEFAULT_HEADERS_PER_FILE = 1000;
+    private static int maxBlockSize = DEFAULT_MAX_BLOCK_SIZE;
+    private static int headersPerFile = DEFAULT_HEADERS_PER_FILE;
+    /**
+     * <p>The maximum DataBlock size, in bytes.</p>
+     * @deprecated Use getMaxBlockSize()
+     */
+    public static final int MAX_BLOCK_SIZE = DEFAULT_MAX_BLOCK_SIZE;
+    /**
+     * <p>The amount of headers per file.</p>
+     * <p>Each header's size in bytes is equal to BigHash.HASH_LENGTH + 1 + 1 + 4 + 4. Every new block will start with this many headers. To get the blocks size, you must also include all the data in the block.</p>
+     * @deprecated Use getHeadersPerFile
      */
     public static final int HEADERS_PER_FILE = 1000;    // keep the file reference
     /**
@@ -90,10 +103,6 @@ public class DataBlock extends Debuggable implements Comparable {
      * <p>This is the size of an entry in bytes. Each header is hash + (byte) type + (byte) status + int (offset in block) + int (size)</p>
      */
     static final int bytesPerEntry = (BigHash.HASH_LENGTH + 1 + 1 + 4 + 4);
-    /**
-     * <p>Used to read in the entire header of the file. This is the total header size in bytes.</p>
-     */
-    static final int bytesToRead = bytesPerEntry * HEADERS_PER_FILE;
     /**
      * <p>Need a reference back to DBU to repair files</p>
      */
@@ -176,7 +185,7 @@ public class DataBlock extends Debuggable implements Comparable {
 //        int bytesPerEntry = (BigHash.HASH_LENGTH + 1 + 1 + 4 + 4);
 //        int bytesToRead = bytesPerEntry * HEADERS_PER_FILE;
         // buffer that amount
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // list of hashes
         ArrayList<BigHash> hashesToReturn = new ArrayList();
@@ -194,7 +203,7 @@ public class DataBlock extends Debuggable implements Comparable {
             // get the complete header
             fillWithBytes(buf, ras, blockFile.getAbsolutePath(), "Reading in header to get hashes for " + (isMetaData ? "meta data" : "data") + ".");
             // check for the hash
-            for (int i = 0; i < HEADERS_PER_FILE; i++) {
+            for (int i = 0; i < getHeadersPerFile(); i++) {
                 // calc the offset
                 int offset = i * bytesPerEntry;
                 // parse the entry parts: hash, type, status, offset, size
@@ -276,7 +285,7 @@ public class DataBlock extends Debuggable implements Comparable {
 //        int bytesPerEntry = (BigHash.HASH_LENGTH + 1 + 1 + 4 + 4);
 //        int bytesToRead = bytesPerEntry * HEADERS_PER_FILE;
         // buffer that amount
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // convert the boolean to meta-data or data bit
         final byte isMetaDataByte = isMetaData ? META_DATA : DATA;
@@ -300,7 +309,7 @@ public class DataBlock extends Debuggable implements Comparable {
             fillWithBytes(buf, ras, rasFile.getAbsolutePath(), "Reading header to get " + (isMetaData ? "meta data" : "data") + " chunk.");
             // check for the hash
             int entryNumber = 0;
-            for (int i = 0; i < HEADERS_PER_FILE; i++) {
+            for (int i = 0; i < getHeadersPerFile(); i++) {
                 // Update so know how many read
                 entryNumber = i;
                 // calc the offset
@@ -364,7 +373,7 @@ public class DataBlock extends Debuggable implements Comparable {
 //        int bytesPerEntry = (BigHash.HASH_LENGTH + 1 + 1 + 4 + 4);
 //        int bytesToRead = bytesPerEntry * HEADERS_PER_FILE;
         // buffer that amount
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // convert the boolean to meta-data or data bit
         final byte isMetaDataByte = isMetaData ? META_DATA : DATA;
@@ -379,7 +388,7 @@ public class DataBlock extends Debuggable implements Comparable {
         }
 
         // check for the hash
-        for (int i = 0; i < HEADERS_PER_FILE; i++) {
+        for (int i = 0; i < getHeadersPerFile(); i++) {
             // calc the offset
             int offset = i * bytesPerEntry;
             // parse the entry parts: hash, type, status, offset, size
@@ -453,7 +462,7 @@ public class DataBlock extends Debuggable implements Comparable {
         }
 
         // buffer the entire data block header
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // lazy load the file
         lazyCreateFile(buf);
@@ -466,7 +475,7 @@ public class DataBlock extends Debuggable implements Comparable {
         final byte isMetaDataByte = isMetaData ? META_DATA : DATA;
 
         // track the last valid offset. start at the end of the header
-        int nextValidOffset = bytesToRead;
+        int nextValidOffset = getBytesToRead();
 
         RandomAccessFile ras = new RandomAccessFile(blockPath, "rw");
         try {
@@ -477,7 +486,7 @@ public class DataBlock extends Debuggable implements Comparable {
             int totalEntriesRead = 0;
 
             // check for the hash
-            for (int i = 0; i < HEADERS_PER_FILE; i++) {
+            for (int i = 0; i < getHeadersPerFile(); i++) {
 
                 totalEntriesRead++;
 
@@ -561,15 +570,17 @@ public class DataBlock extends Debuggable implements Comparable {
 
                 // if the data block still below the size limit and the number of files limit, return
                 // also force a resize if too much data is wasted
-                boolean tooManyBytes = ras.length() > DataBlock.MAX_BLOCK_SIZE;
-                boolean tooManyHeaders = i >= DataBlock.HEADERS_PER_FILE - 1;
+                boolean tooManyBytes = ras.length() > DataBlock.getMaxBlockSize();
+                boolean tooManyHeaders = i >= DataBlock.getHeadersPerFile() - 1;
                 boolean tooMuchWastedSpace = bytesWasted > MAX_WASTED_SPACE_ALLOWED;
                 if (!tooMuchWastedSpace && !tooManyBytes && !tooManyHeaders) {
                     return;
                 }
 
+//                System.out.println("DEBUG> "+tooManyBytes+ " " + tooManyHeaders+ " " + tooMuchWastedSpace+" "+this.getAbsolutePath());
+
                 // If not count wasted space, still too many bytes?
-                boolean tooManyBytesAdjusted = (ras.length() - bytesWasted) > DataBlock.MAX_BLOCK_SIZE;
+                boolean tooManyBytesAdjusted = (ras.length() - bytesWasted) > DataBlock.getMaxBlockSize();
 
                 // flag for if the block should create sub-blocks are be cleaned up and kept as a single block
                 boolean dontSplitBlock = tooMuchWastedSpace && !tooManyHeaders && !tooManyBytesAdjusted;
@@ -649,7 +660,7 @@ public class DataBlock extends Debuggable implements Comparable {
         }
 
         // buffer the entire data block header
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // lazy load the file in case it doesn't exist.
         lazyCreateFile(buf);
@@ -678,8 +689,13 @@ public class DataBlock extends Debuggable implements Comparable {
                 }
             }
 
-            // add to the queue, don't wait for it to finish
-            ddc.dbu.mergeQueue.put(new DataBlockToMerge(backupFile, ddc));
+            // FOUND BUG: sometimes freezed here - the merge queue must be filling
+            // up. Instead, can we merge on this thread?
+//            // add to the queue, don't wait for it to finish
+            DataBlockToMerge dbtm = new DataBlockToMerge(backupFile, ddc);
+            ddc.dbu.mergeQueue.put(dbtm);
+//            mergeDataBlockNow(dbtm);
+
         } /**
          * "otherwise, add to the slow queue of merge" --Jayson
          * "This condition occurs if just cleaning up wasted space, and have not reached the maximum
@@ -708,6 +724,24 @@ public class DataBlock extends Debuggable implements Comparable {
         }
     }
 
+    private void mergeDataBlockNow(DataBlockToMerge dbtm) throws Exception {
+        // the size to decrement
+        long sizeToDecrement = dbtm.fileToMerge.length();
+        // handle the merge
+        try {
+            this.dbu.mergeOldDataBlock(dbtm.fileToMerge);
+        } catch (UnexpectedEndOfDataBlockException ex) {
+
+            // Send in the data block for salvaging and recreation
+            this.dbu.repairCorruptedDataBlock(dbtm.fileToMerge, "ProjectFindingThread: merging old data block (2, indefinite merging)");
+
+            // Rethrow the exception so logs appropriately
+            throw ex;
+        }
+
+        dbtm.ddc.adjustUsedSpace(-sizeToDecrement);
+    }
+
     /**
      * <p>Delete the bytes (chunk) from this DataBlock based on hash.</p>
      * @param hash
@@ -732,7 +766,7 @@ public class DataBlock extends Debuggable implements Comparable {
 //        int bytesPerEntry = (BigHash.HASH_LENGTH + 1 + 1 + 4 + 4);
 //        int bytesToRead = bytesPerEntry * HEADERS_PER_FILE;
         // buffer that amount
-        byte[] buf = new byte[bytesToRead];
+        byte[] buf = new byte[getBytesToRead()];
 
         // make sure that the file exists
         lazyCreateFile(buf);
@@ -741,14 +775,14 @@ public class DataBlock extends Debuggable implements Comparable {
         final byte isMetaDataByte = isMetaData ? META_DATA : DATA;
 
         // track the last valid offset. start at the end of the header
-        int nextValidOffset = bytesToRead;
+        int nextValidOffset = getBytesToRead();
         // read from the file
         RandomAccessFile ras = new RandomAccessFile(rasFile, "rw");
         try {
             // get the complete header
             fillWithBytes(buf, ras, rasFile.getAbsolutePath(), "Reading in headers for data block to delete a " + (isMetaData ? "meta data" : "data") + " chunk.");
             // check for the hash
-            for (int i = 0; i < HEADERS_PER_FILE; i++) {
+            for (int i = 0; i < getHeadersPerFile(); i++) {
                 // calc the offset
                 int offset = i * bytesPerEntry;
                 // parse the entry parts: hash, type, status, offset, size
@@ -913,5 +947,47 @@ public class DataBlock extends Debuggable implements Comparable {
                 this.ddc = newDDC;
             }
         }
+    }
+
+    /**
+     * @return the maxBlockSize
+     */
+    public static int getMaxBlockSize() {
+        return maxBlockSize;
+    }
+
+    /**
+     * @param aMaxBlockSize the maxBlockSize to set
+     */
+    public static void setMaxBlockSize(int aMaxBlockSize) {
+        maxBlockSize = aMaxBlockSize;
+    }
+
+    /**
+     * @return the headersPerFile
+     */
+    public static int getHeadersPerFile() {
+        return headersPerFile;
+    }
+
+    /**
+     * @param aHeadersPerFile the headersPerFile to set
+     */
+    public static void setHeadersPerFile(int aHeadersPerFile) {
+        headersPerFile = aHeadersPerFile;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+//        System.err.println("I'm being garbage collected: "+this.filename);
+        super.finalize();
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public static int getBytesToRead() {
+        return bytesPerEntry * getHeadersPerFile();
     }
 }

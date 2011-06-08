@@ -29,7 +29,7 @@ public class CompressionUtilTest extends TrancheTestCase {
 
     public void testGZIP() throws Exception {
         TestUtil.printTitle("CompressionUtil:testGZIP()");
-        File file = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File file = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedFile = CompressionUtil.gzipCompress(file);
         File decompressedFile = CompressionUtil.gzipDecompress(compressedFile);
         TestUtil.assertFilesAreEquivalent(file, decompressedFile);
@@ -37,7 +37,7 @@ public class CompressionUtilTest extends TrancheTestCase {
 
     public void testLZMA() throws Exception {
         TestUtil.printTitle("CompressionUtil:testLZMA()");
-        File file = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File file = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedFile = CompressionUtil.lzmaCompress(file);
         File decompressedFile = CompressionUtil.lzmaDecompress(compressedFile);
         TestUtil.assertFilesAreEquivalent(file, decompressedFile);
@@ -45,7 +45,7 @@ public class CompressionUtilTest extends TrancheTestCase {
 
     public void testBZIP2() throws Exception {
         TestUtil.printTitle("CompressionUtil:testBZIP2()");
-        File file = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File file = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedFile = CompressionUtil.bzip2Compress(file);
         File decompressedFile = CompressionUtil.bzip2Decompress(compressedFile);
         TestUtil.assertFilesAreEquivalent(file, decompressedFile);

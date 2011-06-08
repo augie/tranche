@@ -196,7 +196,7 @@ public class BigHashTest extends TrancheTestCase {
      */
     public void testHashingInputStream() throws Exception {
         // max file size
-        int maxFileSize = DataBlockUtil.ONE_MB;
+        int maxFileSize = DataBlockUtil.getMaxChunkSize();
         // make up some data
         byte[] data = new byte[(int) (Math.random() * maxFileSize)];
         RandomUtil.getBytes(data);
@@ -220,7 +220,7 @@ public class BigHashTest extends TrancheTestCase {
      */
     public void testPaddedInputStream() throws Exception {
         // max file size
-        int maxFileSize = DataBlockUtil.ONE_MB;
+        int maxFileSize = DataBlockUtil.getMaxChunkSize();
         // make up some data
         byte[] data = new byte[(int) (Math.random() * maxFileSize)];
         // make up some padding
@@ -248,7 +248,7 @@ public class BigHashTest extends TrancheTestCase {
      */
     public void testHashingInputStreamExtra() throws Exception {
         // max file size
-        int maxFileSize = DataBlockUtil.ONE_MB;
+        int maxFileSize = DataBlockUtil.getMaxChunkSize();
         // make up some data
         byte[] data = new byte[(int) (Math.random() * maxFileSize)];
         RandomUtil.getBytes(data);

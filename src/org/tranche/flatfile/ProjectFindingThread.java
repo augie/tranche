@@ -59,6 +59,7 @@ public class ProjectFindingThread extends DebuggableThread {
 
     @Override()
     public void run() {
+//        System.out.println("DEBUG> ProjectFindingThread running");
         /*
          * Check to see if testing with thread off. If so, return, but print a
          * conspicuous notice.
@@ -155,18 +156,23 @@ public class ProjectFindingThread extends DebuggableThread {
             }
         }
 
+//        System.out.println("DEBUG> ProjectFindingThread ready poll mergeQueue");
+
         // handle the queue of files to merge
         while (!this.ffts.isClosed() && !this.isStopped()) {
             // try to get a item to use
             DataBlockToMerge dbtm = null;
             try {
                 dbtm = this.ffts.getDataBlockUtil().mergeQueue.poll(100, TimeUnit.MILLISECONDS);
+
             } catch (InterruptedException e) {
                 // noop
             }
             if (dbtm == null) {
                 continue;
             }
+
+//            System.out.println("DEBUG> "+dbtm.fileToMerge.getAbsolutePath()+" ("+this.ffts.getDataBlockUtil().mergeQueue.size()+")");
 
             // try the merge
             try {

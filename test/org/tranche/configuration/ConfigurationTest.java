@@ -397,7 +397,7 @@ public class ConfigurationTest extends TrancheTestCase {
             Set<BigHash> stickyProjects = new HashSet();
             // add a random number of sticky projects
             for (int i = 0; i < RandomUtil.getInt(30) + 1; i++) {
-                stickyProjects.add(DevUtil.getRandomBigHash(RandomUtil.getInt(DataBlockUtil.ONE_MB)));
+                stickyProjects.add(DevUtil.getRandomBigHash(RandomUtil.getInt(DataBlockUtil.getMaxChunkSize())));
             }
 
             // set the spans

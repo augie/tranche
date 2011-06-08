@@ -55,6 +55,7 @@ import org.tranche.util.TempFileUtil;
 @Fix(problem = "Corrupted DataBlock files, almost certainly due to server process interrupted rudely. These represented dead ends in b-tree, as they would always fail when adding or getting chunks.", solution = "Detect corrupted datablock in DataBlock.fillBytes, and throw as UnexpectedEndOfDataBlockException. Selectly catch and add to DataBlockUtil.repairCorruptedDataBlock, which will salvage.", day = 8, month = 8, year = 2008, author = "Bryan Smith")
 public class DataBlockUtil {
 
+    public static final boolean DEFAULT_STORE_DATA_BLOCK_REFERENCES = true;
     /**
      * <p>When moving, data block must have this much free space before a move is considered.</p>
      */
@@ -75,10 +76,15 @@ public class DataBlockUtil {
      * <p>If set to true, logs aggregate data about DataBlocks.</p>
      */
     private static boolean isLogging = false;
+    
+    public static int DEFAULT_MAX_CHUNK_SIZE = 1024 * 1024;
+    private static int maxChunkSize = DEFAULT_MAX_CHUNK_SIZE;
+
     /**
      * <p>The default file chunk.</p>
+     * @deprecated Use getMaxChunkSize()
      */
-    public static final int ONE_MB = 1024 * 1024;    // Keep track of how many data blocks were successfully merged
+    private static int ONE_MB = DEFAULT_MAX_CHUNK_SIZE;    // Keep track of how many data blocks were successfully merged
     private long successMergeDataBlock = 0;    // Keep track of how many data blocks failed to merge
     private long failedMergeDataBlock = 0;    // Keep track of total. Might be different than sum of success and fail if error in finally block
     private long totalMergeDataBlock = 0;    // 
@@ -117,15 +123,6 @@ public class DataBlockUtil {
      * <p>Total number of data blocks moved when balancing.</p>
      */
     private long dataBlocksBalanced = 0;
-    /**
-     * <p>If true, we're in the process of balancing.</p>
-     */
-    private boolean isBalancing = false;
-    /**
-     * 
-     */
-    private static final String CORRUPTED_DATA_BLOCK_FILENAME = "corrupted-data-block.healingthread";
-
     /**
      * 
      */
@@ -289,55 +286,6 @@ public class DataBlockUtil {
     }
 
     /**
-     * Remove all data/meta data hashes from "memory" (disk-backed) if for given DataBlock.
-     */
-    /**
-     * <p>Remove all the hashes associated with a particular DataBlock from the list of data and meta data hashes available.</p>
-     * @param block
-     * @throws java.lang.Exception
-     */
-    private final synchronized void removeHashesAssociatedWithDatablock(DataBlock block) throws Exception {
-        // Remove data
-        for (BigHash h : block.getHashes(false)) {
-            this.dataHashes.delete(h);
-        }
-        // Remove meta data
-        for (BigHash h : block.getHashes(true)) {
-            this.metaDataHashes.delete(h);
-        }
-    }
-//    /**
-//     * Gets a cached data block.
-//     */
-//    public DataBlock getDataBlock(String name, DataDirectoryConfiguration ddc) {
-//        // the query data block
-//        DataBlock query = new DataBlock(name, null);
-//        synchronized (dataBlocks) {
-//            // check if this block exists
-//            int index = Collections.binarySearch(dataBlocks, query, new Comparator(){
-//                public int compare(Object a, Object b) {
-//                    DataBlock da = (DataBlock)a;
-//                    DataBlock db = (DataBlock)b;
-//                    return da.filename.compareTo(db.filename);
-//                }
-//            });
-//            if (index < 0) {
-//                // make a block using the existing directory
-//                DataBlock block = new DataBlock(name, ddc);
-//                // add the new block
-//                dataBlocks.add(block);
-//                // sort to keep the search working
-//                Collections.sort(dataBlocks);
-//                return block;
-//            } else {
-//                // return the cached match
-//                DataBlock match = dataBlocks.get(index);
-//                return match;
-//            }
-//        }
-//    }
-
-    /**
      * <p>Helper method to get the file/dir that matches the given hash.</p>
      * @param hash
      * @return
@@ -463,8 +411,9 @@ public class DataBlockUtil {
             if (toReturn == null && i <= test.length() - 2) {
                 // search for existing blocks
                 DataBlock findOrCreate = searchForExistingDataBlock(buildName.toString());
-                // set the reference
-                blocks[offset] = findOrCreate;
+                if (isStoreDataBlockReferences()) {
+                    blocks[offset] = findOrCreate; // Only stored if variable set
+                }
                 // set the block reference
                 toReturn = findOrCreate;
             }
@@ -497,6 +446,13 @@ public class DataBlockUtil {
         try {
 
             List<DataBlock> dataBlocksToSearch = new ArrayList();
+
+            // NOTE: this will do nothing when not storing references to DataBlocks in
+            //       this.dataBlocks as currently implemented.
+            //
+            //       Either:
+            //         - Reimplement to work when isStoreDataBlockReferences is false
+            //         - DataBlock balancing off when isStoreDataBlockReferences is false
             for (DataBlock db : this.dataBlocks) {
                 dataBlocksToSearch.add(db);
             }
@@ -1130,7 +1086,7 @@ public class DataBlockUtil {
      * @throws java.lang.Exception
      */
     public final void mergeOldDataBlock(final File fileToMerge) throws FileNotFoundException, IOException, Exception {
-        mergeOldDataBlock(fileToMerge, new byte[DataBlock.bytesToRead]);
+        mergeOldDataBlock(fileToMerge, new byte[DataBlock.getBytesToRead()]);
     }
 
     /**
@@ -1157,7 +1113,7 @@ public class DataBlockUtil {
                 // get the complete header
                 DataBlock.fillWithBytes(buf, ras, fileToMerge.getAbsolutePath(), "Reading in headers to merge old data block.");
                 // check for the hash
-                for (int j = 0; j < DataBlock.HEADERS_PER_FILE; j++) {
+                for (int j = 0; j < DataBlock.getHeadersPerFile(); j++) {
                     // calc the offset
                     int offset = j * DataBlock.bytesPerEntry;
                     // parse the entry parts: hash, type, status, offset, size
@@ -1365,7 +1321,7 @@ public class DataBlockUtil {
             boolean wasHeaderCorrupted = false;
             boolean wasBodyCorrupted = false;
             int metaSalvaged = 0, dataSalvaged = 0;
-            for (int i = 0; i < DataBlock.HEADERS_PER_FILE; i++) {
+            for (int i = 0; i < DataBlock.getHeadersPerFile(); i++) {
                 int offset = i * DataBlock.bytesPerEntry;
 
                 // If header fails, we are done
@@ -1710,8 +1666,6 @@ public class DataBlockUtil {
                 return false;
             }
 
-            isBalancing = true;
-
             /**
              * Find DDC with most available space.
              * 
@@ -1806,7 +1760,6 @@ public class DataBlockUtil {
                 return moved;
             }
         } finally {
-            isBalancing = false;
             printTracerBalancing("Time to find single data block to move to balance data directories: " + TextUtil.formatTimeLength(TimeUtil.getTrancheTimestamp() - start) + (status != null ? "(" + status + ")" : ""));
         }
     }
@@ -1881,5 +1834,49 @@ public class DataBlockUtil {
      */
     public void setMinSizeAvailableInTargetDataBlockBeforeBalance(int aMinSizeAvailableInTargetDataBlockBeforeBalance) {
         ffts.getConfiguration().setValue(ConfigKeys.HASHSPANFIX_REQUIRED_MIN_USED_BYTES_IN_MAX_DATABLOCK_TO_BALANCE_DATA_DIRECTORIES, String.valueOf(aMinSizeAvailableInTargetDataBlockBeforeBalance));
+    }
+
+    private boolean lastIsStoreDataBlockReferences = DEFAULT_STORE_DATA_BLOCK_REFERENCES;
+
+    /**
+     * This only sets in memory. To set permanently, set the Configuration value ConfigKeys.DATABLOCK_STORE_DATABLOCK_REFERENCES to "true".
+     * @deprecated Set the value in Configuration file
+     * @param store
+     * @return
+     */
+    public void setStoreDataBlockReferences(boolean store) {
+        lastIsStoreDataBlockReferences = store;
+    }
+
+    /**
+     * @return the storeDataBlockReferences
+     */
+    public boolean isStoreDataBlockReferences() {
+        boolean storeDataBlockReferences = lastIsStoreDataBlockReferences;
+
+        try {
+            storeDataBlockReferences = Boolean.valueOf(this.ffts.getConfiguration().getValue(ConfigKeys.DATABLOCK_STORE_DATABLOCK_REFERENCES));
+        } catch (Exception nope) { }
+
+        if (lastIsStoreDataBlockReferences != storeDataBlockReferences) {
+            printNotice("Changed \"" + ConfigKeys.DATABLOCK_STORE_DATABLOCK_REFERENCES + "\" from "+lastIsStoreDataBlockReferences+" to "+storeDataBlockReferences);
+            lastIsStoreDataBlockReferences = storeDataBlockReferences;
+        }
+
+        return storeDataBlockReferences;
+    }
+
+    /**
+     * @return the ONE_MB
+     */
+    public static int getMaxChunkSize() {
+        return maxChunkSize;
+    }
+
+    /**
+     * @param aONE_MB the ONE_MB to set
+     */
+    public static void setMaxChunkSize(int aONE_MB) {
+        maxChunkSize = aONE_MB;
     }
 }

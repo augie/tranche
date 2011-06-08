@@ -68,7 +68,7 @@ public class ServerWorkerThreadTest extends TrancheTestCase {
             int numRequestedHashes = numHashes + bogusHashes;
             BigHash hashes[] = new BigHash[numRequestedHashes];
             for (int i = 0; i < numHashes; i++) {
-                byte[] bytes = DevUtil.createRandomDataChunk(DataBlockUtil.ONE_MB);
+                byte[] bytes = DevUtil.createRandomDataChunk(DataBlockUtil.getMaxChunkSize());
                 hashes[i] = new BigHash(bytes);
                 IOUtil.setData(ffts, DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), hashes[i], bytes);
             }

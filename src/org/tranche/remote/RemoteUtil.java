@@ -243,7 +243,7 @@ public class RemoteUtil {
         }
 
         // if more than 100000, buffer on disk
-        long cutoff = DataBlockUtil.ONE_MB;
+        long cutoff = DataBlockUtil.getMaxChunkSize();
         if (size <= cutoff) {
             // keep it all in memory
             byte[] buf = new byte[(int) size];

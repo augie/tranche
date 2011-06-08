@@ -188,7 +188,7 @@ public class ProjectFileUtilTest extends TrancheTestCase {
             testNetwork.start();
 
             // Upload project to server
-            File tempProj = DevUtil.createTestProject(10, 1, DataBlockUtil.ONE_MB * 3);
+            File tempProj = DevUtil.createTestProject(10, 1, DataBlockUtil.getMaxChunkSize() * 3);
 
             byte[] randomData = Utils.makeRandomData(512);
             File tempFile = new File(tempProj + "delete");

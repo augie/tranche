@@ -417,7 +417,7 @@ public final class BigHash implements Comparable<BigHash> {
      */
     public static final BigHash createFromBytes(byte[] bytes, int offset) {
         if (bytes.length - offset < HASH_LENGTH) {
-            throw new RuntimeException("A hash requires exactly " + HASH_LENGTH + " bytes. You provided " + bytes.length);
+            throw new RuntimeException("A hash requires exactly " + HASH_LENGTH + " bytes. You provided " + bytes.length + "(bytes.length = " + bytes.length + "; offset = " + offset + ")");
         }
 
         // make a new, already initialized hash

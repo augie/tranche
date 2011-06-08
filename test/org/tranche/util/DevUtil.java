@@ -225,7 +225,7 @@ public class DevUtil {
     }
 
     public static HashSpan makeRandomHashSpan() throws Exception {
-        return new HashSpan(getRandomBigHash(RandomUtil.getInt(DataBlockUtil.ONE_MB)), getRandomBigHash(RandomUtil.getInt(DataBlockUtil.ONE_MB)));
+        return new HashSpan(getRandomBigHash(RandomUtil.getInt(DataBlockUtil.getMaxChunkSize())), getRandomBigHash(RandomUtil.getInt(DataBlockUtil.getMaxChunkSize())));
     }
 
     public static Set<HashSpan> createRandomHashSpanSet(int maxSize) throws Exception {
@@ -608,7 +608,7 @@ public class DevUtil {
 
     public static MetaData createRandomMetaData(int uploaders, boolean isProjectFile, boolean isEncrypt) throws Exception {
         // make some random data less than one MB
-        byte[] data = new byte[RandomUtil.getInt(DataBlockUtil.ONE_MB)];
+        byte[] data = new byte[RandomUtil.getInt(DataBlockUtil.getMaxChunkSize())];
         RandomUtil.getBytes(data);
         ByteArrayInputStream bais = null;
 
@@ -697,7 +697,7 @@ public class DevUtil {
 
         ArrayList<BigHash> parts = new ArrayList<BigHash>();
         // add the same hash over and over with slight changes - takes too long to make a new one every time
-        BigHash hash = getRandomBigHash(RandomUtil.getInt(DataBlockUtil.ONE_MB / 2));
+        BigHash hash = getRandomBigHash(RandomUtil.getInt(DataBlockUtil.getMaxChunkSize() / 2));
         // add hashes
         for (int i = 0; i < 15000; i++) {
             parts.add(hash);

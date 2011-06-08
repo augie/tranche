@@ -111,7 +111,7 @@ public class AddFileToolTest extends TrancheTestCase {
         File upload = null;
         try {
             upload = TempFileUtil.createTempFileWithName("name.file");
-            DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB * 2);
+            DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() * 2);
             uploadReport = testFailure(upload, "title", "description", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey());
         } finally {
             IOUtil.safeDelete(upload);
@@ -409,7 +409,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeTAR() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeTAR()");
-        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.tarCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -418,7 +418,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeZIP() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeZIP()");
-        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.zipCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -427,7 +427,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeTGZ() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeTGZ()");
-        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.tgzCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -436,7 +436,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeTBZ() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeTBZ()");
-        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestProject(10, 1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.tbzCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -1521,7 +1521,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             int fileCount = 100;
-            final File uploadFile = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 2);
+            final File uploadFile = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 2);
 
             // add the data
             AddFileTool aft = new AddFileTool();
@@ -1551,7 +1551,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             int fileCount = 100;
-            final File uploadFile = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 2);
+            final File uploadFile = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 2);
 
             // add the data
             AddFileTool aft = new AddFileTool();
@@ -1722,7 +1722,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             File upload = TempFileUtil.createTempFileWithName("name.file");
-            DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+            DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
 
             // set up add file tool
             AddFileTool aft = new AddFileTool();
@@ -1796,7 +1796,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
             int fileCount = 20;
 
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB / 2);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() / 2);
 
             // set up add file tool
             AddFileTool aft = new AddFileTool();
@@ -1842,7 +1842,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             File upload = TempFileUtil.createTempFileWithName("name.file");
-            DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+            DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
 
             // set up add file tool
             AddFileTool aft = new AddFileTool();
@@ -1895,7 +1895,7 @@ public class AddFileToolTest extends TrancheTestCase {
         try {
             testNetwork.start();
 
-            File upload = DevUtil.createTestProject(50, 1, DataBlockUtil.ONE_MB * 5);
+            File upload = DevUtil.createTestProject(50, 1, DataBlockUtil.getMaxChunkSize() * 5);
 
             // set up add file tool
             final AddFileTool aft = new AddFileTool();
@@ -1947,7 +1947,7 @@ public class AddFileToolTest extends TrancheTestCase {
         TestUtil.printTitle("AddFileToolTest:testNoServersToUploadTo()");
 
         File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+        DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
 
         System.out.println("----------------------------------------------------------------------");
         System.out.println("STARTING 1: No servers at all");
@@ -2108,7 +2108,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public AddFileToolReport testFailure(String title, String description, X509Certificate certificate, PrivateKey privateKey) throws Exception {
         File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+        DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
         return testFailure(upload, title, description, certificate, privateKey);
     }
 
@@ -2138,19 +2138,19 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testFileSmall() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testFileSmall()");
-        testFile(DataBlockUtil.ONE_MB / 2, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false, null);
+        testFile(DataBlockUtil.getMaxChunkSize() / 2, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false, null);
     }
 
     public void testFileEncrypted() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testFileEncrypted()");
-        testFile(DataBlockUtil.ONE_MB / 2, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, "passphrase", true, false, null);
+        testFile(DataBlockUtil.getMaxChunkSize() / 2, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, "passphrase", true, false, null);
     }
 
     public void testNoneEncoding() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testNoneEncoding()");
 
         // vars
-        int size = DataBlockUtil.ONE_MB;
+        int size = DataBlockUtil.getMaxChunkSize();
         String title = "title";
         String description = "descrption";
         X509Certificate certificate = DevUtil.getDevAuthority();
@@ -2183,7 +2183,7 @@ public class AddFileToolTest extends TrancheTestCase {
             if (uploadReport.getHash() == null) {
                 fail("Hash is null.");
             }
-            assertEquals(DataBlockUtil.ONE_MB, uploadReport.getBytesUploaded());
+            assertEquals( DataBlockUtil.getMaxChunkSize(), uploadReport.getBytesUploaded());
             GetFileTool gft = new GetFileTool();
             gft.setHash(uploadReport.getHash());
             assertEquals(1, gft.getMetaData().getParts().size());
@@ -2198,12 +2198,12 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testFileBig() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testFileBig()");
-        testFile(DataBlockUtil.ONE_MB * 10, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false, null);
+        testFile(DataBlockUtil.getMaxChunkSize() * 10, "title", "descrption", DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), null, null, true, false, null);
     }
 
     public void testExplodeGZIP() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeGZIP()");
-        File upload = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.gzipCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -2212,7 +2212,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeBZIP2() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeBZIP2()");
-        File upload = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.bzip2Compress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -2221,7 +2221,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testExplodeLZMA() throws Exception {
         TestUtil.printTitle("AddFileToolTest:testExplodeLZMA()");
-        File upload = DevUtil.createTestFile(1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestFile(1, DataBlockUtil.getMaxChunkSize() / 2);
         File compressedUpload = CompressionUtil.lzmaCompress(upload);
         File renameTo = new File(TempFileUtil.createTemporaryDirectory(), compressedUpload.getName());
         IOUtil.renameFallbackCopy(compressedUpload, renameTo);
@@ -2257,7 +2257,7 @@ public class AddFileToolTest extends TrancheTestCase {
             Set<String> hosts = new HashSet<String>();
             hosts.add(HOST1);
 
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 5);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 5);
 
             // upload
             AddFileToolReport report = testUpload(hosts, upload, title, description, certificate, privateKey, license, passphrase, compress, explode);
@@ -2291,7 +2291,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             File upload = TempFileUtil.createTempFileWithName("name.file");
-            DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+            DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
 
             AddFileTool aft = new AddFileTool();
             aft.addServerToUse(HOST1);
@@ -2346,7 +2346,7 @@ public class AddFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             int fileCount = 20;
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 5);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 5);
 
             AddFileTool aft = new AddFileTool();
             aft.addServerToUse(HOST1);
@@ -2822,7 +2822,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testDirectoryEvents(Collection<String> hosts) throws Exception {
         int fileCount = 20;
-        File upload = DevUtil.createTestProject(20, 1, DataBlockUtil.ONE_MB / 2);
+        File upload = DevUtil.createTestProject(20, 1, DataBlockUtil.getMaxChunkSize() / 2);
 
         AddFileTool aft = new AddFileTool();
         aft.addServersToUse(hosts);
@@ -2931,7 +2931,7 @@ public class AddFileToolTest extends TrancheTestCase {
 
     public void testFileEvents(Collection<String> hosts) throws Exception {
         File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, DataBlockUtil.ONE_MB / 2);
+        DevUtil.createTestFile(upload, DataBlockUtil.getMaxChunkSize() / 2);
 
         AddFileTool aft = new AddFileTool();
         aft.addServersToUse(hosts);

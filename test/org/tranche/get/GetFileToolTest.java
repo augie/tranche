@@ -380,7 +380,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
         //create temp file
         File upload = TempFileUtil.createTempFileWithName("name.file");
-        DevUtil.createTestFile(upload, 100 * DataBlockUtil.ONE_MB);
+        DevUtil.createTestFile(upload, 100 * DataBlockUtil.getMaxChunkSize());
 
         try {
             testNetwork.start();
@@ -511,7 +511,7 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             // create test project
-            File uploadFile = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.ONE_MB * 2);
+            File uploadFile = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = uploadTest(uploadFile, HOST1, null).getHash();
 
             // download the meta data
@@ -542,22 +542,22 @@ public class GetFileToolTest extends TrancheTestCase {
 
     public void testGetFileInMemory() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetFileInMemory()");
-        testGetFileWithSize(false, RandomUtil.getInt(DataBlockUtil.ONE_MB));
+        testGetFileWithSize(false, RandomUtil.getInt(DataBlockUtil.getMaxChunkSize()));
     }
 
     public void testGetFileDiskBacked() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetFileDiskBacked()");
-        testGetFileWithSize(false, DataBlockUtil.ONE_MB * 10);
+        testGetFileWithSize(false, DataBlockUtil.getMaxChunkSize() * 10);
     }
 
     public void testGetFileEncryptedInMemory() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetFileEncryptedInMemory()");
-        testGetFileWithSize(true, RandomUtil.getInt(DataBlockUtil.ONE_MB));
+        testGetFileWithSize(true, RandomUtil.getInt(DataBlockUtil.getMaxChunkSize()));
     }
 
     public void testGetFileEncryptedDiskBacked() throws Exception {
         TestUtil.printTitle("GetFileToolTest:testGetFileEncryptedDiskBacked()");
-        testGetFileWithSize(true, DataBlockUtil.ONE_MB * 10);
+        testGetFileWithSize(true, DataBlockUtil.getMaxChunkSize() * 10);
     }
 
     public void testGetFileWithSize(boolean encrypted, int size) throws Exception {
@@ -632,7 +632,7 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             // create test project
-            File uploadFile = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.ONE_MB * 2);
+            File uploadFile = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.getMaxChunkSize() * 2);
             String passphrase = null;
             if (encrypted) {
                 passphrase = RandomUtil.getString(15);
@@ -677,7 +677,7 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             // create test project
-            File uploadFile = DevUtil.createTestProject(20, 1, DataBlockUtil.ONE_MB * 2);
+            File uploadFile = DevUtil.createTestProject(20, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = uploadTest(uploadFile, HOST1, null).getHash();
 
             //
@@ -797,14 +797,14 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // create a fake project
             int fileCount = 100;
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 2);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = uploadTest(upload, HOST1, null).getHash();
 
             // get the list of data chunks
             BigHash[] dataHashes = testNetwork.getFlatFileTrancheServer(HOST1).getDataHashes(BigInteger.ZERO, BigInteger.valueOf(10));
             int filesToKill = 10, filesKilled = 0;
             for (BigHash dataHash : dataHashes) {
-                if (dataHash.getLength() > (DataBlockUtil.ONE_MB / 2)) {
+                if (dataHash.getLength() > (DataBlockUtil.getMaxChunkSize() / 2)) {
                     IOUtil.deleteData(testNetwork.getFlatFileTrancheServer(HOST1), DevUtil.getDevAuthority(), DevUtil.getDevPrivateKey(), dataHash);
                     filesKilled++;
                     if (filesKilled == filesToKill) {
@@ -867,7 +867,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // create a fake project
             int fileCount = 100;
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB * 2);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = uploadTest(upload, HOST1, null).getHash();
 
             // get the list of data chunks
@@ -929,7 +929,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // create test project
             File uploadFile = TempFileUtil.createTemporaryFile();
-            DevUtil.createTestFile(uploadFile, DataBlockUtil.ONE_MB / 2);
+            DevUtil.createTestFile(uploadFile, DataBlockUtil.getMaxChunkSize() / 2);
             File uploadFile2 = TempFileUtil.createTemporaryFile();
             IOUtil.copyFile(uploadFile, uploadFile2);
             AddFileToolReport uploadReport1 = uploadTest(uploadFile, HOST1, null);
@@ -994,7 +994,7 @@ public class GetFileToolTest extends TrancheTestCase {
         TestUtil.printTitle("GetFileToolTest:testValidateFile()");
 
         File tempFile = TempFileUtil.createTemporaryFile();
-        DevUtil.createTestFile(tempFile, 1, DataBlockUtil.ONE_MB * 2);
+        DevUtil.createTestFile(tempFile, 1, DataBlockUtil.getMaxChunkSize() * 2);
         BigHash expectedHash = new BigHash(tempFile);
         MetaData metaData = new MetaData();
         // uploader
@@ -1119,7 +1119,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // create test project
             int fileCount = RandomUtil.getInt(10) + 10;
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize());
             BigHash hash = uploadTest(upload, HOST1, null).getHash();
 
             //
@@ -1222,7 +1222,7 @@ public class GetFileToolTest extends TrancheTestCase {
 
             // create test project
             int fileCount = 100;
-            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.ONE_MB);
+            File upload = DevUtil.createTestProject(fileCount, 1, DataBlockUtil.getMaxChunkSize());
             BigHash hash = uploadTest(upload, HOST1, null).getHash();
 
             //
@@ -1274,7 +1274,7 @@ public class GetFileToolTest extends TrancheTestCase {
             testNetwork.start();
 
             // make a test project
-            File uploadDir = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.ONE_MB * 2);
+            File uploadDir = DevUtil.createTestProject(RandomUtil.getInt(10) + 2, 1, DataBlockUtil.getMaxChunkSize() * 2);
             // use a random passphrase
             String passphrase = RandomUtil.getString(10);
             BigHash hash = uploadTest(uploadDir, HOST1, passphrase).getHash();
@@ -1347,13 +1347,13 @@ public class GetFileToolTest extends TrancheTestCase {
             if (encrypted) {
                 passphrase = RandomUtil.getString(15);
             }
-            File upload = DevUtil.createTestProject(20, 1, DataBlockUtil.ONE_MB * 2);
+            File upload = DevUtil.createTestProject(20, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash = uploadTest(upload, HOST1, passphrase).getHash();
             String passphrase2 = null;
             if (encrypted) {
                 passphrase2 = RandomUtil.getString(15);
             }
-            File upload2 = DevUtil.createTestProject(20, 1, DataBlockUtil.ONE_MB * 2);
+            File upload2 = DevUtil.createTestProject(20, 1, DataBlockUtil.getMaxChunkSize() * 2);
             BigHash hash2 = uploadTest(upload2, HOST1, passphrase2).getHash();
 
             //
