@@ -55,7 +55,7 @@ import org.tranche.util.TempFileUtil;
 @Fix(problem = "Corrupted DataBlock files, almost certainly due to server process interrupted rudely. These represented dead ends in b-tree, as they would always fail when adding or getting chunks.", solution = "Detect corrupted datablock in DataBlock.fillBytes, and throw as UnexpectedEndOfDataBlockException. Selectly catch and add to DataBlockUtil.repairCorruptedDataBlock, which will salvage.", day = 8, month = 8, year = 2008, author = "Bryan Smith")
 public class DataBlockUtil {
 
-    public static final boolean DEFAULT_STORE_DATA_BLOCK_REFERENCES = true;
+    public static final boolean DEFAULT_STORE_DATA_BLOCK_REFERENCES = false;
     /**
      * <p>When moving, data block must have this much free space before a move is considered.</p>
      */

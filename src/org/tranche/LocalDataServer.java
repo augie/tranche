@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import org.tranche.clc.TrancheServerCommandLineClient;
 import org.tranche.commons.DebugUtil;
+import org.tranche.configuration.ConfigKeys;
+import org.tranche.configuration.Configuration;
+import org.tranche.flatfile.DataBlockUtil;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.server.Server;
 import org.tranche.servers.ServerUtil;
@@ -28,6 +31,7 @@ import org.tranche.util.TestUtil;
 /**
  * <p>There can be only one local data server.</p>
  * @author James "Augie" Hill - augman85@gmail.com
+ * @author Bryan Smith - besmit@umich.edu
  */
 public class LocalDataServer {
 
@@ -209,6 +213,7 @@ public class LocalDataServer {
         System.out.println("    -p, --port              Value: positive integer.        The port number to which the server will be bound.");
         System.out.println("    -s, --ssl               Value: true/false.              Whether the server should operate over SSL connections.");
         System.out.println("    -z, --userzipfile       Values: two strings.            The file system location of the user zip file for the server and the passphrase to unlock it.");
+        System.out.println("    -r, --datablockrefs     Value: true/false.              Whether to store datablock refs.");
         System.out.println();
         System.out.println("RETURN CODES");
         System.out.println("    0: Exited normally");
@@ -232,6 +237,8 @@ public class LocalDataServer {
                     return;
                 }
             }
+
+            boolean isStoreDataBlockReferences = DataBlockUtil.DEFAULT_STORE_DATA_BLOCK_REFERENCES;
 
             // flags first
             for (int i = 0; i < args.length; i++) {
@@ -343,6 +350,20 @@ public class LocalDataServer {
                     } finally {
                         i++;
                     }
+                } else if (args[i].equals("-r") || args[i].equals("--datablockrefs")) {
+                    try {
+                        isStoreDataBlockReferences = Boolean.valueOf(args[i + 1]);
+                    } catch (Exception e) {
+                        System.err.println("ERROR: Invalid boolean value (isStoreDataBlockReferences): " + args[i + 1]);
+                        DebugUtil.debugErr(LocalDataServer.class, e);
+                        if (!TestUtil.isTesting()) {
+                            System.exit(2);
+                        } else {
+                            return;
+                        }
+                    } finally {
+                        i++;
+                    }
                 } else if (args[i].equals("-z") || args[i].equals("--userzipfile")) {
                     try {
                         UserZipFile user = new UserZipFile(new File(args[i + 1]));
@@ -365,6 +386,7 @@ public class LocalDataServer {
             // set up the local server
             try {
                 setUpFFTS();
+                setStoreDataBlockReferences(isStoreDataBlockReferences);
 
                 // interact using a client -- will also start a server around the FFTS
                 client = new TrancheServerCommandLineClient(ffts, System.in, System.out);
@@ -393,5 +415,16 @@ public class LocalDataServer {
                 return;
             }
         }
+    }
+
+    /**
+     *
+     * @param isUsingDataBlockReferences
+     */
+    private static void setStoreDataBlockReferences(boolean isUsingDataBlockReferences) {
+        Configuration config = getFlatFileTrancheServer().getConfiguration();
+        config.setValue(ConfigKeys.DATABLOCK_STORE_DATABLOCK_REFERENCES, String.valueOf(isUsingDataBlockReferences));
+        getFlatFileTrancheServer().saveConfiguration();
+        System.out.println("Using datablock references?........... " + getFlatFileTrancheServer().getConfiguration().getValue(ConfigKeys.DATABLOCK_STORE_DATABLOCK_REFERENCES));
     }
 }
