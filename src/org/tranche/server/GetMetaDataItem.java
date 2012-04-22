@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 import org.tranche.TrancheServer;
+import org.tranche.configuration.ConfigKeys;
 import org.tranche.exceptions.TrancheProtocolException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -80,7 +81,7 @@ public class GetMetaDataItem extends ServerItem {
             metaDataBytes = (byte[][]) thisServerWrapper.getReturnValueObject();
             exceptionSet.addAll(thisServerWrapper.getErrors());
             // propagate?
-            if (propagateRequest && !(server.getTrancheServer() instanceof RoutingTrancheServer)) {
+            if (propagateRequest && isAllowToPropagate() && !(server.getTrancheServer() instanceof RoutingTrancheServer)) {
                 for (int i = 0; i < hashes.length; i++) {
                     // got the chunk locally
                     if (metaDataBytes[i] != null) {
@@ -190,5 +191,17 @@ public class GetMetaDataItem extends ServerItem {
         }
         RemoteUtil.writeBigHashArray(hashes, out);
         RemoteUtil.writeBoolean(propagateRequest, out);
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    private boolean isAllowToPropagate() {
+        boolean allow = ConfigKeys.DEFAULT_PROPAGATE_ALLOW_GET_META_DATA;
+        try {
+            allow = Boolean.valueOf(this.server.getConfiguration().getValue(ConfigKeys.PROPAGATE_ALLOW_GET_META_DATA));
+        } catch (Exception e) { /* nothing */ }
+        return allow;
     }
 }

@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 import org.tranche.TrancheServer;
+import org.tranche.configuration.ConfigKeys;
 import org.tranche.exceptions.TrancheProtocolException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -77,7 +78,7 @@ public class GetDataItem extends ServerItem {
             PropagationReturnWrapper thisServerWrapper = server.getTrancheServer().getData(hashes, propagateRequest);
             dataBytes = (byte[][]) thisServerWrapper.getReturnValueObject();
             exceptionSet.addAll(thisServerWrapper.getErrors());
-            if (propagateRequest && !(server.getTrancheServer() instanceof RoutingTrancheServer)) {
+            if (propagateRequest && isAllowToPropagate() && !(server.getTrancheServer() instanceof RoutingTrancheServer)) {
                 for (int i = 0; i < hashes.length; i++) {
                     // got the chunk locally
                     if (dataBytes[i] != null) {
@@ -177,5 +178,17 @@ public class GetDataItem extends ServerItem {
         }
         RemoteUtil.writeBigHashArray(hashes, out);
         RemoteUtil.writeBoolean(propagateRequest, out);
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    private boolean isAllowToPropagate() {
+        boolean allow = ConfigKeys.DEFAULT_PROPAGATE_ALLOW_GET_DATA;
+        try {
+            allow = Boolean.valueOf(this.server.getConfiguration().getValue(ConfigKeys.PROPAGATE_ALLOW_GET_DATA));
+        } catch (Exception e) { /* nothing */ }
+        return allow;
     }
 }

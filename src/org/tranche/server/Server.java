@@ -35,6 +35,7 @@ import org.tranche.TrancheServer;
 import org.tranche.configuration.ConfigKeys;
 import org.tranche.configuration.ServerModeFlag;
 import org.tranche.commons.DebuggableThread;
+import org.tranche.configuration.Configuration;
 import org.tranche.exceptions.RejectedRequestException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.flatfile.NonceMap;
@@ -170,6 +171,13 @@ public class Server extends DebuggableThread {
             }
             serverStartupThread = null;
         }
+    }
+    
+    /**
+     * <p>Get configuration for underlying server.</p>
+     */
+    protected Configuration getConfiguration() throws Exception {
+        return this.ts.getConfiguration();
     }
 
     /**
@@ -488,6 +496,7 @@ public class Server extends DebuggableThread {
     @Override
     protected void finalize() throws Throwable {
         setRun(false);
+        super.finalize();
     }
 
     /**

@@ -27,6 +27,8 @@ import org.tranche.hash.*;
 import org.tranche.util.DevUtil;
 import org.tranche.util.IOUtil;
 import org.tranche.commons.RandomUtil;
+import org.tranche.configuration.ConfigKeys;
+import org.tranche.configuration.Configuration;
 import org.tranche.util.TestNetwork;
 import org.tranche.util.TestServerConfiguration;
 import org.tranche.util.TestUtil;
@@ -55,10 +57,35 @@ public class ServerStartupThreadTest extends TrancheTestCase {
         TestUtil.setTestingServerStartupThread(false);
         TestUtil.setTestingHashSpanFixingThread(wasTestingHashSpanFixingThread);
     }
-    
     final String HOST1 = "bryan.com";
     final String HOST2 = "mark.gov";
     final String HOST3 = "augie.org";
+
+    /**
+     * 
+     */
+    public void testCanStop() throws Exception {
+        final TestNetwork testNetwork = new TestNetwork();
+        testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
+        try {
+            testNetwork.start();
+            final FlatFileTrancheServer ffts = testNetwork.getFlatFileTrancheServer(HOST1);
+            assertNotNull(ffts);
+            assertTrue(TestUtil.isTestingServerStartupThread());
+            Configuration config = ffts.getConfiguration();
+            config.setValue(ConfigKeys.SERVER_STARTUP_THREAD_ALLOW_RUN, String.valueOf(false));
+            ffts.setConfiguration(config);
+            Thread.sleep(500);
+            Server s = testNetwork.getServer(HOST1);
+            boolean isRun = s.getServerStartupThread().isAllowedToRun(ffts.getConfiguration());
+            assertFalse(isRun);
+            assertFalse(s.getServerStartupThread().isAlive());
+            System.out.println(ffts.getConfiguration().getValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS));
+        } catch (Exception e) {
+        } finally {
+            testNetwork.stop();
+        }
+    }
 
     /**
      * <p>This test starts three servers: server 1, server 2, and server 3. The following happens:</p>
@@ -72,18 +99,18 @@ public class ServerStartupThreadTest extends TrancheTestCase {
      * @throws java.lang.Exception
      */
     public void testServerStartupThreadPerformsDeletesAndSets() throws Exception {
-        
+
         final boolean wasTestingActivityLogs = TestUtil.isTestingActivityLogs();
-        
+
         TestUtil.setTestingActivityLogs(true);
-        
+
         TestNetwork testNetwork = new TestNetwork();
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST1, 1500, "127.0.0.1", true, true, false));
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST2, 1501, "127.0.0.1", true, true, false));
         testNetwork.addTestServerConfiguration(TestServerConfiguration.generateForDataServer(443, HOST3, 1502, "127.0.0.1", true, true, false));
         try {
             testNetwork.start();
-            
+
             FlatFileTrancheServer ffts1 = testNetwork.getFlatFileTrancheServer(HOST1);
             ffts1.getConfiguration().getHashSpans().add(new HashSpan(HashSpan.FIRST, HashSpan.LAST));
             FlatFileTrancheServer ffts2 = testNetwork.getFlatFileTrancheServer(HOST2);
@@ -136,13 +163,13 @@ public class ServerStartupThreadTest extends TrancheTestCase {
                     dataChunksToCheckFor.add(hash);
                 }
             }
-            
+
             for (BigHash hash : dataChunksToCheckFor) {
                 assertTrue("Should have.", ffts1.getDataBlockUtil().hasData(hash));
                 assertTrue("Should have.", ffts2.getDataBlockUtil().hasData(hash));
                 assertTrue("Should have.", ffts3.getDataBlockUtil().hasData(hash));
             }
-            
+
             for (BigHash hash : metaDataChunksToCheckFor) {
                 assertTrue("Should have.", ffts1.getDataBlockUtil().hasMetaData(hash));
                 assertTrue("Should have.", ffts2.getDataBlockUtil().hasMetaData(hash));
@@ -172,9 +199,10 @@ public class ServerStartupThreadTest extends TrancheTestCase {
              *  STEP 2: Turn server 1 offline.
              * ------------------------------------------------------------------------------------------------------------------------------
              */
-            assertTrue("Should be online: "+HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
+            assertTrue("Should be online: " + HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
             testNetwork.suspendServer(HOST1);
-            assertFalse("Shouldn't be online: "+HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
+            Thread.sleep(1000);
+            assertFalse("Shouldn't be online: " + HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
 
             /**
              * ------------------------------------------------------------------------------------------------------------------------------
@@ -306,9 +334,9 @@ public class ServerStartupThreadTest extends TrancheTestCase {
              *  STEP 5: Turn server 1 online, and make sure it has the appropriate chunks after deletions and adds completed.
              * ------------------------------------------------------------------------------------------------------------------------------
              */
-            assertFalse("Shouldn't be online yet: "+HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
+            assertFalse("Shouldn't be online yet: " + HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
             testNetwork.resumeServer(HOST1);
-            assertTrue("Should be online again: "+HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
+            assertTrue("Should be online again: " + HOST1, NetworkUtil.getStatus().getRow(HOST1).isOnline());
 
             ServerStartupThread sst = testNetwork.getServer(HOST1).getServerStartupThread();
             assertNotNull("Startup thread should not be null.", sst);
@@ -329,7 +357,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
             for (BigHash h : deletedDataChunks) {
                 boolean hasData = IOUtil.hasData(rserver1, h);
                 if (hasData) {
-                    byte[] bytes = (byte[])IOUtil.getData(rserver1, h, false).getReturnValueObject();
+                    byte[] bytes = (byte[]) IOUtil.getData(rserver1, h, false).getReturnValueObject();
                     System.out.println("Found data chunk shouldn't have: " + (bytes == null ? "null" : bytes.length + " bytes"));
                 }
                 assertFalse("Should not have chunk: " + h, hasData);
@@ -338,7 +366,7 @@ public class ServerStartupThreadTest extends TrancheTestCase {
             for (BigHash h : deletedMetaDataChunks) {
                 boolean hasMetaData = IOUtil.hasMetaData(rserver1, h);
                 if (hasMetaData) {
-                    byte[] bytes = (byte[])IOUtil.getMetaData(rserver1, h, false).getReturnValueObject();
+                    byte[] bytes = (byte[]) IOUtil.getMetaData(rserver1, h, false).getReturnValueObject();
                     System.out.println("Found meta data chunk shouldn't have: " + (bytes == null ? "null" : bytes.length + " bytes"));
                 }
                 assertFalse("Should not have chunk: " + h, hasMetaData);

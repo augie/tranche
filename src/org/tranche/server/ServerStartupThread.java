@@ -27,6 +27,7 @@ import org.tranche.commons.DebugUtil;
 import org.tranche.commons.DebuggableThread;
 import org.tranche.commons.TextUtil;
 import org.tranche.configuration.ConfigKeys;
+import org.tranche.configuration.Configuration;
 import org.tranche.exceptions.AssertionFailedException;
 import org.tranche.flatfile.FlatFileTrancheServer;
 import org.tranche.hash.BigHash;
@@ -110,6 +111,15 @@ public class ServerStartupThread extends DebuggableThread {
             }
 
             debugOut("Starting for data server");
+
+            final FlatFileTrancheServer ffts = (FlatFileTrancheServer) wrappedServer;
+
+            // Check whether allowed to run between each step
+            if (!isAllowedToRun(ffts.getConfiguration())) {
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, nothing ran: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                return;
+            }
+
             /**
              * GET SERVERS TO USE: When our new network functionality is finished, this will likely
              *                     need to change.
@@ -146,7 +156,7 @@ public class ServerStartupThread extends DebuggableThread {
                 debugOut("Using server: " + host);
             }
 
-            final FlatFileTrancheServer ffts = (FlatFileTrancheServer) wrappedServer;
+
             final long lastRecordedActivityTimestamp = ffts.getActivityLog().getLastRecordedTimestamp();
 
             final long startWriteOnlyTimestamp = TimeUtil.getTrancheTimestamp();
@@ -165,6 +175,12 @@ public class ServerStartupThread extends DebuggableThread {
 
             // Record time took to complete step
             step1Time = TimeUtil.getTrancheTimestamp() - step1Start;
+
+            // Check whether allowed to run between each step
+            if (!isAllowedToRun(ffts.getConfiguration())) {
+                ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped after step #1: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                return;
+            }
 
             // ----------------------------------------------------------------------------------------------
             //  STEP 2: Check other servers for logs, and see if anything should be deleted.
@@ -185,6 +201,12 @@ public class ServerStartupThread extends DebuggableThread {
                 boolean wasChecked = checkServerForChunksToDelete(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, deleteCount);
                 if (!wasChecked) {
                     serversToCheckForDeletes.add(host);
+                }
+
+                // Check whether allowed to run between each step
+                if (!isAllowedToRun(ffts.getConfiguration())) {
+                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #2: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                    return;
                 }
             } // For each server, look for deletes to perform
 
@@ -207,6 +229,12 @@ public class ServerStartupThread extends DebuggableThread {
                 if (!wasChecked) {
                     serversToCheckForReplacedMetaData.add(host);
                 }
+
+                // Check whether allowed to run between each step
+                if (!isAllowedToRun(ffts.getConfiguration())) {
+                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #3: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                    return;
+                }
             } // For each server, look for deletes to perform
 
             step3Time = TimeUtil.getTrancheTimestamp() - step3Start;
@@ -226,6 +254,12 @@ public class ServerStartupThread extends DebuggableThread {
 
                 if (!wasChecked) {
                     serversToCheckForAdds.add(host);
+                }
+
+                // Check whether allowed to run between each step
+                if (!isAllowedToRun(ffts.getConfiguration())) {
+                    ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #4: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                    return;
                 }
             } // For each server, look for new chunks to add
 
@@ -250,6 +284,12 @@ public class ServerStartupThread extends DebuggableThread {
                     if (wasChecked) {
                         serversToCheckForDeletesIt.remove();
                     }
+
+                    // Check whether allowed to run between each step
+                    if (!isAllowedToRun(ffts.getConfiguration())) {
+                        ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #5: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                        return;
+                    }
                 }
 
                 // Perform: replace
@@ -260,6 +300,11 @@ public class ServerStartupThread extends DebuggableThread {
                     if (wasChecked) {
                         serversToCheckForReplacedMetaDataIt.remove();
                     }
+                    // Check whether allowed to run between each step
+                    if (!isAllowedToRun(ffts.getConfiguration())) {
+                        ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #5: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                        return;
+                    }
                 }
 
                 // Perform: adds
@@ -269,6 +314,11 @@ public class ServerStartupThread extends DebuggableThread {
                     boolean wasChecked = checkServerForChunksToAdd(lastRecordedActivityTimestamp, startWriteOnlyTimestamp, host, ffts, addCount, deleteCount);
                     if (wasChecked) {
                         serversToCheckForAddsIt.remove();
+                    }
+                    // Check whether allowed to run between each step
+                    if (!isAllowedToRun(ffts.getConfiguration())) {
+                        ffts.getConfiguration().setValue(ConfigKeys.SERVER_STARTUP_THREAD_STATUS, String.valueOf("ServerStartupThread disabled, stopped during step #5: " + String.valueOf(TimeUtil.getTrancheTimestamp() - start) + ")"));
+                        return;
                     }
                 }
 
@@ -293,6 +343,26 @@ public class ServerStartupThread extends DebuggableThread {
             debugOut(" Deletes: " + deleteCount[0] + "; Adds: " + addCount[0]);
             debugOut("---------------------------------------------------------------------------------------------------------------------------");
         }
+    }
+    private boolean lastAllowedToRun = ConfigKeys.DEFAULT_SHOULD_SERVER_STARTUP_THREAD_RUN;
+
+    /**
+     * 
+     */
+    public boolean isAllowedToRun(Configuration conf) {
+
+        boolean isRun = ConfigKeys.DEFAULT_SHOULD_SERVER_STARTUP_THREAD_RUN;
+
+        try {
+            isRun = Boolean.valueOf(conf.getValue(ConfigKeys.SERVER_STARTUP_THREAD_ALLOW_RUN));
+        } catch (Exception nope) { /* Skip -- either none or parse error, fallback on default */ }
+
+        if (isRun != lastAllowedToRun) {
+            debugOut("Changing allowed to run from " + lastAllowedToRun + " to " + isRun);
+            lastAllowedToRun = isRun;
+        }
+
+        return isRun;
     }
 
     /**

@@ -49,6 +49,10 @@ public class ConfigKeys {
      */
     public static final boolean DEFAULT_SHOULD_HEALING_THREAD_RUN = true;
     /**
+     * 
+     */
+    public static final boolean DEFAULT_SHOULD_SERVER_STARTUP_THREAD_RUN = true;
+    /**
      * <p>The default value for config option to allow healing thread to delete
      * chunks with sufficient total replications and sufficient replications
      * in appropriate hash spans.</p>
@@ -115,6 +119,11 @@ public class ConfigKeys {
      * <p>Whether or not should record data chunk deletions by default.</p>
      */
     public static final boolean DEFAULT_LOG_DATA_CHUNK_DELETIONS = true;
+    /**
+     * 
+     */
+    public static final boolean DEFAULT_PROPAGATE_ALLOW_GET_DATA = true;
+    public static final boolean DEFAULT_PROPAGATE_ALLOW_GET_META_DATA = true;
     /**
      * *****************      ---> KEYS <---      *****************
      */
@@ -503,9 +512,19 @@ public class ConfigKeys {
     public static final String REQUESTS_COUNT_GET_PROJECT_HASHES = "requestCount: GetProjectHashes";
     public static final String REQUESTS_COUNT_GET_KNOWN_SERVERS = "requestCount: GetKnownServers";
     /**
+     * <p>Turn off propagation of certain requests server side.</p>
+     * <p>Be careful! The client-side logic for propagation is tricky, so make sure whatever you turn off won't break the client logic. (E.g., turn off propagation for setting a data chunk, will the AddFileTool still work correctly?)</p>
+     */
+    public static final String PROPAGATE_ALLOW_GET_DATA = "propagate: AllowGetData";
+    public static final String PROPAGATE_ALLOW_GET_META_DATA = "propagate: AllowGetMetaData";
+    /**
      * ServerStartupThread variables
      */
     public static final String SERVER_STARTUP_THREAD_STATUS = "serverStartupThread: status";
+    /**
+     * <p>Prevent the startup thread from doing anything.</p>
+     */
+    public static final String SERVER_STARTUP_THREAD_ALLOW_RUN = "serverStartupThread: AllowRun";
     /**
      * RoutingTrancheServer variables
      */
@@ -679,7 +698,13 @@ public class ConfigKeys {
          *              <!--- ServerStartupThread variables -->
          **********************************************************************/
         permissions.put(SERVER_STARTUP_THREAD_STATUS, CAN_READ);
+        permissions.put(SERVER_STARTUP_THREAD_ALLOW_RUN, CAN_READ_EDIT);
         
+        /***********************************************************************
+         *              <!--- Propagation variables -->
+         **********************************************************************/ 
+        permissions.put(PROPAGATE_ALLOW_GET_DATA, CAN_READ_EDIT);
+        permissions.put(PROPAGATE_ALLOW_GET_META_DATA, CAN_READ_EDIT);
         /***********************************************************************
          *              <!--- RoutingTrancheServer variables -->
          **********************************************************************/
