@@ -148,10 +148,6 @@ public class TrancheServerCommandLineClient extends DebuggableThread {
      * be plugged in by sub-classes.
      * </p>
      */
-    @TodoList({
-        @Todo(desc = "Create an \"ignore exception in this block\" utility -- avoid \"empty block\" warnings and demonstrate intent"),
-        @Todo(desc = "Refactor this method in to smaller pieces")
-    })
     @Override()
     public void run() {
         // calc the largest item name
