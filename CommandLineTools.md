@@ -1,0 +1,15 @@
+There are any number of scenarios that might require or at least suggest the use of a command-line client. Here are several:
+
+  * **Automated tools**: users can use the power of their environment (shell scripts, DOS batch script) combined with other tools (like cron) to automate uploads and downloads. The output of the tools makes aggregating information (hashes, directories) simple, which can be stored in files or databases with little additional work.
+  * **Headless environments**: If you work in any environment that does not offer desktop access (such as SSH or a GUI-less operating system), you can use the command-line interface in a familar way
+  * **Less overhead**: Requires less resources (memory and CPU) than GUI interface
+  * **Quick, stable interface**: The command-line arguments, along with return codes, are stabilizing, and we will aim for backwards compatability to maintain integrity of existing user tools and familiarity.
+
+
+
+## Usage ##
+
+  1. Download the tools from the Downloads section.
+  1. Unzip the downloaded archive
+  1. In your operating system's command-line interface, navigate to the unzipped directory
+  1. Read the **README.txt** file for further instructions.

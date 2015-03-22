@@ -1,0 +1,28 @@
+Tranche uses a public certificate-private key scheme for authorizing network usage.
+
+When we refer to a "user certificate", a "user cert", or a "user zip file" in particular, we are referring to a `*`.zip.encrypted file that contains both a public certificate and a private key, is zipped up and encrypted with a passphrase of the user's choosing.
+
+
+
+## Application ##
+
+You start out a Tranche network with a core set of certificates that are assigned different levels of permission to the network.
+
+Individuals that use the Tranche network are assigned their own user certificates, and these certificates are signed by one of the core certificates, giving them a certain level of permission by proxy.
+
+A certificate is only valid for a certain period of time, so a single person may need to be assigned multiple certificates over time.
+
+  * **Uploading**: When a user uploads to a Tranche network, the user's private key is used to create a signature for the data that is being uploaded. The user's public certificate is sent with the data along with the signature. The server verifies that the user is trusted directly or by proxy, then verifies that the signature matches the uploaded data and the public certificate.
+
+  * **Downloading**: There is no per-user authorization when downloading from a Tranche network. However, a Tranche network administrator does have the ability to only allow recognized users to download from a Tranche network in an all-or-nothing fashion.
+
+
+## Permissions ##
+| | Read | Write | Auto-Cert | User | Admin |
+|:|:-----|:------|:----------|:-----|:------|
+| Read Configuration | • | • | • | • | • |
+| Write Data |  | • | • | • | • |
+| Write Meta Data |  | • | • | • | • |
+| Delete Data |  |  |  | • | • |
+| Delete Meta Data |  |  |  | • | • |
+| Write Configuration |  |  |  |  | • |

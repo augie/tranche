@@ -1,0 +1,54 @@
+# Features #
+
+Please also add any features you think may be implied by one of the features shown. **Bold** text denotes a minimum feature.
+
+  * **Upload a file or directory of files (data set)**
+  * **Download a data set with its current license**
+  * **Independently validate the downloaded content using common hashing algorithms**
+  * **Cite the data set unambiguously along with a hash that can be used to validate its contents**
+  * **Search**
+  * **Manage meta data associated with a data set**
+  * **Delete a file or data set as long as it's not locked**
+  * **Modify at any time the permissions for which users or groups of users can view/download/modify a data set**
+  * **Lock part/all of data set permission**
+  * **Lock a license**
+  * **Lock a data set from deletion**
+  * **Modify at any time the license for use of a data set.**
+  * **Backwards compatibility with the existing Tranche repository features and content**
+    * **Download from existing repository and upload to iRODS-backed repository**
+    * **Map all old Tranche hashes to new unique identifiers**
+  * **Java Web Start Swing-based GUI for uploading, modifying permissions/licensing**
+  * **FTP suport**
+  * **SFTP support**
+  * **Monitoring abilities**
+    * **Traffic**
+    * **Usage/load statistics**
+    * **Memory usage, contents**
+    * **Connections**
+    * **Notifications**
+    * Graphs
+    * Content
+    * Mining
+  * GridFTP support
+  * ALex Annotation
+    * RESTful access and management
+    * Serve XML files containing the current annotation sets with downloaded data set
+  * Machine-readable licensing
+  * HTTP(S) upload, download, modify permissions/licensing, browse, search
+  * Data set versioning
+  * Segment an existing data set for easier download
+
+
+# Design #
+
+The internal software design. It should be robust, scalable, and meet all features.
+
+For simplicity's sake, the Tranche layer will not store any information. As requests come in, the Tranche layer will access the appropriate information either from a MySQL database (users, groups, permissions, possible licenses) or the iRODS data repository (data set info).
+
+When a data set is uploaded, it can be given a unique identifier that is an auto-incrementing number. As a data set is uploaded, the files should be hashed using the MD5 algorithm. That hash should be stored in the meta data database. Once all the files have been hashed, the hashes should then be hashed together in ascending alphabetical ASCII value order of the file names to create the MD5 hash of the data set.
+
+Caching may be used to speed up response times, with the trade-off being a small amount of time after a change when some information will need to "propagate".
+
+Use only standard protocols for upload and download (SFTP, FTP, FTPS, HTTP, HTTPS).
+
+When downloading a data set, create a folder with the name of the data set. In that folder, put the data set as it was uploaded, the associated license file, and annotation files.

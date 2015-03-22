@@ -1,0 +1,57 @@
+<br>
+<hr />
+<br>
+
+
+<h1>All Servers Offline</h1>
+
+If your Tranche server is telling you that it could not find any servers on startup, first check your Internet connection. If this is fine, then the likely culprit is your firewall. You will have to work with your local network administrator to open up the default Tranche ports: 443 and 1045. Without these ports open, you will not able to use Tranche.<br>
+<br>
+<br>
+<br>
+<hr />
+<br>
+
+
+<h1>GUI Not Launching</h1>
+
+Any of the following may be reasons that your tool is not launching.<br>
+<br>
+<br>
+<h2>Java Not Set Up Properly</h2>
+
+You do not have Java or Web Start is not associated with the the JNLP If you download the JNLP file (ends with .jnlp or .jsp), and double-clicking on it did nothing, perhaps you do not have Java installed or Java Web Start is not associated with the file. First see whether you can find Java Web Start, and if you cannot, you can download Java.<br>
+<br>
+<br>
+<h2>JNLP File Not Being Recognized</h2>
+
+Your computer may not be running the JNLP file. Check your desktop or download directory to see whether a file was downloaded -- it might end with .jsp or .jnlp. It might be that your browser does not execute the files automatically. This behavior can be configured for each browser. Try double-clicking on the file to see whether Java Web Start launches.<br>
+<br>
+<br>
+<h2>Disabled Caching In Internet Explorer</h2>
+
+There is a bug in Internet Explorer that will prevent the application from running if the cache is disabled. Make sure you cache is enabled.<br>
+<br>
+<br>
+<h2>Clear Your Caches</h2>
+
+The cache is where your computer stores files so that it doesn't need to retrieve them again for any arbitrary period of time. While this prevents unnecessary re-downloading, this also means that old copies of files may persist after changes were made.<br>
+<br>
+For Tranche, this may cause problems when the code has changed significantly, and in some cases the application may not start.<br>
+<br>
+If you are having difficulty running the application (such as when the application does not appear after clicking the link), there are steps you will want to take:<br>
+<br>
+<h3>Clear your browser's cache</h3>
+
+How to clear a browser's cache depends on the browser. You can search online for your particular browser. Here are links to clearing the cache for some common browsers:<br>
+<br>
+<ul><li><a href='http://www.microsoft.com/windows/ie/ie6/using/howto/customizing/clearcache.mspx'>Internet Explorer 6</a>
+</li><li><a href='http://support.mozilla.com/en-US/kb/Options+window'>Mozilla Firefox 3</a></li></ul>
+
+<h3>Clear the Java Web Start cache</h3>
+
+<ol><li>Open a command prompt<br>
+</li><li>Start up the Java Web Start Viewer<br>
+</li><li>Should start with the Java Cache viewer on top. If it doesn't, you should be able to find it, or try restarting from step #2.<br>
+</li><li>Select and remove individual items. With any existing Tranche icons highlighted, click on the red X to delete it. (If a Tranche instance is running, you may need to shut it down.)<br>
+</li><li>The application cache is empty!. Unless you have applications not related to Tranche that you want to keep.

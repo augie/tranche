@@ -1,0 +1,10 @@
+Tranche is designed to let anyone with administrative rights remotely manage a server, including adding/modifying/deleting users; however, until you are set as an administrator you need to do a small work-around when adding a new administrator. Use the following steps.
+
+  1. Launch Tranche.
+  1. Click on the "Servers" tab.
+  1. You must then select and possible start the servers to which you would like to add the administrator - you must currently have administrator access on a server in order to add someone.
+  1. Once the server has started click on the server address again and from the left hand menu - or by right clicking on the server - select "Add an Admin".
+
+In order to do the above steps you must be at the computer that is running the Tranche server. If you do not have a user file, make one. Once you are set as an administrator you can remotely add or modify the administrators that the server trusts.
+
+Normally you shouldn't add users as administrators. An administrator has the right to do anything they please to the server, including deleting files, deleting configuration information, and removing other administrators. Often it is advantageous to limit users access to simply being able to read, write, and/or update files on the server. You can do this by loading the user using the remote administration tools.

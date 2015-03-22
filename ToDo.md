@@ -1,0 +1,97 @@
+| **TITLE** | **PRIORITY** | **CLAIMED BY** |
+|:----------|:-------------|:---------------|
+| [Data Chunk-File Relationship Tracking](ToDo#Data_Chunk-File_Relationship_Tracking.md) | high | Augie (augman85) |
+| [GUI Modules](ToDo#GUI_Modules.md) | medium | Augie (augman85) |
+| [Delete File Tool](ToDo#Delete_File_Tool.md) | medium |  |
+| [Edit Meta Data Tool](ToDo#Edit_Meta_Data_Tool.md) | medium |  |
+| [HTTP Browse Repository Through Server](ToDo#HTTP_Browse_Repository_Through_Server.md) | low |  |
+| [HTTP or FTP Download](ToDo#HTTP_or_FTP_Download.md) | low |  |
+| [HTTP or FTP Upload](ToDo#HTTP_or_FTP_Upload.md) | low |  |
+| [Launch GUI From Server](ToDo#Launch_GUI_From_Server.md) | low |  |
+| [Machine-Readable Licenses](ToDo#Machine-Readable_Licenses.md) | low |  |
+| [Manage HTTP Server](ToDo#Manage_HTTP_Server.md) | low |  |
+| [Multiple-Repository Configuration](ToDo#Multiple-Repository_Configuration.md) | low |  |
+| [Remote Command Line Terminal](ToDo#Remote_Command_Line_Terminal.md) | low |  |
+| [Self-Modification of Server Hash Spans](ToDo#Self-Modification_of_Server_Hash_Spans.md) | low |  |
+
+
+### Data Chunk-File Relationship Tracking ###
+
+Need to track which files every data chunk is a part of. There is the possibility that a data chunk may belong to two separately uploaded files. This is a problem when trying to delete: it is unknown by the repository whether deleting the data chunk would cause a problem when trying to download a file that was not intended to be deleted.
+
+Because of this problem, we currently only delete the meta data of the ProjectFile so as to not unintentionally delete parts of files that were not meant to be deleted. This causes there to be orphaned chunks on the repository eating up space and cycles.
+
+The plan is when a data chunk is uploaded to also include the file hash, uploader name, upload timestamp, and relative path in the data set of the file being uploaded. This information will be stored in a relational table in the data block alongside the chunk. When the data chunk is deleted, the same information must be used in the request. The data will only be removed if there are no other files with that the chunk belongs to.
+
+Because of the complexity of this task, the team at the University of Michigan will be doing of the implementation.
+
+
+### GUI Modules ###
+
+Make GUI Modules available through the GUI. This functionality was removed for the sake of expedience during the Tranche 2.0 refactor.
+
+
+### Delete File Tool ###
+
+An object similar to the GetFileTool that gives an easy-to-use API for deleting from a repository. Can only be implemented after the chunk-file relationship tracking is implemented.
+
+
+### Edit Meta Data Tool ###
+
+An object similar to the GetFileTool that gives an easy-to-use API for editing the meta data that exists on the repository.
+
+If the meta data that needs to be edited is on a non-writable server, it should be deleted only if the changes were successful on another server.
+
+(NEED DETAILS - contact Augie augman85@gmail.com)
+
+
+### HTTP Browse Repository Through Server ###
+
+Add functionality to the Tranche server that allows users to browse the contents of a Tranche repository using an HTTP browser. The core HTTP server code is already implemented, though there is currently . You would only need to implement the browsing functionality and make the web pages returned look good.
+
+(NEED DETAILS - contact Augie augman85@gmail.com)
+
+
+## Proxy Download ##
+
+Download from a Tranche repository, tarring the contents on the fly and make it available as an InputStream.
+
+
+### HTTP &/ FTP Download ###
+
+Wishlist item. Use the proxy download to send the InputStream to users upon request.
+
+
+### HTTP or FTP Upload ###
+
+Wishlist item. Haven't planned how it would work.
+
+
+### Launch GUI From Server ###
+
+(NEED DETAILS - contact Augie augman85@gmail.com)
+
+
+### Machine-Readable Licenses ###
+
+Licenses are an important part of Tranche. They let uploaders state exactly what can or cannot be done with the data that they are uploading. Right now, the licenses must be read and interpreted by humans, but we want automated agents to be able to read and interpret the licenses. The following should be implemented:
+
+  * Creating or finding an existing (check Creative Commons) XML schema
+  * Modify the License object and reader/writer to work for both the human-readable and machine-readable license files.
+  * Modify the AddFileTool to also upload the new type of license (want to have both human-readable and machine-readable licenses included in the data set). The user of the AddFileTool should notice no change in usage.
+  * Add the hash of the machine-readable license as a variable in the ProjectFile and the ProjectFile reader/writer (ProjectFileUtil). Make sure the AddFileTool sets this variable if a machine-readable license is uploaded.
+
+
+### Multiple-Repository Configuration ###
+
+(NEED DETAILS - contact Augie augman85@gmail.com)
+
+
+### Remote Command Line Terminal ###
+
+(NEED DETAILS - contact Augie augman85@gmail.com)
+
+
+### Self-Modification of Server Hash Spans ###
+
+(NEED DETAILS - contact Augie augman85@gmail.com)

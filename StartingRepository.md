@@ -1,0 +1,182 @@
+## Create Certificates ##
+
+  1. Download the command line tools from the Downloads.
+  1. Extract the contents of the ZIP file to some directory, which we will refer to as _DIR_.
+  1. Open a command-line client and navigate to _DIR_.
+  1. Perform the following operation to print out the usage instructions: `java -jar tranche-certs.jar -h`
+  1. Once you have created your certificates, you are ready for the next step.
+
+
+## Create Repository Configuration File ##
+
+In order to run Tranche, the first argument that must be passed to any main method is the location of the file that describes the Tranche repository you will be using.
+
+Configuration files and certificates can be located in any of a number of places. In general, Tranche attempts to load files and certificates in a nearest to furthest order. Here is how Tranche tries to load them:
+  1. **Java package**: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/pc-tranche.conf`.
+  1. **File system**: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/pc-tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\pc-tranche.conf` for Windows.
+  1. **Internet**: will attempt to load from the Internet if could not load from Java or the file system.
+
+
+
+### File Syntax ###
+  * Some general guidelines on the configuration file syntax.
+  * Blank lines are ignored.
+  * Comment lines can start with `#` or //.
+  * There is no /`*` comment `*`/ support.
+  * For attribute names, cAsE does not matter.
+  * Attribute names and values are always separated by an equals sign.
+
+
+
+### Example Repository Configuration File ###
+```
+[GENERAL]
+# the attributes that are not set will be set to the default values
+name = ProteomeCommons.org Tranche
+description = ProteomeCommons.org helps bring academics and professionals in proteomics together.
+
+[CORE SERVERS]
+# this is a comment
+tranche://101.101.101.101:443
+tranche://202.202.202.202:443
+
+[CERTIFICATES]
+security.certificate.admin = /org/proteomecommons/tranche/admin.public.certificate
+security.certificate.write = /org/proteomecommons/tranche/write.public.certificate
+security.certificate.user = /org/proteomecommons/tranche/user.public.certificate
+security.certificate.read = /org/proteomecommons/tranche/read.public.certificate
+security.certificate.autocert = /org/proteomecommons/tranche/autocert.public.certificate
+security.certificate.anon = /org/proteomecommons/tranche/anonymous.public.certificate
+security.key.anon = /org/proteomecommons/tranche/anonymous.private.key
+security.certificate.email = /org/proteomecommons/tranche/email.public.certificate
+security.key.email = /org/proteomecommons/tranche/email.private.key
+
+[LOGGING]
+log.upload.url = https://proteomecommons.org/logUpload.jsp
+
+[SERVER]
+server.port = 443
+server.ssl = false
+
+[GUI]
+download.pool.size = 2
+```
+
+
+
+### GENERAL Category ###
+
+Name, value pairs:
+| **Name** | **Description** | **Default** |
+|:---------|:----------------|:------------|
+| name | The name of the repository. |  |
+| description | The description of the repository (what is it storing?). |  |
+| admin.emails | A comma-separated list of email addresses to which email notifications will be sent. |  |
+| contact.email | The email address for users to contact. |  |
+| replications | The number of replications required for each chunk of data. | 3 |
+| home.url | The URL for the repository web site. |  |
+| signup.url | The URL for users to sign up for the repository. |  |
+| contact.url | The URL where users can contact the administrators. |  |
+| launch.advanced.url | The URL used to launch the Tranche Java Web Start application. |  |
+| launch.download.url | The URL used to launch the Tranche Downloader Java Web Start application. |  |
+| launch.upload.url | The URL used to launch the Tranche Uploader Java Web Start application. |  |
+| project.cache.url | The URL of the project cache. |  |
+| project.cache.hash | The Tranche hash of the project cache. The project cache URL will be tried first. |  |
+| project.url | The URL of the data set's descriptive information. |  |
+| project.publish.url | The URL where a user can go to publish their data sets. |  |
+| email.url | The URL to HTTP POST email requests. | https://trancheproject.org/email/send.jsp |
+| user.login.url | The URL where users can log in to get their valid user zip files. |  |
+| time.change.check.interval | The number of milliseconds between checking if the system time has been changed significantly. | 10000 |
+| time.change.check.deviation | The number of milliseconds the actual timestamp can deviate from the expected timestamp before resetting the network time. | 1000 |
+| time.update.interval | The number of milliseconds between forcing a reset of the network time. | 21600000 |
+| time.update.timeout | The timeout per NT server request. | 10000 |
+| status.update.client.frequency | The number of milliseconds between updating the network status table on a client. | 60000 |
+| status.update.server.frequency | The number of milliseconds between updating the network status table on a server. | 30000 |
+| status.update.server.grouping | The number of servers in a network status table group. Used in server status propagation. | 5 |
+| connection.full.hashspan.threshold | The point at which only a single full hash span of servers are connected to. | 25 |
+| connection.keep.alive.interval | The number of milliseconds between sending a ping to each connected server to keep the socket alive. | 8000 |
+| status.defunct.threshold | Servers that are offline and do not update within this time get removed from the table. | 604800000 |
+| update.conf.url | The URL where an updated configuration file can be found. The update will occur at regular intervals at about the same time on all clients and servers. If the location for certificate files has changed, they will be reloaded from the new location. |  |
+| update.conf.interval | The number of milliseconds between updating the configuration. | 10000000 |
+
+
+
+### CERTIFICATES Category ###
+
+Here is how Tranche tries to load certificates and keys:
+  1. **Java package**: will attempt to load the file/certificate through the class loader. Example of a package location: `/org/proteomecommons/tranche/pc-tranche.conf`.
+  1. **File system**: will attempt to load from the local computer file system if could not load from Java. Example of a file system location: `/home/tranche/Desktop/pc-tranche.conf` for Linux, or `C:\Documents and Settings\James A Hill\Desktop\pc-tranche.conf` for Windows.
+  1. **Internet**: will attempt to load from the Internet if could not load from Java or the file system.
+
+Name, value pairs:
+| **Name** | **Description** | **Default** |
+|:---------|:----------------|:------------|
+| security.certificate.admin | The location of the public certificate for the administrator (all priveleges). |  |
+| security.certificate.write | The location of the public certificate for the write-only user. |  |
+| security.certificate.user | The location of the public certificate for the standard user (read, write, delete). |  |
+| security.certificate.read | The location of the public certificate for the read-only user. |  |
+| security.certificate.autocert | The location of the public certificate for the auto-certificate user (read, write). |  |
+| security.certificate.anon | The location of the public certificate for the anonymous user. |  |
+| security.key.anon | The location of the private key for the anonymous user. |  |
+| security.certificate.email | The location of the public certificate for the email user. |  |
+| security.key.email | The location of the private key for the email user. |  |
+
+
+
+### SERVER Category ###
+Name, value pairs:
+| **Name** | **Description** | **Default** |
+|:---------|:----------------|:------------|
+| server.directory | The location of the directory that contains all the server configuration and runtime files. | ./ |
+| server.port | The starting port number for a server. | 443 |
+| server.ssl | The starting boolean for whether a server should communicate over SSL. | false |
+| server.queue.size | The maximum number of requests a client can have outstanding on a server. | 10 |
+| server.timeout | The maximum number of milliseconds before a request to a server times out if it doesn't send back a feep-alive signal. | 60000 |
+| server.keepalive.timeout | The maximum number of milliseconds before a request that is being kept alive is timed out. | 120000 |
+| server.config.attributes.url | The URL of the updated server configuration attributes. |  |
+| server.server.registration.time | The amount of time that may pass before reregistering the local server with connected servers in the server status update process. | 3600000 |
+| server.user.simultaneous.requests | The number of requests a single user can have executed simultaneously on a server. | 3 |
+| server.server.simultaneous.requests | The number of requests a single server can have executed simultaneously on a server. | 10 |
+| server.offline.notification.interval | The number of milliseconds between sending offline server notification emails. | 86400000 |
+| server.clients.max | The maximum number of clients that can concurrently connect to a server. | 1000 |
+
+
+
+### LOGGING Category ###
+Name, value pairs:
+| **Name** | **Description** | **Default** |
+|:---------|:----------------|:------------|
+| log.error.url | The URL to which the software will submit error logs. |  |
+| log.server.url | The URL to which the software will submit server logs. |  |
+| log.upload.url | The URL to which the software will register uploads. |  |
+| log.upload.failure.url | The URL to which the software will register upload failures.  |  |
+| log.download.url | The URL to which the software will register downloads. |  |
+| log.download.failure.url | The URL to which the software will register failed downloads. |  |
+
+
+
+### CORE SERVERS Category ###
+A list of Tranche URLs. One URL per line.
+
+
+
+### NETWORK TIME SERVERS Category ###
+A list of domain names or IP addresses that correspond to network time servers.
+
+
+
+### BANNED SERVERS CATEGORY ###
+A list of domain names or IP addresses of Tranche servers that are banned.
+
+
+
+### GUI Category ###
+Name, value pairs:
+| **Name** | **Description** | **Default** |
+|:---------|:----------------|:------------|
+| module.list.start | A comma-separated list of hashes for modules that should be loaded on startup. |  |
+| module.list.hash | The hash of the list of possible modules. |  |
+| module.list.url | The URL of the list of possible modules. |  |
+| upload.pool.size | The starting number of uploads that can occur at any one time. | 1 |
+| download.pool.size | The starting numbeher of downloads that can occur at any one time. | 1 |
+| hash.auto\_complete | The starting boolean of whether the hash popup suggestion window should be used. | true |

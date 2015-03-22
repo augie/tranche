@@ -1,0 +1,58 @@
+### Help! Tranche isn't working! ###
+
+Though it isn't common, some problems with Tranche are caused by caching issues, where a previous version of Tranche being run instead of the newest, most stable. To clear the cache and allow the newest version of Tranche to be downloaded and run, you must clear your browser and Java WebStart caches.  Depending on the browser you are using will dictate exactly where you will have to go to clear your cache.  In general; however, you will need to go to a &quot;Preferences&quot; or &quot;Tools&quot; section and look for your cache.  When it is found there should also be an option for clearing it out.
+
+In order to clear out the java webstart cache you will need to get to a command line (Terminal in Mac OS X and Command Prompt in Windows).  From the command line type in:
+
+```
+javaws -viewer
+```
+
+This will bring up the Java WebStart cache.  Clear out any old versions of Tranche.
+You have now cleared out your browser and java cache.  Load Tranche again.  This time the newest and most stable version will be downloaded and your problem will likely also be fixed.
+
+
+### What kinds of files and information can I upload? ###
+
+Any type of file can be uploaded to a Tranche repository.  Tranche can be thought of something like a very large safety deposit box, in that it doesn't matter what you have as long as the Tranche repository to which you are uploading has the space for it, you can upload it.
+
+
+### How do I structure my files for upload? ###
+
+Uploads to a Tranche repository can be structured in any manner that you would like; however, in order to facilitate locating the exact information you are looking for, it is recommended that an upload is structured in a manner similar to the following:
+Create a readme file to be placed in the folder with the data to be uploaded.  This file would contain information regarding who you are, and information as to what the rest of the uploaded folder contains.  Within this main folder it is recommended that subdirectories be created for the each of the types of data types that you would like to publish.
+
+
+### Is it faster if I compress my files first? ###
+
+Compressing a file does not make the process faster. Tranche will auto compress the files for you and it is best to let it do that.
+
+
+### How does Tranche make collaborations easier? ###
+
+Tranche allows collaborators to share data and research data regardless of file size, the number of files, or the file types. Tranche can also securely share data in pre-review before publication.  Files can be encrypted and the passphrase is only available to the original uploader and whomever they share it with.  In this way researchers can work in various locations all sharing data without having to worry about the security of the data being compromised.
+
+
+### If my data set is password protected, how can I be sure only my collaborators have access? ###
+
+The ability to decrypt data is only available to those with whom the passphrase has been shared. When data is uploaded with encryption the only individual that has access to the passphrase is the original uploader; thus, only the original uploader has the ability to allow others access to data by sharing the passphrase with them.  Tranche uses the same encryption standards as modern E-commerce websites, e.g. your online bank, and it is unlikely that anyone will break these standards anytime in the near future.
+
+
+### When I am ready, how do I publicly release my data? ###
+
+When you are ready to release your data you can then publicly release the passphrase so that others can then download the data.  Alternatively, you can upload the data a second time, this time without a passphrase. A third alternative is to allow Tranche to auto-decrypt your data by using the Tranche Tool to publish your data set's passphrase directly to the repository. This last alternative will result in the data set being downloadable without a passphrase even though the data set is still encrypted.
+
+
+### How will other investigators and funding agencies know my lab produced the data? ###
+
+Data can be documented and provenance shown in several different ways. The best formal way is to publish the Tranche hash within any manuscript in which you publish.  Not only does this formally prove where the data comes from, Tranche can also be used to verify the completeness of data uploads.  In addition to publication in manuscripts, a Tranche hash with a corresponding annotation, can be published on a number of websites. For an examples please examine [ProteomeCommons.org](https://proteomecommons.org).
+
+
+### What if I change my mind about the data I have uploaded? ###
+
+Data can be deleted from a Tranche repository. Data cannot be deleted from the systems of those users who have already downloaded your data.
+
+
+### How do I find my data sets after I have uploaded them? ###
+
+In order to find data after it has been uploaded you will need the Tranche hash which corresponds to that data.  When you first upload data to a repository, a Tranche hash will be returned.  If this hash is lost, the same data can be re-uploaded, and because this data is already on the repository, Tranche will recognize this, skip the process of uploading the duplicate files, and return the original Tranche hash.  In addition, if the Tranche hash is lost, the Tranche Tool can be used to locate the data.

@@ -1,0 +1,16 @@
+Tranche is designed to utilize as much of your computer's resources as it can to give you the fastest possible uploads and downloads. Tranche will never "break" other programs, but you may find that your computer isn't as responsive while Tranche is running. Here are a few helpful tips so that you can easily use the same computer that you are running Tranche on.
+
+You have two basic options to speed up your computer.
+
+  1. Turn off Tranche. Crude, but remember that you can always resume a upload or download.
+  1. Set Tranche to have a lower than normal thread priority (highly recommended for Windows).
+
+
+
+## Setting Tranche To Have A Lower Than Normal Thread Priority ##
+
+Most operating systems run many programs at once (i.e. multi-threaded) and, if you please, you can choose the priority of these threads. Setting a thread to a lower priority makes all other threads relatively more responsive. If you don't think your computer is responsive enough when Tranche is running, you can set it to a lower priority -- thus making everything else seem more responsive. The only downside to doing this is Tranche will run significanly slower; hoewver, you can always toggle the Tranche thread back to normal priority when you are done using the computer.
+
+The following picture shows how to toggle thread priorities using Microsoft Window's Task Manager. Right-click on your taskbar and select "Task Manager" to get this window. Select the "Process" tab to get the following.
+
+Once you have set the priority you can close out of Task Manager. Note, it is generally a bad idea to make Tranche (or any program) higher than normal priority. Your computer will be almost unresponsive until the program finishes running.
